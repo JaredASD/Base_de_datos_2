@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estudiante | Portafolio BD II</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
+            <div class="nav-links">
+                <a href="#" class="nav-link neu-button">Inicio</a>
+                <a href="index.html" class="nav-login neu-button-accent">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content neu-card">
+            <span class="badge">Estudiante</span>
+            <h1>BASE DE DATOS <span class="roman">II</span></h1>
+            <p class="owner">Bienvenido al portafolio de <strong>Jared Josue Meza Medina</strong></p>
+        </div>
+    </header>
+
+    <main class="container" id="proyectos">
+        <h2 class="section-title">Estructura Académica</h2>
+        <div class="grid-unidades" id="studentGrid"></div>
+    </main>
+
+    <script>
+        if(!localStorage.getItem('userRole')) window.location.href = "index.html";
+
+        const REPO_URL = "https://github.com/JaredASD/Base_de_datos_2/tree/main/";
+
+        const unidades = [
+            { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
+            { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
+            { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
+            { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
+        ];
+
+        const grid = document.getElementById('studentGrid');
+        unidades.forEach(u => {
+            let html = `
+            <section class="unidad-card neu-card">
+                <div class="card-header">${u.nombre}</div>
+                <p class="unidad-desc">${u.desc}</p>
+                <div class="semanas-grid">`;
+            for(let i=u.rango[0]; i<=u.rango[1]; i++){
+                let sNum = i < 10 ? '0'+i : i;
+                html += `
+                    <div class="semana-item neu-inset" onclick="window.open('${REPO_URL}Semana${sNum}', '_blank')">
+                        S${i}
+                    </div>`;
+            }
+            html += `</div></section>`;
+            grid.innerHTML += html;
+        });
+    </script>
+</body>
+</html>

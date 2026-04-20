@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Base de Datos II</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container { height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .login-card { width: 320px; padding: 40px; text-align: center; }
+        .input-neu { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; background: var(--bg-color); box-shadow: var(--shadow-inset-dark), var(--shadow-inset-light); outline: none; color: var(--text-main); font-family: 'Montserrat'; }
+        .btn-send { width: 100%; padding: 12px; border: none; margin-top: 20px; cursor: pointer; color: var(--accent-primary); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card neu-card">
+            <h2 style="font-family: 'Oswald';">PORTAFOLIO LOGIN</h2>
+            <input type="text" id="user" placeholder="Usuario" class="input-neu">
+            <input type="password" id="pass" placeholder="Contraseña" class="input-neu">
+            <button onclick="login()" class="neu-button btn-send">ENTRAR</button>
+        </div>
+    </div>
+
+    <script>
+        function login() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+
+            localStorage.clear(); // Limpiar sesiones previas
+
+            if(u === "admin" && p === "admin123") {
+                localStorage.setItem('userRole', 'admin');
+                window.location.href = "admin.html";
+            } else if(u === "user" && p === "user123") {
+                localStorage.setItem('userRole', 'estudiante');
+                window.location.href = "estudiante.html";
+            } else { 
+                alert("Usuario o contraseña incorrectos"); 
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,112 +1,181 @@
-gracias, ahora crees que en la ventana de admin pueda ser mas facil eliminar un archivo, no escribiendo el nombre del archivo por que es algo tedioso
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin | Gestión Académica</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .admin-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-        .btn-mini { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .btn-up { color: var(--accent-secondary); }
-        .btn-del { color: #ff7675; }
-        #fileInput { display: none; }
-        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(224,229,236,0.9); z-index:2000; justify-content:center; align-items:center; flex-direction:column; }
-    </style>
+    <meta charset="UTF-8">
+    <title>Admin | Gestión Académica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+        .btn-mini { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.3s; }
+        .btn-up { color: var(--accent-secondary); }
+        .btn-del { color: #ff7675; }
+        
+        #fileInput { display: none; }
+        
+        /* Capas de carga y modales */
+        .loading-overlay, .modal-overlay { 
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(224, 229, 236, 0.9); z-index:2000; 
+            justify-content:center; align-items:center; flex-direction:column; 
+        }
+
+        /* Estilo del Modal de Borrado */
+        .delete-modal { width: 90%; max-width: 400px; padding: 30px; text-align: center; }
+        .file-list { margin-top: 20px; max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; }
+        
+        .file-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; margin-bottom: 10px; border-radius: 10px; font-size: 0.9rem;
+        }
+        .btn-confirm-del { background: none; border: none; color: #ff7675; cursor: pointer; font-weight: bold; }
+        .btn-close-modal { margin-top: 20px; width: 100%; padding: 10px; border: none; cursor: pointer; font-family: 'Oswald'; }
+    </style>
 </head>
 <body>
-    <div id="loader" class="loading-overlay"><div class="neu-card" style="padding:20px;">Subiendo archivo a GitHub...</div></div>
+    <div id="loader" class="loading-overlay">
+        <div class="neu-card" style="padding:20px;">Procesando con GitHub...</div>
+    </div>
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
-            <div class="nav-links">
-                <span class="nav-link" style="color: var(--accent-primary)">MODO ADMINISTRADOR</span>
-                <a href="index.html" class="nav-login neu-button-accent">Salir</a>
-            </div>
-        </div>
-    </nav>
+    <div id="deleteModal" class="modal-overlay">
+        <div class="delete-modal neu-card">
+            <h3 id="modalTitle" style="font-family: 'Oswald'; margin-bottom:10px;">Archivos en Semana</h3>
+            <div id="fileList" class="file-list">
+                </div>
+            <button onclick="closeDeleteModal()" class="neu-button btn-close-modal">CERRAR</button>
+        </div>
+    </div>
 
-    <main class="container">
-        <h2 class="section-title">Estructura Académica (Admin)</h2>
-        <input type="file" id="fileInput">
-        <div class="grid-unidades" id="adminGrid"></div>
-    </main>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
+            <div class="nav-links">
+                <span class="nav-link" style="color: var(--accent-primary)">MODO ADMINISTRADOR</span>
+                <a href="index.html" class="nav-login neu-button-accent">Salir</a>
+            </div>
+        </div>
+    </nav>
 
-    <script>
-        if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
+    <main class="container">
+        <h2 class="section-title">Estructura Académica (Admin)</h2>
+        <input type="file" id="fileInput">
+        <div class="grid-unidades" id="adminGrid"></div>
+    </main>
 
-        const GITHUB_TOKEN = "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"; 
-        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-        let currentSemana = "";
+    <script>
+        if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
 
-        const unidades = [
-            { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
-            { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
-            { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
-            { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
-        ];
+        const GITHUB_TOKEN = "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"; 
+        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
+        let currentSemana = "";
 
-        const grid = document.getElementById('adminGrid');
-        unidades.forEach(u => {
-            let html = `
-            <section class="unidad-card neu-card">
-                <div class="card-header">${u.nombre}</div>
-                <p class="unidad-desc">${u.desc}</p>
-                <div class="semanas-grid">`;
-            for(let i=u.rango[0]; i<=u.rango[1]; i++){
-                let sNum = i < 10 ? '0'+i : i;
-                html += `
-                    <div class="semana-item neu-inset">
-                        S${i}
-                        <div class="admin-actions">
-                            <button class="btn-mini btn-up neu-button" onclick="openFile('Semana${sNum}')">↑</button>
-                            <button class="btn-mini btn-del neu-button" onclick="deleteFile('Semana${sNum}')">×</button>
-                        </div>
-                    </div>`;
-            }
-            html += `</div></section>`;
-            grid.innerHTML += html;
-        });
+        const unidades = [
+            { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
+            { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
+            { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
+            { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
+        ];
 
-        function openFile(s) { currentSemana = s; document.getElementById('fileInput').click(); }
+        // Renderizado de la Grid
+        const grid = document.getElementById('adminGrid');
+        unidades.forEach(u => {
+            let html = `<section class="unidad-card neu-card"><div class="card-header">${u.nombre}</div><p class="unidad-desc">${u.desc}</p><div class="semanas-grid">`;
+            for(let i=u.rango[0]; i<=u.rango[1]; i++){
+                let sNum = i < 10 ? '0'+i : i;
+                html += `
+                    <div class="semana-item neu-inset">
+                        S${i}
+                        <div class="admin-actions">
+                            <button class="btn-mini btn-up neu-button" onclick="openFile('Semana${sNum}')" title="Subir">↑</button>
+                            <button class="btn-mini btn-del neu-button" onclick="loadFilesToDelete('Semana${sNum}')" title="Borrar">×</button>
+                        </div>
+                    </div>`;
+            }
+            html += `</div></section>`;
+            grid.innerHTML += html;
+        });
 
-        document.getElementById('fileInput').onchange = function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64 = reader.result.split(',')[1];
-                document.getElementById('loader').style.display = "flex";
-                const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${file.name}`;
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Upload ${file.name}`, content: base64 })
-                });
-                document.getElementById('loader').style.display = "none";
-                if(res.ok) alert("Archivo subido correctamente.");
-            };
-        };
+        // --- FUNCIONALIDAD SUBIR ---
+        function openFile(s) { currentSemana = s; document.getElementById('fileInput').click(); }
 
-        async function deleteFile(semana) {
-            const name = prompt("Nombre exacto del archivo a borrar en " + semana + ":");
-            if(!name) return;
-            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}/${name}`;
-            const res = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
-            const data = await res.json();
-            if(data.sha) {
-                await fetch(url, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "Delete", sha: data.sha })
-                });
-                alert("Archivo eliminado.");
-            }
-        }
-    </script>
+        document.getElementById('fileInput').onchange = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64 = reader.result.split(',')[1];
+                showLoader(true);
+                const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${file.name}`;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Upload ${file.name}`, content: base64 })
+                });
+                showLoader(false);
+                if(res.ok) alert("✅ Archivo subido correctamente.");
+            };
+        };
+
+        // --- FUNCIONALIDAD BORRAR DINÁMICA ---
+        async function loadFilesToDelete(semana) {
+            currentSemana = semana;
+            const listContainer = document.getElementById('fileList');
+            document.getElementById('modalTitle').innerText = "Archivos en " + semana;
+            listContainer.innerHTML = "Buscando archivos...";
+            document.getElementById('deleteModal').style.display = "flex";
+
+            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}`;
+            
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
+                const files = await res.json();
+
+                if (res.status === 404 || files.length === 0) {
+                    listContainer.innerHTML = "No hay archivos en esta carpeta.";
+                    return;
+                }
+
+                listContainer.innerHTML = ""; // Limpiar buscador
+                files.forEach(file => {
+                    if(file.type === "file") {
+                        const item = document.createElement('div');
+                        item.className = "file-item neu-inset";
+                        item.innerHTML = `
+                            <span>${file.name}</span>
+                            <button class="btn-confirm-del" onclick="executeDelete('${file.name}', '${file.sha}')">ELIMINAR</button>
+                        `;
+                        listContainer.appendChild(item);
+                    }
+                });
+            } catch (err) {
+                listContainer.innerHTML = "Error al conectar con GitHub.";
+            }
+        }
+
+        async function executeDelete(fileName, sha) {
+            if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;
+
+            showLoader(true);
+            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`;
+            
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Delete ${fileName}`, sha: sha })
+            });
+
+            showLoader(false);
+            if(res.ok) {
+                alert("🗑️ Archivo eliminado.");
+                closeDeleteModal();
+            } else {
+                alert("Error al intentar eliminar.");
+            }
+        }
+
+        function closeDeleteModal() { document.getElementById('deleteModal').style.display = "none"; }
+        function showLoader(show) { document.getElementById('loader').style.display = show ? "flex" : "none"; }
+    </script>
 </body>
 </html>

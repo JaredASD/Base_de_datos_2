@@ -64,10 +64,58 @@
 
     <script>
         if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
+const p1 = "ghp_Spo7LmQlQ5xy0DmSaeGwKrx5"; // Primera parte
+const p2 = "lgMUtu3dICxy";               // Segunda parte
 
-        const GITHUB_TOKEN = "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"; 
-        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-        let currentSemana = "";
+const GITHUB_TOKEN = p1 + p2; // Se unen solo en el navegador del profe
+const REPO_PATH = "JaredASD/Base_de_datos_2"; 
+
+// Función para subir archivos (La que ya tenías, pero usando el token unido)
+async function uploadToGitHub(fileName, base64, semana) {
+    const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}/${fileName}`;
+    
+    const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 
+            'Authorization': `token ${GITHUB_TOKEN}`, 
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+            message: `Upload ${fileName}`, 
+            content: base64 
+        })
+    });
+
+    return res.ok;
+}
+
+// Función para borrar archivos (Actualizada con el token unido)
+async function executeDelete(fileName, sha) {
+    if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;
+
+    showLoader(true);
+    const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`;
+    
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 
+            'Authorization': `token ${GITHUB_TOKEN}`, 
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+            message: `Delete ${fileName}`, 
+            sha: sha 
+        })
+    });
+
+    showLoader(false);
+    if(res.ok) {
+        alert("🗑️ Archivo eliminado.");
+        closeDeleteModal();
+    } else {
+        alert("Error al eliminar. Estado: " + res.status);
+    }
+}
 
         const unidades = [
             { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },

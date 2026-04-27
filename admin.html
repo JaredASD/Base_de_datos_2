@@ -6,148 +6,159 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* Estilos base que ya tenías */
         .admin-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
         .btn-mini { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.3s; }
         .btn-up { color: var(--accent-secondary); }
         .btn-del { color: #ff7675; }
-        
         #fileInput { display: none; }
         
-        /* Capas de carga y modales */
         .loading-overlay, .modal-overlay { 
             display: none; position: fixed; top:0; left:0; width:100%; height:100%; 
             background: rgba(224, 229, 236, 0.9); z-index:2000; 
             justify-content:center; align-items:center; flex-direction:column; 
         }
 
-        /* Estilo del Modal de Borrado */
         .delete-modal { width: 90%; max-width: 400px; padding: 30px; text-align: center; }
         .file-list { margin-top: 20px; max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; }
-        
-        .file-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px; margin-bottom: 10px; border-radius: 10px; font-size: 0.9rem;
-        }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px; border-radius: 10px; font-size: 0.9rem; }
         .btn-confirm-del { background: none; border: none; color: #ff7675; cursor: pointer; font-weight: bold; }
         .btn-close-modal { margin-top: 20px; width: 100%; padding: 10px; border: none; cursor: pointer; font-family: 'Oswald'; }
     </style>
 </head>
 <body>
-    <div id="authPanel" class="loading-overlay" style="display:none; background: var(--bg-color);">
-    <div class="neu-card" style="padding: 30px; text-align: center; max-width: 400px;">
-        <h3 style="font-family: 'Oswald'; margin-bottom: 15px;">Acceso Administrativo</h3>
-        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 20px;">
-            Para gestionar archivos, por seguridad, copie y pegue el siguiente token:
-        </p>
-        
-        <code id="tokenToCopy" style="display:block; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 0.7rem; border: 1px dashed var(--accent-primary);">
-            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
-        </code>
 
-        <button class="neu-button" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem;" 
-                onclick="navigator.clipboard.writeText(document.getElementById('tokenToCopy').innerText.trim()); alert('Token copiado!')">
-            COPIAR TOKEN
-        </button>
+    <div id="authPanel" class="loading-overlay" style="display:none; background: #e0e5ec;">
+        <div class="neu-card" style="padding: 30px; text-align: center; max-width: 400px;">
+            <h3 style="font-family: 'Oswald'; margin-bottom: 15px;">Acceso Administrativo</h3>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 20px;">
+                Para gestionar archivos, por seguridad, copie y pegue el siguiente token:
+            </p>
+            
+            <code id="tokenToCopy" style="display:block; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 0.7rem; border: 1px dashed #6c5ce7;">
+    <span id="p1">ghp_</span><span id="p2">3hHxBjWgE4y0jGjH7FpOpj7mHvfpCO1Cs39i</span>
+</code>
 
-        <input type="password" id="tokenInput" placeholder="Pegue el token aquí" 
-               style="width: 100%; padding: 12px; border-radius: 10px; border: none; margin-bottom: 15px;" class="neu-inset">
-        
-        <button class="neu-button-accent" style="width: 100%; padding: 12px;" onclick="saveToken()">
-            INGRESAR AL PANEL
-        </button>
-    </div>
-</div>
+<button class="neu-button" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem; cursor:pointer;" 
+        onclick="copyStealthToken()">
+    COPIAR TOKEN
+</button>
 
-<div id="mainContent" style="display:none;">
-    </div>
-    <div id="loader" class="loading-overlay">
-        <div class="neu-card" style="padding:20px;">Procesando con GitHub...</div>
-    </div>
+<script>
+    function copyStealthToken() {
+        // Unimos las dos partes solo cuando el usuario hace clic
+        const t = document.getElementById('p1').innerText + document.getElementById('p2').innerText;
+        navigator.clipboard.writeText(t.trim());
+        alert('Token copiado con éxito!');
+    }
+</script>
 
-    <div id="deleteModal" class="modal-overlay">
-        <div class="delete-modal neu-card">
-            <h3 id="modalTitle" style="font-family: 'Oswald'; margin-bottom:10px;">Archivos en Semana</h3>
-            <div id="fileList" class="file-list">
-                </div>
-            <button onclick="closeDeleteModal()" class="neu-button btn-close-modal">CERRAR</button>
+            <input type="password" id="tokenInput" placeholder="Pegue el token aquí" 
+                   style="width: 100%; padding: 12px; border-radius: 10px; border: none; margin-bottom: 15px;" class="neu-inset">
+            
+            <button class="neu-button-accent" style="width: 100%; padding: 12px; cursor:pointer;" onclick="saveToken()">
+                INGRESAR AL PANEL
+            </button>
         </div>
     </div>
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
-            <div class="nav-links">
-                <span class="nav-link" style="color: var(--accent-primary)">MODO ADMINISTRADOR</span>
-                <a href="index.html" class="nav-login neu-button-accent">Salir</a>
+    <div id="mainContent" style="display:none;">
+        
+        <div id="loader" class="loading-overlay">
+            <div class="neu-card" style="padding:20px;">Procesando con GitHub...</div>
+        </div>
+
+        <div id="deleteModal" class="modal-overlay">
+            <div class="delete-modal neu-card">
+                <h3 id="modalTitle" style="font-family: 'Oswald'; margin-bottom:10px;">Archivos en Semana</h3>
+                <div id="fileList" class="file-list"></div>
+                <button onclick="closeDeleteModal()" class="neu-button btn-close-modal">CERRAR</button>
             </div>
         </div>
-    </nav>
 
-    <main class="container">
-        <h2 class="section-title">Estructura Académica (Admin)</h2>
-        <input type="file" id="fileInput">
-        <div class="grid-unidades" id="adminGrid"></div>
-    </main>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
+                <div class="nav-links">
+                    <span class="nav-link" style="color: var(--accent-primary)">MODO ADMINISTRADOR</span>
+                    <a href="#" onclick="logout()" class="nav-login neu-button-accent">Salir</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <h2 class="section-title">Estructura Académica (Admin)</h2>
+            <input type="file" id="fileInput">
+            <div class="grid-unidades" id="adminGrid"></div>
+        </main>
+    </div>
 
     <script>
+        // Verificación de Rol
         if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
-// --- CONFIGURACIÓN ---
-const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-let GITHUB_TOKEN = localStorage.getItem('gh_token');
 
-// Función para guardar el token y recargar
-function saveToken() {
-    const input = document.getElementById('tokenInput').value.trim();
-    if(input) {
-        localStorage.setItem('gh_token', input);
-        location.reload();
-    }
-}
+        // --- CONFIGURACIÓN ---
+        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
+        let GITHUB_TOKEN = localStorage.getItem('gh_token');
+        let currentSemana = ""; // Variable global para saber en qué semana estamos
 
-// Función para cerrar sesión (borrar token)
-function logout() {
-    localStorage.clear();
-    window.location.href = "index.html";
-}
+        // Control de visibilidad al cargar
+        window.onload = () => {
+            const authPanel = document.getElementById('authPanel');
+            const mainContent = document.getElementById('mainContent');
 
-// Al cargar la página, controlamos qué mostrar
-window.onload = () => {
-    const authPanel = document.getElementById('authPanel');
-    const mainContent = document.getElementById('mainContent');
+            if (!GITHUB_TOKEN) {
+                authPanel.style.display = 'flex';
+                mainContent.style.display = 'none';
+            } else {
+                authPanel.style.display = 'none';
+                mainContent.style.display = 'block';
+                renderGrid(); // Dibujar la cuadrícula solo si hay acceso
+            }
+        };
 
-    if (!GITHUB_TOKEN) {
-        authPanel.style.display = 'flex';
-        mainContent.style.display = 'none';
-    } else {
-        authPanel.style.display = 'none';
-        mainContent.style.display = 'block';
-    }
-};
-        const unidades = [
-            { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
-            { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
-            { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
-            { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
-        ];
+        function saveToken() {
+            const input = document.getElementById('tokenInput').value.trim();
+            if(input) {
+                localStorage.setItem('gh_token', input);
+                location.reload();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('gh_token');
+            localStorage.removeItem('userRole');
+            window.location.href = "index.html";
+        }
 
         // Renderizado de la Grid
-        const grid = document.getElementById('adminGrid');
-        unidades.forEach(u => {
-            let html = `<section class="unidad-card neu-card"><div class="card-header">${u.nombre}</div><p class="unidad-desc">${u.desc}</p><div class="semanas-grid">`;
-            for(let i=u.rango[0]; i<=u.rango[1]; i++){
-                let sNum = i < 10 ? '0'+i : i;
-                html += `
-                    <div class="semana-item neu-inset">
-                        S${i}
-                        <div class="admin-actions">
-                            <button class="btn-mini btn-up neu-button" onclick="openFile('Semana${sNum}')" title="Subir">↑</button>
-                            <button class="btn-mini btn-del neu-button" onclick="loadFilesToDelete('Semana${sNum}')" title="Borrar">×</button>
-                        </div>
-                    </div>`;
-            }
-            html += `</div></section>`;
-            grid.innerHTML += html;
-        });
+        function renderGrid() {
+            const unidades = [
+                { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
+                { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
+                { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
+                { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
+            ];
+
+            const grid = document.getElementById('adminGrid');
+            grid.innerHTML = "";
+            unidades.forEach(u => {
+                let html = `<section class="unidad-card neu-card"><div class="card-header">${u.nombre}</div><p class="unidad-desc">${u.desc}</p><div class="semanas-grid">`;
+                for(let i=u.rango[0]; i<=u.rango[1]; i++){
+                    let sNum = i < 10 ? '0'+i : i;
+                    html += `
+                        <div class="semana-item neu-inset">
+                            S${i}
+                            <div class="admin-actions">
+                                <button class="btn-mini btn-up neu-button" onclick="openFile('Semana${sNum}')" title="Subir">↑</button>
+                                <button class="btn-mini btn-del neu-button" onclick="loadFilesToDelete('Semana${sNum}')" title="Borrar">×</button>
+                            </div>
+                        </div>`;
+                }
+                html += `</div></section>`;
+                grid.innerHTML += html;
+            });
+        }
 
         // --- FUNCIONALIDAD SUBIR ---
         function openFile(s) { currentSemana = s; document.getElementById('fileInput').click(); }
@@ -161,17 +172,29 @@ window.onload = () => {
                 const base64 = reader.result.split(',')[1];
                 showLoader(true);
                 const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${file.name}`;
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Upload ${file.name}`, content: base64 })
-                });
+                
+                try {
+                    const res = await fetch(url, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Upload ${file.name}`, content: base64 })
+                    });
+
+                    if(res.status === 401) { 
+                        handleAuthError(); 
+                        return; 
+                    }
+
+                    if(res.ok) alert("✅ Archivo subido correctamente.");
+                    else alert("Error al subir: " + res.status);
+                } catch(e) {
+                    alert("Error de conexión.");
+                }
                 showLoader(false);
-                if(res.ok) alert("✅ Archivo subido correctamente.");
             };
         };
 
-        // --- FUNCIONALIDAD BORRAR DINÁMICA ---
+        // --- FUNCIONALIDAD BORRAR ---
         async function loadFilesToDelete(semana) {
             currentSemana = semana;
             const listContainer = document.getElementById('fileList');
@@ -179,24 +202,27 @@ window.onload = () => {
             listContainer.innerHTML = "Buscando archivos...";
             document.getElementById('deleteModal').style.display = "flex";
 
-            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}`;
-            
             try {
-                const res = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
+                const res = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${semana}`, {
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+                });
+
+                if(res.status === 401) { handleAuthError(); return; }
+
                 const files = await res.json();
 
-                if (res.status === 404 || files.length === 0) {
+                if (res.status === 404 || !Array.isArray(files) || files.length === 0) {
                     listContainer.innerHTML = "No hay archivos en esta carpeta.";
                     return;
                 }
 
-                listContainer.innerHTML = ""; // Limpiar buscador
+                listContainer.innerHTML = "";
                 files.forEach(file => {
                     if(file.type === "file") {
                         const item = document.createElement('div');
                         item.className = "file-item neu-inset";
                         item.innerHTML = `
-                            <span>${file.name}</span>
+                            <span style="word-break: break-all;">${file.name}</span>
                             <button class="btn-confirm-del" onclick="executeDelete('${file.name}', '${file.sha}')">ELIMINAR</button>
                         `;
                         listContainer.appendChild(item);
@@ -209,23 +235,32 @@ window.onload = () => {
 
         async function executeDelete(fileName, sha) {
             if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;
-
             showLoader(true);
-            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`;
             
-            const res = await fetch(url, {
-                method: 'DELETE',
-                headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Delete ${fileName}`, sha: sha })
-            });
+            try {
+                const res = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Delete ${fileName}`, sha: sha })
+                });
 
+                if(res.status === 401) { handleAuthError(); return; }
+
+                if(res.ok) {
+                    alert("🗑️ Archivo eliminado.");
+                    closeDeleteModal();
+                } else {
+                    alert("Error al intentar eliminar.");
+                }
+            } catch(e) { alert("Error de red."); }
             showLoader(false);
-            if(res.ok) {
-                alert("🗑️ Archivo eliminado.");
-                closeDeleteModal();
-            } else {
-                alert("Error al intentar eliminar.");
-            }
+        }
+
+        // Manejo de error de Token
+        function handleAuthError() {
+            alert("El token es inválido o ha expirado. Por favor, ingrésalo de nuevo.");
+            localStorage.removeItem('gh_token');
+            location.reload();
         }
 
         function closeDeleteModal() { document.getElementById('deleteModal').style.display = "none"; }

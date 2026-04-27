@@ -64,58 +64,10 @@
 
     <script>
         if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
-const p1 = "ghp_Spo7LmQlQ5xy0DmSaeGwKrx5"; // Primera parte
-const p2 = "lgMUtu3dICxy";               // Segunda parte
 
-const GITHUB_TOKEN = p1 + p2; // Se unen solo en el navegador del profe
-const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-
-// Función para subir archivos (La que ya tenías, pero usando el token unido)
-async function uploadToGitHub(fileName, base64, semana) {
-    const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}/${fileName}`;
-    
-    const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 
-            'Authorization': `token ${GITHUB_TOKEN}`, 
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ 
-            message: `Upload ${fileName}`, 
-            content: base64 
-        })
-    });
-
-    return res.ok;
-}
-
-// Función para borrar archivos (Actualizada con el token unido)
-async function executeDelete(fileName, sha) {
-    if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;
-
-    showLoader(true);
-    const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`;
-    
-    const res = await fetch(url, {
-        method: 'DELETE',
-        headers: { 
-            'Authorization': `token ${GITHUB_TOKEN}`, 
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ 
-            message: `Delete ${fileName}`, 
-            sha: sha 
-        })
-    });
-
-    showLoader(false);
-    if(res.ok) {
-        alert("🗑️ Archivo eliminado.");
-        closeDeleteModal();
-    } else {
-        alert("Error al eliminar. Estado: " + res.status);
-    }
-}
+        const GITHUB_TOKEN = "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"; 
+        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
+        let currentSemana = "";
 
         const unidades = [
             { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
@@ -167,59 +119,39 @@ async function executeDelete(fileName, sha) {
 
         // --- FUNCIONALIDAD BORRAR DINÁMICA ---
         async function loadFilesToDelete(semana) {
-    currentSemana = semana;
-    const listContainer = document.getElementById('fileList');
-    document.getElementById('modalTitle').innerText = "Archivos en " + semana;
-    listContainer.innerHTML = "Consultando a GitHub...";
-    document.getElementById('deleteModal').style.display = "flex";
+            currentSemana = semana;
+            const listContainer = document.getElementById('fileList');
+            document.getElementById('modalTitle').innerText = "Archivos en " + semana;
+            listContainer.innerHTML = "Buscando archivos...";
+            document.getElementById('deleteModal').style.display = "flex";
 
-    // URL para listar contenido de la carpeta
-    const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}`;
-    
-    try {
-        const res = await fetch(url, { 
-            headers: { 
-                'Authorization': `token ${GITHUB_TOKEN.trim()}`,
-                'Accept': 'application/vnd.github.v3+json'
-            } 
-        });
+            const url = `https://api.github.com/repos/${REPO_PATH}/contents/${semana}`;
+            
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
+                const files = await res.json();
 
-        if (res.status === 401) {
-            listContainer.innerHTML = "<b style='color:red'>Error 401: Token inválido.</b> Revisa que el token en el código sea el nuevo.";
-            return;
+                if (res.status === 404 || files.length === 0) {
+                    listContainer.innerHTML = "No hay archivos en esta carpeta.";
+                    return;
+                }
+
+                listContainer.innerHTML = ""; // Limpiar buscador
+                files.forEach(file => {
+                    if(file.type === "file") {
+                        const item = document.createElement('div');
+                        item.className = "file-item neu-inset";
+                        item.innerHTML = `
+                            <span>${file.name}</span>
+                            <button class="btn-confirm-del" onclick="executeDelete('${file.name}', '${file.sha}')">ELIMINAR</button>
+                        `;
+                        listContainer.appendChild(item);
+                    }
+                });
+            } catch (err) {
+                listContainer.innerHTML = "Error al conectar con GitHub.";
+            }
         }
-
-        if (res.status === 404) {
-            listContainer.innerHTML = "<b>La carpeta está vacía o no existe.</b><br>Sube un archivo primero con el botón (↑).";
-            return;
-        }
-
-        const files = await res.json();
-        listContainer.innerHTML = ""; 
-
-        // Filtrar solo archivos (excluir carpetas)
-        const onlyFiles = files.filter(f => f.type === "file");
-
-        if (onlyFiles.length === 0) {
-            listContainer.innerHTML = "No hay archivos para eliminar.";
-            return;
-        }
-
-        onlyFiles.forEach(file => {
-            const item = document.createElement('div');
-            item.className = "file-item neu-inset";
-            item.innerHTML = `
-                <span style="word-break: break-all;">${file.name}</span>
-                <button class="btn-confirm-del" onclick="executeDelete('${file.name}', '${file.sha}')">BORRAR</button>
-            `;
-            listContainer.appendChild(item);
-        });
-
-    } catch (err) {
-        listContainer.innerHTML = "Error de conexión. Revisa tu internet.";
-        console.error(err);
-    }
-}
 
         async function executeDelete(fileName, sha) {
             if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;

@@ -33,6 +33,33 @@
     </style>
 </head>
 <body>
+    <div id="authPanel" class="loading-overlay" style="display:none; background: var(--bg-color);">
+    <div class="neu-card" style="padding: 30px; text-align: center; max-width: 400px;">
+        <h3 style="font-family: 'Oswald'; margin-bottom: 15px;">Acceso Administrativo</h3>
+        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 20px;">
+            Para gestionar archivos, por seguridad, copie y pegue el siguiente token:
+        </p>
+        
+        <code id="tokenToCopy" style="display:block; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 0.7rem; border: 1px dashed var(--accent-primary);">
+            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
+        </code>
+
+        <button class="neu-button" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem;" 
+                onclick="navigator.clipboard.writeText(document.getElementById('tokenToCopy').innerText.trim()); alert('Token copiado!')">
+            COPIAR TOKEN
+        </button>
+
+        <input type="password" id="tokenInput" placeholder="Pegue el token aquí" 
+               style="width: 100%; padding: 12px; border-radius: 10px; border: none; margin-bottom: 15px;" class="neu-inset">
+        
+        <button class="neu-button-accent" style="width: 100%; padding: 12px;" onclick="saveToken()">
+            INGRESAR AL PANEL
+        </button>
+    </div>
+</div>
+
+<div id="mainContent" style="display:none;">
+    </div>
     <div id="loader" class="loading-overlay">
         <div class="neu-card" style="padding:20px;">Procesando con GitHub...</div>
     </div>
@@ -64,11 +91,38 @@
 
     <script>
         if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
+// --- CONFIGURACIÓN ---
+const REPO_PATH = "JaredASD/Base_de_datos_2"; 
+let GITHUB_TOKEN = localStorage.getItem('gh_token');
 
-        const GITHUB_TOKEN = "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"; 
-        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-        let currentSemana = "";
+// Función para guardar el token y recargar
+function saveToken() {
+    const input = document.getElementById('tokenInput').value.trim();
+    if(input) {
+        localStorage.setItem('gh_token', input);
+        location.reload();
+    }
+}
 
+// Función para cerrar sesión (borrar token)
+function logout() {
+    localStorage.clear();
+    window.location.href = "index.html";
+}
+
+// Al cargar la página, controlamos qué mostrar
+window.onload = () => {
+    const authPanel = document.getElementById('authPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    if (!GITHUB_TOKEN) {
+        authPanel.style.display = 'flex';
+        mainContent.style.display = 'none';
+    } else {
+        authPanel.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
+};
         const unidades = [
             { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
             { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
@@ -176,6 +230,7 @@
 
         function closeDeleteModal() { document.getElementById('deleteModal').style.display = "none"; }
         function showLoader(show) { document.getElementById('loader').style.display = show ? "flex" : "none"; }
+        
     </script>
 </body>
 </html>

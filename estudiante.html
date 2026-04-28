@@ -8,69 +8,59 @@
     <style>
         .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
-        /* --- NAVEGACIÓN INTERNA --- */
-        .section-nav {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .nav-tab {
-            padding: 15px 30px;
-            font-family: 'Oswald';
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-            transition: 0.3s;
-            border-radius: 15px;
-        }
-        .nav-tab.active {
-            background: var(--accent-primary);
-            color: white;
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.2);
-        }
-
-        /* --- SECCIONES --- */
+        /* --- NAVEGACIÓN Y SECCIONES (Mantenemos lo anterior) --- */
+        .section-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; }
+        .nav-tab { padding: 15px 30px; font-family: 'Oswald'; cursor: pointer; border-radius: 15px; border: none; transition: 0.3s; }
+        .nav-tab.active { background: var(--accent-primary); color: white; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.2); }
         .page-section { display: none; animation: fadeIn 0.5s ease; }
         .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- ESTILOS DE PRESENTACIÓN --- */
-        .profile-card {
-            display: flex;
-            gap: 40px;
-            align-items: center;
-            padding: 40px;
-            margin-bottom: 30px;
-        }
-        .profile-img {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: #e0e0e0;
-            box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-        }
-        .profile-text h2 { font-family: 'Oswald'; color: var(--accent-primary); margin-bottom: 10px; }
-        .profile-text p { line-height: 1.6; color: var(--text-light); }
-
-        /* --- ESTILOS DE SEMANAS (IGUALES AL ANTERIOR) --- */
+        /* --- ESTILOS DE SEMANAS --- */
         .semana-item { cursor: pointer; padding: 25px; margin-bottom: 15px; transition: 0.3s; }
         .semana-title { font-family: 'Oswald'; font-size: 1.3rem; }
         .file-container { display: none; margin-top: 20px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
         .semana-item.active .file-container { display: grid; }
-        .file-btn { padding: 15px; text-decoration: none; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+        .file-btn { padding: 15px; text-decoration: none; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; font-weight: 600; cursor: pointer; }
+
+        /* --- VISOR DE PDF (MODAL) --- */
+        .pdf-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .pdf-content {
+            width: 90%; height: 90%; background: var(--bg-color); border-radius: 20px;
+            display: flex; flex-direction: column; overflow: hidden; position: relative;
+        }
+        .pdf-header {
+            padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
+            background: white; border-bottom: 1px solid #eee;
+        }
+        .pdf-frame { width: 100%; height: 100%; border: none; }
+        .close-pdf { cursor: pointer; font-weight: 800; color: #ff7675; }
+        .download-pdf-btn { 
+            padding: 8px 15px; background: var(--accent-primary); color: white; 
+            border-radius: 10px; text-decoration: none; font-size: 0.8rem; 
+        }
+
         .btn-gh-direct { grid-column: 1 / -1; background: #24292e; color: white !important; text-align: center; justify-content: center; margin-top: 10px; }
     </style>
 </head>
 <body>
+
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-content neu-card">
+            <div class="pdf-header">
+                <span id="pdfName" style="font-weight: 600; font-family: 'Oswald';">Visor de Documento</span>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <a id="pdfDownloadLink" href="#" download class="download-pdf-btn">Descargar PDF</a>
+                    <span class="close-pdf" onclick="closePDF()">[ CERRAR ]</span>
+                </div>
+            </div>
+            <iframe id="pdfFrame" class="pdf-frame"></iframe>
+        </div>
+    </div>
+
     <nav class="navbar">
         <div class="nav-container" style="max-width: 1100px;">
             <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
@@ -88,34 +78,18 @@
     </header>
 
     <main class="container">
-        
         <div class="section-nav">
             <button class="nav-tab neu-card active" onclick="switchSection('info', this)">INTRODUCCIÓN</button>
             <button class="nav-tab neu-card" onclick="switchSection('portfolio', this)">CONTENIDO ACADÉMICO</button>
         </div>
 
         <section id="section-info" class="page-section active">
-            <div class="profile-card neu-card">
-                <div class="profile-img">👨‍💻</div>
-                <div class="profile-text">
-                    <h2>Jared Josue Meza Medina</h2>
-                    <p><strong>Estudiante de V Ciclo - UPLA</strong></p>
-                    <p>Apasionado por la arquitectura de datos y la optimización de sistemas backend. Mi enfoque se centra en diseñar soluciones escalables y seguras, aplicando las mejores prácticas en el modelado entidad-relación y la gestión estratégica de la información.</p>
-                </div>
-            </div>
-
-            <div class="neu-card" style="padding: 30px; margin-bottom: 30px;">
-                <h3 style="font-family: 'Oswald'; color: var(--accent-secondary);">Sobre el Curso: Base de Datos II</h3>
-                <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 15px;">
-                    Esta asignatura profundiza en los mecanismos avanzados de los motores de bases de datos. Durante el semestre, exploramos desde el ajuste fino de consultas SQL (Query Tuning) hasta la implementación de triggers complejos, procedimientos almacenados y la transición hacia arquitecturas no relacionales.
-                </p>
-                <div style="display: flex; gap: 20px; margin-top: 20px;">
-                    <div class="neu-inset" style="flex: 1; padding: 15px; font-size: 0.8rem;">
-                        <b>Tecnologías:</b> SQL Server, GitHub, MySQL, MongoDB.
-                    </div>
-                    <div class="neu-inset" style="flex: 1; padding: 15px; font-size: 0.8rem;">
-                        <b>Enfoque:</b> Seguridad, Transaccionabilidad y Escalabilidad.
-                    </div>
+            <div class="profile-card neu-card" style="display: flex; gap: 40px; padding: 40px; align-items: center;">
+                <div style="font-size: 4rem; background: #eee; width: 150px; height: 150px; border-radius: 50%; display: flex; justify-content: center; align-items: center;" class="neu-inset">👨‍💻</div>
+                <div>
+                    <h2 style="font-family: 'Oswald'; color: var(--accent-primary);">Jared Josue Meza Medina</h2>
+                    <p>Estudiante de Ingeniería de Sistemas - Ciclo V</p>
+                    <p style="color: var(--text-light); margin-top: 10px;">Especialización en gestión de datos y seguridad informática aplicada a entornos SQL Server.</p>
                 </div>
             </div>
         </section>
@@ -124,52 +98,60 @@
             <h2 class="section-title">Evidencias de Aprendizaje</h2>
             <div class="grid-unidades" id="studentGrid"></div>
         </section>
-
     </main>
 
     <script>
         const REPO_USER = "JaredASD";
         const REPO_NAME = "Base_de_datos_2";
 
-        // Lógica de cambio de sección
         function switchSection(sectionId, btn) {
-            // Ocultar todas las secciones
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-            // Desactivar todos los botones
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-            
-            // Activar la seleccionada
             document.getElementById('section-' + sectionId).classList.add('active');
             btn.classList.add('active');
         }
 
+        // Lógica para abrir/cerrar PDF
+        function openPDF(url, name) {
+    // Usamos el visor de Google para forzar la visualización del PDF de GitHub
+    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    
+    document.getElementById('pdfFrame').src = googleViewerUrl;
+    document.getElementById('pdfName').innerText = name;
+    document.getElementById('pdfDownloadLink').href = url;
+    document.getElementById('pdfModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; 
+}
+
+function closePDF() {
+    const modal = document.getElementById('pdfModal');
+    const frame = document.getElementById('pdfFrame');
+    
+    modal.style.display = 'none';
+    frame.src = ''; // Esto detiene la carga del PDF por completo
+    document.body.style.overflow = 'auto'; // Devuelve el scroll a la página
+}
+
         const unidades = [
-            { nombre: "UNIDAD I: INTRODUCCIÓN A LA ARQUITECTURA DE BASE DE DATOS", rango: [1,4] },
+            { nombre: "UNIDAD I: FUNDAMENTOS Y MODELADO", rango: [1,4] },
             { nombre: "UNIDAD II: OPTIMIZACIÓN SQL", rango: [5,8] },
             { nombre: "UNIDAD III: SEGURIDAD Y TRANSACCIONES", rango: [9,12] },
             { nombre: "UNIDAD IV: ARQUITECTURAS MODERNAS", rango: [13,16] }
         ];
 
         const grid = document.getElementById('studentGrid');
-        
         unidades.forEach(u => {
-            let html = `
-            <section class="unidad-card neu-card" style="padding: 30px; margin-bottom: 30px;">
-                <div class="card-header" style="font-size: 1.2rem; color: var(--accent-secondary); border-bottom: 2px solid; margin-bottom: 20px; padding-bottom: 10px;">
-                    ${u.nombre}
-                </div>
+            let html = `<section class="unidad-card neu-card" style="padding: 30px; margin-bottom: 30px;">
+                <div class="card-header" style="font-size: 1.2rem; color: var(--accent-secondary); border-bottom: 2px solid; margin-bottom: 20px; padding-bottom: 10px;">${u.nombre}</div>
                 <div class="semanas-lista">`;
             for(let i=u.rango[0]; i<=u.rango[1]; i++){
                 let sNum = i < 10 ? '0'+i : i;
                 let semanaKey = `Semana${sNum}`;
                 html += `
                     <div class="semana-item neu-inset" onclick="toggleSemana(this, '${semanaKey}')">
-                        <div class="semana-header">
-                            <span class="semana-title">Semana Académica ${sNum}</span>
-                            <span style="font-size: 0.7rem; opacity: 0.5;">Ver Recursos</span>
-                        </div>
+                        <div class="semana-header"><span class="semana-title">Semana Académica ${sNum}</span></div>
                         <div id="list-${semanaKey}" class="file-container">
-                            <span class="loading-text">Conectando con la nube...</span>
+                            <span style="font-size:0.7rem; color:#999;">Cargando archivos...</span>
                         </div>
                     </div>`;
             }
@@ -184,10 +166,10 @@
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${REPO_USER}/${REPO_NAME}/contents/${semana}`);
-                const ghBtn = `<a href="https://github.com/${REPO_USER}/${REPO_NAME}/tree/main/${semana}" target="_blank" class="file-btn neu-card btn-gh-direct">Ver Carpeta Completa en GitHub</a>`;
+                const ghBtn = `<a href="https://github.com/${REPO_USER}/${REPO_NAME}/tree/main/${semana}" target="_blank" class="file-btn neu-card btn-gh-direct">Ver carpeta en GitHub</a>`;
 
                 if (!res.ok) {
-                    container.innerHTML = `<span class="loading-text">No hay archivos en esta semana.</span>${ghBtn}`;
+                    container.innerHTML = `<span style="font-size:0.7rem;">Sin archivos.</span>${ghBtn}`;
                     return;
                 }
 
@@ -196,20 +178,29 @@
 
                 files.forEach(file => {
                     if (file.type === "file") {
-                        const btn = document.createElement('a');
-                        btn.href = file.download_url;
-                        btn.target = "_blank";
-                        btn.className = "file-btn neu-card";
-                        btn.innerHTML = `<span>📄 ${file.name}</span> <span style="color:var(--accent-primary)">Descargar</span>`;
-                        btn.onclick = (e) => e.stopPropagation();
-                        container.appendChild(btn);
+                        const isPDF = file.name.toLowerCase().endsWith('.pdf');
+                        const item = document.createElement('div');
+                        item.className = "file-btn neu-card";
+                        
+                        // Si es PDF, abre el visor. Si no, descarga directa.
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            if (isPDF) {
+                                openPDF(file.download_url, file.name);
+                            } else {
+                                window.open(file.download_url, '_blank');
+                            }
+                        };
+
+                        item.innerHTML = `<span>📄 ${file.name}</span> <span style="color:var(--accent-primary)">${isPDF ? 'Previsualizar' : 'Descargar'}</span>`;
+                        container.appendChild(item);
                     }
                 });
 
                 container.insertAdjacentHTML('beforeend', ghBtn);
                 container.setAttribute('data-loaded', 'true');
             } catch (err) {
-                container.innerHTML = "<span class='loading-text'>Error de API.</span>";
+                container.innerHTML = "<span>Error al cargar.</span>";
             }
         }
     </script>

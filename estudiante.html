@@ -113,30 +113,14 @@
 
         // Lógica para abrir/cerrar PDF
         function openPDF(url, name) {
-    const modal = document.getElementById('pdfModal');
-    const frame = document.getElementById('pdfFrame');
-    const errorMsg = document.getElementById('pdfErrorMsg');
+    // Usamos el visor de Google para forzar la visualización del PDF de GitHub
+    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
     
-    // 1. Configuramos los enlaces de respaldo
+    document.getElementById('pdfFrame').src = googleViewerUrl;
     document.getElementById('pdfName').innerText = name;
     document.getElementById('pdfDownloadLink').href = url;
-    document.getElementById('pdfExternalLink').href = url;
-    document.getElementById('pdfFallbackLink').href = url;
-
-    // 2. Mostramos el mensaje de "ayuda" después de 5 segundos por si no carga
-    errorMsg.style.display = 'none';
-    setTimeout(() => {
-        if(modal.style.display === 'flex') {
-            errorMsg.style.display = 'block';
-        }
-    }, 5000);
-
-    // 3. Intentamos cargar con Google Viewer
-    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    frame.src = googleViewerUrl;
-
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    document.getElementById('pdfModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; 
 }
 function closePDF() {
     const modal = document.getElementById('pdfModal');

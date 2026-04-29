@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portafolio | Base de Datos II</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* --- ANIMACIONES --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        body {
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+        }
+
         .page-wrapper {
             min-height: 100vh;
             display: flex;
@@ -18,106 +35,141 @@
 
         /* --- SECCIÓN DE BIENVENIDA --- */
         .welcome-section {
-            max-width: 800px;
+            max-width: 850px;
             text-align: center;
-            margin-bottom: 50px;
-            padding: 40px;
+            margin-bottom: 40px;
+            padding: 50px;
+            border-radius: 40px;
+            /* Animación de entrada */
+            animation: fadeInUp 0.8s ease-out forwards;
         }
 
         .university-badge {
             display: inline-block;
-            padding: 8px 20px;
-            background: white;
+            padding: 10px 25px;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
             border-radius: 50px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 800;
             color: var(--accent-primary);
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            letter-spacing: 3px;
+            margin-bottom: 25px;
+            box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff;
         }
 
         .main-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 3.5rem;
-            line-height: 1.1;
+            font-size: 4rem;
+            line-height: 1;
             margin-bottom: 20px;
             color: var(--text-main);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05); /* Sombra suave para lectura */
         }
 
         .main-title span {
-            color: var(--accent-secondary);
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
         }
 
         .course-description {
-            font-size: 1rem;
-            color: var(--text-light);
-            line-height: 1.6;
-            margin: 20px auto;
-            max-width: 600px;
-        }
-
-        .author-info {
-            font-weight: 600;
-            color: var(--text-main);
-            margin-top: 10px;
-            display: block;
+            font-size: 1.1rem;
+            color: #576574; /* Color más oscuro para lectura */
+            line-height: 1.8;
+            margin: 25px auto;
+            max-width: 650px;
+            font-weight: 400;
         }
 
         /* --- SELECTOR DE ROLES --- */
         .roles-container {
             display: flex;
-            gap: 30px;
+            gap: 40px;
             justify-content: center;
             margin-top: 20px;
+            animation: fadeInUp 1s ease-out 0.3s forwards; /* Aparece un poco después */
+            opacity: 0;
         }
 
         .role-card {
-            width: 180px;
-            padding: 25px;
+            width: 220px;
+            padding: 35px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
             align-items: center;
             background: var(--bg-color);
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(145deg, rgba(255,255,255,0.4), rgba(0,0,0,0.02));
+            pointer-events: none;
         }
 
         .role-card:hover {
-            transform: scale(1.05);
-            box-shadow: 15px 15px 30px rgba(163, 177, 198, 0.7), 
-                        -15px -15px 30px rgba(255, 255, 255, 0.9);
+            transform: translateY(-15px);
+            box-shadow: 20px 20px 40px #bebebe, -20px -20px 40px #ffffff;
+        }
+
+        .role-card:active {
+            transform: scale(0.95);
+            box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff;
         }
 
         .role-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 15px;
-            filter: drop-shadow(4px 4px 8px rgba(0,0,0,0.1));
+            width: 90px;
+            height: 90px;
+            margin-bottom: 20px;
+            animation: float 4s ease-in-out infinite; /* Iconos flotantes */
         }
 
         .role-label {
             font-family: 'Oswald', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 1px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
             color: var(--text-main);
         }
 
-        /* --- FOOTER DEL LOGIN --- */
+        /* Efecto de color al hover según rol */
+        .role-card:nth-child(1):hover .role-label { color: var(--accent-primary); }
+        .role-card:nth-child(2):hover .role-label { color: var(--accent-secondary); }
+
+        .author-info {
+            font-size: 1rem;
+            color: var(--text-main);
+            margin-top: 20px;
+            display: block;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-top: 15px;
+        }
+
+        /* --- FOOTER --- */
         .login-footer {
-            margin-top: 60px;
-            font-size: 0.8rem;
-            color: var(--text-light);
+            margin-top: 80px;
+            font-size: 0.75rem;
+            color: #a4b0be;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            animation: fadeInUp 1.2s ease-out 0.6s forwards;
+            opacity: 0;
         }
 
         /* Responsivo */
         @media (max-width: 600px) {
-            .main-title { font-size: 2.2rem; }
-            .roles-container { flex-direction: column; }
-            .role-card { width: 220px; }
+            .main-title { font-size: 2.8rem; }
+            .roles-container { flex-direction: column; gap: 20px; }
+            .role-card { width: 280px; }
+            .welcome-section { padding: 30px; }
         }
     </style>
 </head>
@@ -126,20 +178,18 @@
     <div class="page-wrapper">
         
         <header class="welcome-section neu-card">
-            <span class="university-badge">UPLA | INGENIERÍA DE SISTEMAS</span>
+            <span class="university-badge">UPLA | FACULTAD DE INGENIERÍA</span>
             
             <h1 class="main-title">BASE DE DATOS <span>II</span></h1>
             
             <p class="course-description">
-                Exploración avanzada de sistemas de gestión de datos, modelado relacional complejo, 
-                optimización de consultas SQL, seguridad transaccional y arquitecturas NoSQL 
-                para el procesamiento de información a gran escala.
+                Gestión avanzada de sistemas de información. Un espacio dedicado a la 
+                documentación de arquitecturas relacionales, optimización de recursos 
+                y seguridad de datos a gran escala.
             </p>
 
-            <div class="divider"></div>
-            
-            <span class="author-info">Por: Jared Josue Meza Medina</span>
-            <small style="color: var(--text-light)">Ciclo V - 2026</small>
+            <span class="author-info"><strong>Jared Josue Meza Medina</strong></span>
+            <small style="color: #a4b0be; letter-spacing: 1px;">INGENIERÍA DE SISTEMAS Y COMPUTACIÓN • 2026</small>
         </header>
 
         <div class="roles-container">
@@ -150,12 +200,12 @@
 
             <button onclick="access('admin')" class="role-card neu-card">
                 <img src="administrador.png" alt="Admin" class="role-icon">
-                <span class="role-label">DOCENTE / ADMIN</span>
+                <span class="role-label">DOCENTE</span>
             </button>
         </div>
 
         <footer class="login-footer">
-            Facultad de Ingeniería &copy; Huancayo, Perú
+            Huancayo, Perú &bull; Semestre Académico 2026-I
         </footer>
 
     </div>
@@ -165,17 +215,14 @@
             localStorage.clear();
             localStorage.setItem('userRole', role);
             
-            // Efecto visual antes de salir
-            document.body.style.opacity = "0.5";
-            document.body.style.transition = "0.5s";
+            // Efecto de desvanecimiento suave
+            document.querySelector('.page-wrapper').style.opacity = "0";
+            document.querySelector('.page-wrapper').style.transform = "scale(0.9)";
+            document.querySelector('.page-wrapper').style.transition = "0.6s all cubic-bezier(0.4, 0, 0.2, 1)";
             
             setTimeout(() => {
-                if (role === 'admin') {
-                    window.location.href = "admin.html";
-                } else {
-                    window.location.href = "estudiante.html";
-                }
-            }, 300);
+                window.location.href = (role === 'admin') ? "admin.html" : "estudiante.html";
+            }, 500);
         }
     </script>
 

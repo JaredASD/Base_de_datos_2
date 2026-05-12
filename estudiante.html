@@ -6,6 +6,90 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+/* ----- RESUMEN SEMANAL ----- */
+.summary-panel{
+    margin-top:20px;
+    padding:20px;
+    border-radius:20px;
+    background:#f7f7f7;
+    display:none;
+}
+.semana-item.active .summary-panel{
+    display:block;
+}
+
+.summary-panel.active{
+    display:block;
+}
+
+.summary-options{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+    margin-top:15px;
+}
+
+.summary-btn{
+    padding:18px;
+    border-radius:15px;
+    cursor:pointer;
+    font-weight:600;
+    text-align:center;
+    transition:.3s;
+}
+
+.summary-btn:hover{
+    transform:translateY(-3px);
+}
+
+.quiz-lock{
+    opacity:.5;
+    pointer-events:none;
+}
+
+.organizer-view{
+    margin-top:20px;
+    width:100%;
+    height:500px;
+    border:none;
+    border-radius:15px;
+    background:white;
+}
+
+.quiz-container{
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+    background:white;
+    display:none;
+}
+
+.quiz-container.active{
+    display:block;
+}
+
+.ready-box{
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+    background:white;
+}
+
+.ready-buttons{
+    display:flex;
+    gap:15px;
+    margin-top:15px;
+}
+
+.ready-buttons button{
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+}
+</style>
+    <style>
         .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
         /* --- NAVEGACIÓN Y SECCIONES (Mantenemos lo anterior) --- */
@@ -103,6 +187,33 @@
     <script>
         const REPO_USER = "JaredASD";
         const REPO_NAME = "Base_de_datos_2";
+        const resumenes = {
+
+    Semana01: {
+
+        diapositivas:
+        "AQUI_LINK_GENIALLY_DIAPOS",
+
+        quiz:
+        "AQUI_LINK_GENIALLY_QUIZ",
+
+        organizador:
+        "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana05/Organizador.png"
+    },
+
+    Semana05: {
+
+        diapositivas:
+        "https://view.genially.com/6a025fd0e8089b8c03b8c89a",
+
+        quiz:
+        "https://view.genially.com/6a025fe5d3e63dcd4cc6756a",
+
+        organizador:
+        "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana02/Organizador.png"
+    }
+
+};
 
         function switchSection(sectionId, btn) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -122,13 +233,130 @@
     document.getElementById('pdfModal').style.display = 'flex';
     document.body.style.overflow = 'hidden'; 
 }
+// Lógica para abrir/cerrar PDF
+function openPDF(url, name) {
+
+    const googleViewerUrl =
+    `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
+    document.getElementById('pdfFrame').src =
+    googleViewerUrl;
+
+    document.getElementById('pdfName').innerText =
+    name;
+
+    document.getElementById('pdfDownloadLink').href =
+    url;
+
+    document.getElementById('pdfModal').style.display =
+    'flex';
+
+    document.body.style.overflow = 'hidden';
+}
+
 function closePDF() {
-    const modal = document.getElementById('pdfModal');
-    const frame = document.getElementById('pdfFrame');
-    
+
+    const modal =
+    document.getElementById('pdfModal');
+
+    const frame =
+    document.getElementById('pdfFrame');
+
     modal.style.display = 'none';
-    frame.src = ''; // Esto detiene la carga del PDF por completo
-    document.body.style.overflow = 'auto'; // Devuelve el scroll a la página
+
+    frame.src = '';
+
+    document.body.style.overflow = 'auto';
+}
+
+// ---------- DIAPOSITIVAS ----------
+function openSlides(semana){
+
+    const data = resumenes[semana];
+
+    if(!data || !data.diapositivas){
+
+        alert("No hay diapositivas.");
+        return;
+    }
+
+    window.open(
+        data.diapositivas,
+        '_blank'
+    );
+}
+
+// ---------- ORGANIZADOR ----------
+function showOrganizer(semana){
+
+    const data = resumenes[semana];
+
+    const frame =
+    document.getElementById(`organizer-${semana}`);
+
+    frame.style.display = 'none';
+
+    let img =
+    document.getElementById(`img-${semana}`);
+
+    if(!img){
+
+        img = document.createElement('img');
+
+        img.id = `img-${semana}`;
+
+        img.style.width = "100%";
+        img.style.marginTop = "20px";
+        img.style.borderRadius = "15px";
+
+        frame.parentNode.appendChild(img);
+    }
+
+    img.src = data.organizador;
+}
+
+// ---------- DESBLOQUEAR QUIZ ----------
+function unlockQuiz(semana){
+
+    const btn =
+    document.getElementById(`quizBtn-${semana}`);
+
+    btn.classList.remove('quiz-lock');
+
+    btn.style.opacity = "1";
+
+    btn.style.pointerEvents = "auto";
+
+    btn.innerHTML = '❓ Iniciar Quiz';
+}
+
+// ---------- QUIZ ----------
+function startQuiz(semana){
+
+    const btn =
+    document.getElementById(`quizBtn-${semana}`);
+
+    if(btn.classList.contains('quiz-lock')){
+
+        alert(
+            "Primero revisa el resumen."
+        );
+
+        return;
+    }
+
+    const data = resumenes[semana];
+
+    if(!data || !data.quiz){
+
+        alert("No hay quiz.");
+        return;
+    }
+
+    window.open(
+        data.quiz,
+        '_blank'
+    );
 }
 
         const unidades = [
@@ -150,8 +378,75 @@ function closePDF() {
                     <div class="semana-item neu-inset" onclick="toggleSemana(this, '${semanaKey}')">
                         <div class="semana-header"><span class="semana-title">Semana Académica ${sNum}</span></div>
                         <div id="list-${semanaKey}" class="file-container">
-                            <span style="font-size:0.7rem; color:#999;">Cargando archivos...</span>
-                        </div>
+    <span style="font-size:0.7rem; color:#999;">
+        Cargando archivos...
+    </span>
+</div>
+
+<!-- PANEL RESUMEN -->
+${semanaKey === "Semana05" ? `
+
+<!-- PANEL RESUMEN -->
+<div class="summary-panel" id="summary-${semanaKey}">
+
+    <h3 style="font-family:'Oswald'; color:var(--accent-primary);">
+        Resumen de la Semana
+    </h3>
+
+    <div class="summary-options">
+
+        <div class="summary-btn neu-card"
+             onclick="openSlides('${semanaKey}')">
+
+            📑 Diapositivas
+
+        </div>
+
+        <div class="summary-btn neu-card"
+             onclick="showOrganizer('${semanaKey}')">
+
+            🧠 Organizador
+
+        </div>
+
+        <div class="summary-btn neu-card quiz-lock"
+             id="quizBtn-${semanaKey}"
+             onclick="startQuiz('${semanaKey}')">
+
+            ❓ Quiz Bloqueado
+
+        </div>
+
+    </div>
+
+    <div class="ready-box neu-inset">
+
+        <strong>
+            ¿Ya terminaste de revisar el resumen?
+        </strong>
+
+        <div class="ready-buttons">
+
+            <button onclick="unlockQuiz('${semanaKey}')">
+                Sí
+            </button>
+
+            <button>
+                No
+            </button>
+
+        </div>
+
+    </div>
+
+    <iframe id="organizer-${semanaKey}"
+            class="organizer-view"
+            style="display:none;">
+    </iframe>
+
+</div>
+
+` : ''}
                     </div>`;
             }
             html += `</div></section>`;
@@ -160,6 +455,7 @@ function closePDF() {
 
         async function toggleSemana(element, semana) {
             element.classList.toggle('active');
+            
             const container = document.getElementById(`list-${semana}`);
             if (container.getAttribute('data-loaded') === 'true') return;
 

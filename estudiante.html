@@ -2,248 +2,1060 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Estudiante | Portafolio Pro BD II</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLAYER 1 — Portafolio BD II</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Dale a la barra de navegación un nivel bajo */
-.navbar {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    z-index: 100; /* Un número moderado */
-    /* ... el resto de tus estilos ... */
-}
+    /* ============================================================
+       ESTUDIANTE.HTML — PAGE SPECIFIC STYLES
+    ============================================================ */
 
-/* Dale al visor (Modal) el nivel máximo */
-.pdf-modal {
-    display: none; 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85); /* Un poco más oscuro para que no distraiga lo de atrás */
-    z-index: 9999; /* ¡Poder absoluto! Esto lo pone por encima de TODO */
-    justify-content: center; 
-    align-items: center;
-    backdrop-filter: blur(5px); /* Efecto de desenfoque para que se vea más pro */
-}
+    /* ── NAVBAR ── */
+    .retro-nav {
+        position: sticky; top: 0; z-index: 500;
+        background: rgba(8,9,15,0.97);
+        border-bottom: 3px solid var(--gold);
+        box-shadow: 0 3px 0 #000, 0 0 20px rgba(255,214,10,0.1);
+        padding: 0 24px;
+        transition: border-color 0.4s;
+    }
+    body.hacker-mode .retro-nav {
+        border-bottom-color: rgba(0,255,65,0.5);
+        box-shadow: 0 3px 0 #000, 0 0 20px rgba(0,255,65,0.1);
+    }
+    .nav-inner {
+        max-width: 1100px; margin: 0 auto;
+        display: flex; justify-content: space-between; align-items: center;
+        height: 58px;
+    }
+    .nav-brand {
+        display: flex; align-items: center; gap: 12px;
+    }
+    .nav-logo-box {
+        width: 36px; height: 36px;
+        border: 2px solid var(--gold); box-shadow: 2px 2px 0 #000;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+        color: var(--gold); background: var(--bg-card);
+        flex-shrink: 0;
+    }
+    body.hacker-mode .nav-logo-box { border-color: #00ff41; color: #00ff41; box-shadow: 0 0 8px rgba(0,255,65,0.3); }
+    .nav-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.45rem; color: var(--gold); letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000;
+    }
+    body.hacker-mode .nav-title { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,0.5); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        padding: 8px 14px; border: 2px solid rgba(255,214,10,0.4);
+        background: transparent; color: var(--text2); cursor: pointer;
+        transition: all 0.12s; letter-spacing: 1px; box-shadow: 2px 2px 0 #000;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .nav-btn:hover { border-color: var(--gold); color: var(--gold); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    .nav-btn.danger { border-color: rgba(229,37,33,0.4); }
+    .nav-btn.danger:hover { border-color: var(--red); color: var(--red); }
+    body.hacker-mode .nav-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.5); }
+    body.hacker-mode .nav-btn:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
 
-.pdf-content {
-    width: 95%; /* Un poco más ancho */
-    height: 92%; 
-    background: #fff; 
-    border-radius: 15px;
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5); /* Sombra para que resalte */
-}
-        .pdf-content {
-    width: 90%;
-    height: 95%; /* Un poquito más alto */
-    background: #fff;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: column;
-}
-        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    /* ── MAIN LAYOUT ── */
+    .main-wrap {
+        max-width: 1100px; margin: 0 auto;
+        padding: 28px 20px 60px;
+        position: relative; z-index: 10;
+    }
 
-        /* --- NAVEGACIÓN Y SECCIONES (Mantenemos lo anterior) --- */
-        .section-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; }
-        .nav-tab { padding: 15px 30px; font-family: 'Oswald'; cursor: pointer; border-radius: 15px; border: none; transition: 0.3s; }
-        .nav-tab.active { background: var(--accent-primary); color: white; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.2); }
-        .page-section { display: none; animation: fadeIn 0.5s ease; }
-        .page-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* ── TAB NAVIGATION ── */
+    .tab-nav {
+        display: flex; gap: 8px; margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.45rem; letter-spacing: 1px;
+        padding: 10px 18px;
+        background: var(--bg-card2); color: var(--text2);
+        border: 2px solid rgba(255,214,10,0.25);
+        box-shadow: 3px 3px 0 #000;
+        cursor: pointer; transition: all 0.12s;
+    }
+    .tab-btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #000; border-color: rgba(255,214,10,0.6); color: var(--gold); }
+    .tab-btn.active {
+        background: var(--gold); color: #000;
+        border-color: var(--gold); box-shadow: 3px 3px 0 #000;
+        transform: none;
+    }
+    body.hacker-mode .tab-btn { background: rgba(0,0,0,0.8); border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.5); }
+    body.hacker-mode .tab-btn:hover { border-color: rgba(0,255,65,0.7); color: #00ff41; }
+    body.hacker-mode .tab-btn.active { background: rgba(0,255,65,0.12); color: #00ff41; border-color: #00ff41; box-shadow: 0 0 12px rgba(0,255,65,0.2); }
 
-        /* --- ESTILOS DE SEMANAS --- */
-        .semana-item { cursor: pointer; padding: 25px; margin-bottom: 15px; transition: 0.3s; }
-        .semana-title { font-family: 'Oswald'; font-size: 1.3rem; }
-        .file-container { display: none; margin-top: 20px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .semana-item.active .file-container { display: grid; }
-        .file-btn { padding: 15px; text-decoration: none; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; font-weight: 600; cursor: pointer; }
+    .tab-section { display: none; animation: fadeUp 0.4s ease; }
+    .tab-section.active { display: block; }
 
-        /* --- VISOR DE PDF (MODAL) --- */
-        .pdf-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;
-        }
-        .pdf-content {
-            width: 90%; height: 90%; background: var(--bg-color); border-radius: 20px;
-            display: flex; flex-direction: column; overflow: hidden; position: relative;
-        }
-        .pdf-header {
-            padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
-            background: white; border-bottom: 1px solid #eee;
-        }
-        .pdf-frame { width: 100%; height: 100%; border: none; }
-        .close-pdf { cursor: pointer; font-weight: 800; color: #ff7675; }
-        .download-pdf-btn { 
-            padding: 8px 15px; background: var(--accent-primary); color: white; 
-            border-radius: 10px; text-decoration: none; font-size: 0.8rem; 
-        }
+    /* ── PROFILE SECTION ── */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .player-card-main {
+        background: var(--bg-card);
+        border: 3px solid var(--gold);
+        box-shadow: 5px 5px 0 #000;
+        padding: 28px 24px;
+        display: flex; flex-direction: column; align-items: center;
+        text-align: center; gap: 14px;
+        position: relative; overflow: hidden;
+    }
+    .player-card-main::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(255,255,255,0.015) 4px,rgba(255,255,255,0.015) 5px);
+        pointer-events: none;
+    }
+    body.hacker-mode .player-card-main { background: rgba(5,5,5,0.97); border-color: rgba(0,255,65,0.4); box-shadow: 0 0 20px rgba(0,255,65,0.1); }
+    .p-avatar {
+        width: 80px; height: 80px;
+        border: 3px solid var(--gold); box-shadow: 3px 3px 0 #000;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; background: var(--bg-card2);
+    }
+    body.hacker-mode .p-avatar { border-color: #00ff41; box-shadow: 0 0 12px rgba(0,255,65,0.4); }
+    .p-tag {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        color: var(--green); letter-spacing: 2px; margin-bottom: 2px;
+        animation: blink 2s step-end infinite;
+    }
+    body.hacker-mode .p-tag { color: rgba(0,255,65,0.6); }
+    .p-name {
+        font-family: 'Press Start 2P', monospace; font-size: 0.6rem;
+        color: var(--white); text-shadow: 2px 2px 0 #000; line-height: 1.6;
+    }
+    body.hacker-mode .p-name { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,0.5); }
+    .p-class {
+        font-family: 'VT323', monospace; font-size: 1rem;
+        color: var(--text2); letter-spacing: 2px;
+    }
+    body.hacker-mode .p-class { color: rgba(0,255,65,0.5); }
+    .p-divider {
+        width: 100%; height: 2px;
+        background: repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 8px,transparent 8px,transparent 14px);
+        opacity: 0.3;
+    }
+    body.hacker-mode .p-divider { background: repeating-linear-gradient(90deg,#00ff41 0,#00ff41 8px,transparent 8px,transparent 14px); }
+    .p-stat-row { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .p-stat-item { display: grid; grid-template-columns: 60px 1fr 30px; align-items: center; gap: 6px; }
+    .p-stat-name { font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: var(--text3); }
+    .p-stat-val  { font-family: 'Press Start 2P', monospace; font-size: 0.35rem; color: var(--gold); text-align: right; }
+    body.hacker-mode .p-stat-name { color: rgba(0,255,65,0.4); }
+    body.hacker-mode .p-stat-val  { color: #00ff41; }
 
-        .btn-gh-direct { grid-column: 1 / -1; background: #24292e; color: white !important; text-align: center; justify-content: center; margin-top: 10px; }
+    /* Profile info cards */
+    .info-panels { display: flex; flex-direction: column; gap: 16px; }
+    .info-panel {
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.3);
+        box-shadow: 4px 4px 0 #000; padding: 20px 22px;
+    }
+    .info-panel:hover { border-color: var(--gold); transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #000; }
+    body.hacker-mode .info-panel { background: rgba(5,5,5,0.97); border-color: rgba(0,255,65,0.2); box-shadow: none; }
+    body.hacker-mode .info-panel:hover { border-color: rgba(0,255,65,0.6); box-shadow: 0 0 14px rgba(0,255,65,0.1); }
+    .ip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .ip-icon { font-size: 1.1rem; }
+    .ip-title { font-family: 'Press Start 2P', monospace; font-size: 0.45rem; color: var(--gold); text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
+    body.hacker-mode .ip-title { color: #00ff41; text-shadow: 0 0 6px rgba(0,255,65,0.4); }
+    .ip-body { font-family: 'VT323', monospace; font-size: 1.1rem; color: var(--text2); line-height: 1.6; letter-spacing: 0.5px; }
+    body.hacker-mode .ip-body { color: rgba(0,255,65,0.6); }
+
+    /* ── PORTFOLIO SECTION ── */
+
+    /* Search + Filter bar */
+    .filter-bar {
+        display: flex; gap: 10px; align-items: center;
+        margin-bottom: 22px; flex-wrap: wrap;
+    }
+    .filter-input {
+        flex: 1; min-width: 200px;
+        font-family: 'Press Start 2P', monospace; font-size: 0.4rem;
+        padding: 10px 14px;
+        background: var(--bg-card); color: var(--text);
+        border: 2px solid rgba(255,214,10,0.3); box-shadow: 2px 2px 0 #000;
+        outline: none; letter-spacing: 1px;
+    }
+    .filter-input:focus { border-color: var(--gold); box-shadow: 3px 3px 0 #000; }
+    .filter-input::placeholder { color: var(--text3); }
+    body.hacker-mode .filter-input { background: rgba(0,0,0,0.9); color: #00ff41; border-color: rgba(0,255,65,0.25); }
+    body.hacker-mode .filter-input:focus { border-color: #00ff41; box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+    body.hacker-mode .filter-input::placeholder { color: rgba(0,255,65,0.3); }
+    .filter-badge {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        padding: 6px 12px; border: 2px solid rgba(255,214,10,0.3);
+        background: var(--bg-card2); color: var(--text2);
+        cursor: pointer; transition: all 0.12s; box-shadow: 2px 2px 0 #000;
+    }
+    .filter-badge:hover, .filter-badge.on { border-color: var(--gold); color: var(--gold); background: rgba(255,214,10,0.08); }
+    body.hacker-mode .filter-badge { background: rgba(0,0,0,0.8); border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.5); }
+    body.hacker-mode .filter-badge:hover, body.hacker-mode .filter-badge.on { border-color: rgba(0,255,65,0.8); color: #00ff41; background: rgba(0,255,65,0.05); }
+
+    /* World (Unidad) cards */
+    .world-list { display: flex; flex-direction: column; gap: 18px; }
+    .world-card {
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.35);
+        box-shadow: 5px 5px 0 #000;
+    }
+    .world-header {
+        display: flex; align-items: center; gap: 14px;
+        padding: 18px 22px; cursor: pointer;
+        transition: background 0.15s;
+        border-bottom: 2px solid rgba(255,214,10,0.12);
+        user-select: none;
+    }
+    .world-header:hover { background: rgba(255,214,10,0.04); }
+    body.hacker-mode .world-card { background: rgba(5,5,5,0.97); border-color: rgba(0,255,65,0.25); box-shadow: 0 0 12px rgba(0,255,65,0.05); }
+    body.hacker-mode .world-header { border-bottom-color: rgba(0,255,65,0.1); }
+    body.hacker-mode .world-header:hover { background: rgba(0,255,65,0.02); }
+    .world-number {
+        font-family: 'Press Start 2P', monospace; font-size: 0.75rem;
+        color: var(--gold); text-shadow: 2px 2px 0 #000;
+        width: 44px; flex-shrink: 0;
+    }
+    body.hacker-mode .world-number { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,0.5); }
+    .world-info { flex: 1; }
+    .world-title {
+        font-family: 'Press Start 2P', monospace; font-size: 0.52rem;
+        color: var(--white); text-shadow: 2px 2px 0 #000; letter-spacing: 1px;
+    }
+    body.hacker-mode .world-title { color: #00ff41; text-shadow: 0 0 6px rgba(0,255,65,0.4); }
+    .world-sub {
+        font-family: 'VT323', monospace; font-size: 0.9rem;
+        color: var(--text2); margin-top: 3px; letter-spacing: 1px;
+    }
+    body.hacker-mode .world-sub { color: rgba(0,255,65,0.5); }
+    .world-toggle {
+        font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+        color: var(--gold); transition: transform 0.25s;
+    }
+    body.hacker-mode .world-toggle { color: #00ff41; }
+    .world-card.open .world-toggle { transform: rotate(90deg); }
+    .world-body { display: none; padding: 14px 18px; }
+    .world-card.open .world-body { display: block; animation: fadeUp 0.3s ease; }
+
+    /* Mission (Semana) items */
+    .mission-list { display: flex; flex-direction: column; gap: 10px; }
+    .mission-item {
+        border: 2px solid rgba(255,214,10,0.2);
+        background: var(--bg-card2);
+        transition: border-color 0.15s;
+    }
+    .mission-header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 16px; cursor: pointer; user-select: none;
+    }
+    .mission-header:hover { border-color: var(--gold); }
+    .mission-item:hover { border-color: rgba(255,214,10,0.6); }
+    body.hacker-mode .mission-item { background: rgba(0,0,0,0.7); border-color: rgba(0,255,65,0.12); }
+    body.hacker-mode .mission-item:hover { border-color: rgba(0,255,65,0.5); }
+    .mission-num {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        color: var(--blue); width: 20px; flex-shrink: 0;
+    }
+    body.hacker-mode .mission-num { color: rgba(0,184,255,0.7); }
+    .mission-title {
+        font-family: 'Press Start 2P', monospace; font-size: 0.42rem;
+        color: var(--text); letter-spacing: 1px; flex: 1;
+    }
+    body.hacker-mode .mission-title { color: rgba(0,255,65,0.8); }
+    .mission-status {
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        padding: 4px 8px; border: 1px solid; letter-spacing: 1px;
+    }
+    .mission-status.loaded  { color: var(--green); border-color: var(--green); background: rgba(67,176,71,0.08); }
+    .mission-status.loading { color: var(--gold);  border-color: var(--gold);  animation: blink 1s step-end infinite; }
+    .mission-status.empty   { color: var(--text3); border-color: var(--text3); }
+    body.hacker-mode .mission-status.loaded  { color: #00ff41; border-color: #00ff41; background: rgba(0,255,65,0.05); }
+    body.hacker-mode .mission-status.loading { color: rgba(0,255,65,0.6); border-color: rgba(0,255,65,0.4); }
+    .mission-arrow {
+        font-family: 'Press Start 2P', monospace; font-size: 0.4rem;
+        color: var(--text3); transition: transform 0.2s;
+    }
+    .mission-item.open .mission-arrow { transform: rotate(90deg); color: var(--gold); }
+    body.hacker-mode .mission-item.open .mission-arrow { color: #00ff41; }
+
+    /* File grid inside mission */
+    .file-grid {
+        display: none;
+        padding: 12px 16px 16px;
+        border-top: 2px solid rgba(255,214,10,0.1);
+    }
+    .mission-item.open .file-grid { display: block; animation: fadeUp 0.3s ease; }
+    body.hacker-mode .file-grid { border-color: rgba(0,255,65,0.08); }
+    .file-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+    .file-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 14px;
+        background: var(--bg); border: 2px solid rgba(255,214,10,0.2);
+        box-shadow: 2px 2px 0 #000;
+        cursor: pointer; transition: all 0.12s;
+    }
+    .file-item:hover { border-color: var(--gold); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    .file-item:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #000; }
+    body.hacker-mode .file-item { background: rgba(0,0,0,0.6); border-color: rgba(0,255,65,0.15); box-shadow: none; }
+    body.hacker-mode .file-item:hover { border-color: rgba(0,255,65,0.7); box-shadow: 0 0 8px rgba(0,255,65,0.12); }
+    .file-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        color: var(--text); letter-spacing: 0.5px; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; line-height: 1.6;
+    }
+    body.hacker-mode .file-name { color: rgba(0,255,65,0.8); }
+    .file-action {
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        color: var(--blue); letter-spacing: 1px; margin-top: 2px;
+    }
+    body.hacker-mode .file-action { color: rgba(0,184,255,0.7); }
+    .file-size {
+        font-family: 'VT323', monospace; font-size: 0.8rem;
+        color: var(--text3); flex-shrink: 0;
+    }
+    body.hacker-mode .file-size { color: rgba(0,255,65,0.3); }
+
+    /* GitHub link button */
+    .gh-btn {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 10px 16px; margin-top: 12px;
+        background: rgba(36,41,46,0.8); border: 2px solid rgba(255,255,255,0.1);
+        box-shadow: 2px 2px 0 #000;
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        color: var(--text2); cursor: pointer; text-decoration: none;
+        transition: all 0.12s;
+    }
+    .gh-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    body.hacker-mode .gh-btn { background: rgba(0,0,0,0.8); border-color: rgba(0,255,65,0.15); color: rgba(0,255,65,0.5); }
+    body.hacker-mode .gh-btn:hover { border-color: rgba(0,255,65,0.6); color: #00ff41; }
+
+    /* Loading / error states */
+    .state-msg {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        color: var(--text3); padding: 14px 0; text-align: center;
+        letter-spacing: 1px; animation: blink 1.5s step-end infinite;
+    }
+    .state-msg.err { color: var(--red); animation: none; }
+
+    /* ── PDF MODAL ── */
+    .pdf-modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.92); z-index: 9800;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(4px);
+    }
+    .pdf-modal.open { display: flex; }
+    .pdf-box {
+        width: 95%; height: 92%;
+        background: var(--bg-card);
+        border: 3px solid var(--gold);
+        box-shadow: 6px 6px 0 #000;
+        display: flex; flex-direction: column; overflow: hidden;
+    }
+    body.hacker-mode .pdf-box { border-color: rgba(0,255,65,0.5); box-shadow: 0 0 30px rgba(0,255,65,0.15); }
+    .modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 18px;
+        background: var(--bg-card2);
+        border-bottom: 2px solid rgba(255,214,10,0.2);
+        flex-shrink: 0;
+    }
+    body.hacker-mode .modal-header { border-bottom-color: rgba(0,255,65,0.15); }
+    .modal-title {
+        font-family: 'Press Start 2P', monospace; font-size: 0.42rem;
+        color: var(--gold); text-shadow: 1px 1px 0 #000;
+        max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    body.hacker-mode .modal-title { color: #00ff41; }
+    .modal-actions { display: flex; align-items: center; gap: 8px; }
+    .modal-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        padding: 7px 12px; border: 2px solid rgba(255,214,10,0.4);
+        background: transparent; color: var(--text2);
+        cursor: pointer; transition: all 0.1s; box-shadow: 2px 2px 0 #000;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .modal-btn:hover { border-color: var(--gold); color: var(--gold); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    .modal-btn.close-btn { border-color: rgba(229,37,33,0.4); color: var(--red); }
+    .modal-btn.close-btn:hover { border-color: var(--red); background: rgba(229,37,33,0.1); }
+    body.hacker-mode .modal-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.6); }
+    body.hacker-mode .modal-btn:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
+    .pdf-frame { flex: 1; border: none; background: #fff; }
+
+    /* ── IMAGE MODAL ── */
+    .img-modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.95); z-index: 9800;
+        flex-direction: column;
+        backdrop-filter: blur(6px);
+    }
+    .img-modal.open { display: flex; }
+    .img-modal .modal-header { flex-shrink: 0; }
+    .img-viewer {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        overflow: hidden; padding: 16px;
+        position: relative;
+    }
+    .img-viewer img {
+        max-width: 100%; max-height: 100%;
+        object-fit: contain;
+        border: 2px solid rgba(255,214,10,0.3);
+        box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        transition: transform 0.2s ease;
+        cursor: zoom-in;
+    }
+    body.hacker-mode .img-viewer img { border-color: rgba(0,255,65,0.3); }
+    .img-controls {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        padding: 12px;
+        background: var(--bg-card2);
+        border-top: 2px solid rgba(255,214,10,0.15);
+        flex-shrink: 0;
+    }
+    body.hacker-mode .img-controls { border-color: rgba(0,255,65,0.1); }
+    .zoom-info {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        color: var(--gold); text-shadow: 1px 1px 0 #000; min-width: 60px; text-align: center;
+    }
+    body.hacker-mode .zoom-info { color: #00ff41; }
+    .img-nav-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        padding: 7px 14px; border: 2px solid rgba(255,214,10,0.35);
+        background: transparent; color: var(--text2);
+        cursor: pointer; box-shadow: 2px 2px 0 #000; transition: all 0.1s;
+    }
+    .img-nav-btn:hover { border-color: var(--gold); color: var(--gold); transform: translate(-1px,-1px); }
+    body.hacker-mode .img-nav-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.6); }
+    body.hacker-mode .img-nav-btn:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 760px) {
+        .profile-grid { grid-template-columns: 1fr; }
+        .file-items   { grid-template-columns: 1fr; }
+        .nav-inner    { gap: 10px; }
+        .pdf-box      { width: 100%; height: 100%; border-radius: 0; }
+    }
+    @media (max-width: 500px) {
+        .world-title  { font-size: 0.4rem; }
+        .tab-btn      { font-size: 0.38rem; padding: 8px 12px; }
+    }
     </style>
 </head>
 <body>
 
-    <div id="pdfModal" class="pdf-modal">
-        <div class="pdf-content neu-card">
-            <div class="pdf-header">
-                <span id="pdfName" style="font-weight: 600; font-family: 'Oswald';">Visor de Documento</span>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <a id="pdfDownloadLink" href="#" download class="download-pdf-btn">Descargar PDF</a>
-                    <span class="close-pdf" onclick="closePDF()">[ CERRAR ]</span>
+<!-- ══ CANVAS LAYERS ══ -->
+<canvas id="c-stars"></canvas>
+<canvas id="c-matrix"></canvas>
+<canvas id="c-grid"></canvas>
+<canvas id="c-particles"></canvas>
+
+<!-- ══ HACKER OVERLAYS ══ -->
+<div id="scan-bar"></div>
+<div class="corner-hud tl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud tr"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud bl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud br"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="px-corner tl"></div>
+<div class="px-corner tr"></div>
+<div class="px-corner bl"></div>
+<div class="px-corner br"></div>
+<div id="hk-cursor"></div>
+<div id="hk-dot"></div>
+<div id="hx-clock">
+    <div class="hxc-time">0x00:0x00:0x00</div>
+    <div id="hxc-date"></div>
+    <div id="hxc-epoch"></div>
+</div>
+<div class="data-stream L" id="dsL"></div>
+<div class="data-stream R" id="dsR"></div>
+<div id="log-console">
+    <div class="log-header">SYS_STATUS: ACTIVE</div>
+    <div id="log-lines"></div>
+</div>
+<div id="hack-overlay">
+    <div id="ho-title">CARGANDO MÓDULO...</div>
+    <div style="font-size:.6rem;color:rgba(0,255,65,.5);letter-spacing:3px;margin-bottom:12px;">ACCESO ESTUDIANTE</div>
+    <div id="ho-bar"><div id="ho-fill"></div></div>
+    <div id="ho-pct">0%</div>
+    <div id="ho-lines"></div>
+</div>
+<div id="screen-wipe"></div>
+
+<!-- ══ ACHIEVEMENT ══ -->
+<div id="achievement">
+    <div class="achievement-box">
+        <div class="achievement-icon">🎮</div>
+        <div class="achievement-text">
+            <div class="achievement-title">ACHIEVEMENT</div>
+            <div class="achievement-name">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- PDF Modal -->
+<div id="pdf-modal" class="pdf-modal">
+    <div class="pdf-box">
+        <div class="modal-header">
+            <div class="modal-title" id="pdf-title">VISOR DE DOCUMENTO</div>
+            <div class="modal-actions">
+                <a id="pdf-download" href="#" download class="modal-btn">⬇ DESCARGAR</a>
+                <button class="modal-btn close-btn" onclick="closePDF()">✕ CERRAR</button>
+            </div>
+        </div>
+        <iframe id="pdf-frame" class="pdf-frame"></iframe>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div id="img-modal" class="img-modal">
+    <div class="modal-header">
+        <div class="modal-title" id="img-title">VISOR DE IMAGEN</div>
+        <div class="modal-actions">
+            <span id="img-dims" style="font-family:'Press Start 2P',monospace;font-size:0.35rem;color:var(--text2);"></span>
+            <a id="img-download" href="#" download class="modal-btn">⬇ DESCARGAR</a>
+            <button class="modal-btn close-btn" onclick="closeImg()">✕ CERRAR</button>
+        </div>
+    </div>
+    <div class="img-viewer" id="img-viewer" onclick="toggleZoom()">
+        <img id="img-el" src="" alt="">
+    </div>
+    <div class="img-controls">
+        <button class="img-nav-btn" id="btn-prev" onclick="navImage(-1)">◀ PREV</button>
+        <button class="img-nav-btn" onclick="zoomOut()">－</button>
+        <span class="zoom-info" id="zoom-info">100%</span>
+        <button class="img-nav-btn" onclick="zoomIn()">＋</button>
+        <button class="img-nav-btn" onclick="resetZoom()">RESET</button>
+        <button class="img-nav-btn" id="btn-next" onclick="navImage(1)">NEXT ▶</button>
+    </div>
+</div>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="retro-nav">
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <div class="nav-logo-box">BD</div>
+            <div class="nav-title">BASE DE DATOS II — PLAYER 1</div>
+        </div>
+        <div class="nav-right">
+            <!-- Mode Switch (compact) -->
+            <label class="switch" style="margin-right:4px;">
+                <input type="checkbox" id="mode-toggle" onchange="applyMode()">
+                <span class="sw-slider"></span>
+            </label>
+            <a href="index.html" class="nav-btn danger" onclick="playWarp()">⏏ SALIR</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="main-wrap">
+
+    <!-- Mode labels (small, below nav) -->
+    <div style="text-align:right;margin-bottom:14px;font-family:'Press Start 2P',monospace;font-size:0.35rem;color:var(--text3);letter-spacing:2px;">
+        MODO: <span id="mode-label-txt" style="color:var(--gold);">RETRO</span>
+    </div>
+
+    <!-- TAB NAV -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('perfil', this)">👾 PERFIL</button>
+        <button class="tab-btn" onclick="switchTab('portfolio', this)">📁 CONTENIDO</button>
+    </div>
+
+    <!-- ── TAB: PERFIL ── -->
+    <div id="tab-perfil" class="tab-section active">
+        <div class="profile-grid">
+
+            <!-- Player card -->
+            <div class="player-card-main">
+                <div class="p-avatar">👨‍💻</div>
+                <div class="p-tag">▶ PLAYER ONE</div>
+                <div class="p-name">JARED JOSUE<br>MEZA MEDINA</div>
+                <div class="p-class">ING. SISTEMAS Y COMPUTACIÓN</div>
+                <div class="p-divider"></div>
+                <div style="font-family:'Press Start 2P',monospace;font-size:0.35rem;color:var(--text3);letter-spacing:1px;align-self:flex-start;">CICLO V · 2026-I</div>
+
+                <!-- XP Bars -->
+                <div class="p-stat-row">
+                    <div class="p-stat-item">
+                        <span class="p-stat-name">SQL</span>
+                        <div class="pixel-bar-wrap"><div class="pixel-bar-fill" data-width="82"></div></div>
+                        <span class="p-stat-val">82</span>
+                    </div>
+                    <div class="p-stat-item">
+                        <span class="p-stat-name">INDEX</span>
+                        <div class="pixel-bar-wrap"><div class="pixel-bar-fill blue" data-width="75"></div></div>
+                        <span class="p-stat-val">75</span>
+                    </div>
+                    <div class="p-stat-item">
+                        <span class="p-stat-name">CONCURR</span>
+                        <div class="pixel-bar-wrap"><div class="pixel-bar-fill red" data-width="68"></div></div>
+                        <span class="p-stat-val">68</span>
+                    </div>
+                    <div class="p-stat-item">
+                        <span class="p-stat-name">SEGURIDAD</span>
+                        <div class="pixel-bar-wrap"><div class="pixel-bar-fill green" data-width="71"></div></div>
+                        <span class="p-stat-val">71</span>
+                    </div>
                 </div>
             </div>
-            <iframe id="pdfFrame" class="pdf-frame"></iframe>
+
+            <!-- Info panels -->
+            <div class="info-panels">
+                <div class="info-panel">
+                    <div class="ip-header">
+                        <span class="ip-icon">📖</span>
+                        <span class="ip-title">SOBRE EL JUGADOR</span>
+                    </div>
+                    <div class="ip-body">
+                        Estudiante de Ingeniería de Sistemas — Ciclo V. Especialización en gestión de datos
+                        y seguridad informática aplicada a entornos SQL Server y PostgreSQL.
+                        Apasionado por la optimización de consultas y el diseño de arquitecturas relacionales de alto rendimiento.
+                    </div>
+                </div>
+                <div class="info-panel">
+                    <div class="ip-header">
+                        <span class="ip-icon">🎯</span>
+                        <span class="ip-title">MISIÓN ACADÉMICA</span>
+                    </div>
+                    <div class="ip-body">
+                        Documentar cada semana del curso de Base de Datos II como evidencia de aprendizaje progresivo.
+                        Desde fundamentos y modelado relacional hasta arquitecturas modernas con alta disponibilidad y seguridad.
+                        Cada archivo subido representa una misión completada en el camino hacia la maestría en BD.
+                    </div>
+                </div>
+                <div class="info-panel">
+                    <div class="ip-header">
+                        <span class="ip-icon">🏫</span>
+                        <span class="ip-title">DATOS DE CAMPAÑA</span>
+                    </div>
+                    <div class="ip-body">
+                        Universidad: UPLA — Facultad de Ingeniería<br>
+                        Curso: Base de Datos II · Semestre: 2026-I<br>
+                        Repositorio: github.com/JaredASD/Base_de_datos_2<br>
+                        Docente: [Nombre del docente]<br>
+                        Localización: Huancayo, Perú
+                    </div>
+                </div>
+                <div class="info-panel">
+                    <div class="ip-header">
+                        <span class="ip-icon">⚡</span>
+                        <span class="ip-title">POWER-UPS ACTIVOS</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;">
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">SQL SERVER</span>
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">POSTGRESQL</span>
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">T-SQL</span>
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">PL/pgSQL</span>
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">DBEAVER</span>
+                        <span style="font-family:'Press Start 2P',monospace;font-size:0.32rem;padding:5px 10px;border:2px solid rgba(255,214,10,0.35);color:var(--text2);">SSMS</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <nav class="navbar">
-        <div class="nav-container" style="max-width: 1100px;">
-            <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
-            <div class="nav-links">
-                <a href="index.html" class="nav-login neu-button-accent">Cerrar Sesión</a>
-            </div>
-        </div>
-    </nav>
+    <!-- ── TAB: PORTFOLIO ── -->
+    <div id="tab-portfolio" class="tab-section">
 
-    <header class="hero">
-        <div class="hero-content neu-card" style="max-width: 1100px; margin: 0 auto 30px;">
-            <span class="badge">Ingeniería de Sistemas</span>
-            <h1>PORTAFOLIO DIGITAL <span class="roman">2026</span></h1>
-        </div>
-    </header>
-
-    <main class="container">
-        <div class="section-nav">
-            <button class="nav-tab neu-card active" onclick="switchSection('info', this)">INTRODUCCIÓN</button>
-            <button class="nav-tab neu-card" onclick="switchSection('portfolio', this)">CONTENIDO ACADÉMICO</button>
+        <!-- Filter bar -->
+        <div class="filter-bar">
+            <input type="text" class="filter-input" id="search-input"
+                   placeholder="BUSCAR ARCHIVO..." oninput="filterFiles(this.value)">
+            <button class="filter-badge" onclick="toggleFilter('pdf')"   id="f-pdf">📄 PDF</button>
+            <button class="filter-badge" onclick="toggleFilter('img')"   id="f-img">🖼 IMÁGENES</button>
+            <button class="filter-badge" onclick="toggleFilter('other')" id="f-other">📦 OTROS</button>
         </div>
 
-        <section id="section-info" class="page-section active">
-            <div class="profile-card neu-card" style="display: flex; gap: 40px; padding: 40px; align-items: center;">
-                <div style="font-size: 4rem; background: #eee; width: 150px; height: 150px; border-radius: 50%; display: flex; justify-content: center; align-items: center;" class="neu-inset">👨‍💻</div>
-                <div>
-                    <h2 style="font-family: 'Oswald'; color: var(--accent-primary);">Jared Josue Meza Medina</h2>
-                    <p>Estudiante de Ingeniería de Sistemas - Ciclo V</p>
-                    <p style="color: var(--text-light); margin-top: 10px;">Especialización en gestión de datos y seguridad informática aplicada a entornos SQL Server.</p>
+        <!-- World list (rendered by JS) -->
+        <div class="world-list" id="world-list"></div>
+    </div>
+
+</div><!-- /main-wrap -->
+
+<script src="main.js"></script>
+<script>
+/* ============================================================
+   GITHUB CONFIG
+============================================================ */
+const REPO_USER = "JaredASD";
+const REPO_NAME = "Base_de_datos_2";
+const GH_BASE   = `https://api.github.com/repos/${REPO_USER}/${REPO_NAME}/contents`;
+const GH_TREE   = `https://github.com/${REPO_USER}/${REPO_NAME}/tree/main`;
+
+/* ============================================================
+   WORLDS / UNITS DATA
+============================================================ */
+const WORLDS = [
+    { id: 'w1', num: '1', label: 'WORLD 1',
+      title: 'FUNDAMENTOS Y ARQUITECTURA',
+      sub: 'Modelado relacional · Álgebra · Normalization',
+      weeks: [1,2,3,4] },
+    { id: 'w2', num: '2', label: 'WORLD 2',
+      title: 'INDEXACIÓN Y PERFORMANCE',
+      sub: 'B-Tree · Hash Index · Query Optimizer',
+      weeks: [5,6,7,8] },
+    { id: 'w3', num: '3', label: 'WORLD 3',
+      title: 'CONCURRENCIA Y TRANSACCIONES',
+      sub: 'ACID · Locks · MVCC · Deadlock',
+      weeks: [9,10,11,12] },
+    { id: 'w4', num: '4', label: 'WORLD 4',
+      title: 'SEGURIDAD Y ARQUITECTURAS',
+      sub: 'Backup · Replication · Cloud · Final Boss',
+      weeks: [13,14,15,16] },
+];
+
+/* ============================================================
+   FILE TYPE HELPERS
+============================================================ */
+const EXT_MAP = {
+    pdf:  { icon:'📄', action:'PREVISUALIZAR', type:'pdf' },
+    jpg:  { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    jpeg: { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    png:  { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    gif:  { icon:'🎞', action:'VER IMAGEN',    type:'img' },
+    webp: { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    svg:  { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    bmp:  { icon:'🖼', action:'VER IMAGEN',    type:'img' },
+    doc:  { icon:'📝', action:'DESCARGAR',     type:'other' },
+    docx: { icon:'📝', action:'DESCARGAR',     type:'other' },
+    xls:  { icon:'📊', action:'DESCARGAR',     type:'other' },
+    xlsx: { icon:'📊', action:'DESCARGAR',     type:'other' },
+    ppt:  { icon:'📋', action:'DESCARGAR',     type:'other' },
+    pptx: { icon:'📋', action:'DESCARGAR',     type:'other' },
+    zip:  { icon:'🗜', action:'DESCARGAR',     type:'other' },
+    sql:  { icon:'🗄', action:'VER',           type:'other' },
+    txt:  { icon:'📃', action:'VER',           type:'other' },
+    mp4:  { icon:'🎬', action:'DESCARGAR',     type:'other' },
+};
+function getExt(name) { return name.split('.').pop().toLowerCase(); }
+function getFileInfo(name) {
+    const ext = getExt(name);
+    return EXT_MAP[ext] || { icon:'📦', action:'DESCARGAR', type:'other' };
+}
+function formatSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes+'B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1)+'KB';
+    return (bytes/1048576).toFixed(1)+'MB';
+}
+
+/* ============================================================
+   TAB SWITCH
+============================================================ */
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    btn.classList.add('active');
+    if (!isHacker) playCoin();
+    if (id === 'portfolio' && !worldsBuilt) buildWorlds();
+}
+
+/* ============================================================
+   BUILD WORLD LIST (DOM)
+============================================================ */
+let worldsBuilt = false;
+function buildWorlds() {
+    worldsBuilt = true;
+    const container = document.getElementById('world-list');
+    container.innerHTML = '';
+    WORLDS.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'world-card';
+        card.id = w.id;
+        card.innerHTML = `
+            <div class="world-header" onclick="toggleWorld(this)">
+                <div class="world-number">${w.label}</div>
+                <div class="world-info">
+                    <div class="world-title">${w.title}</div>
+                    <div class="world-sub">${w.sub}</div>
                 </div>
+                <div class="world-toggle">▶</div>
             </div>
-        </section>
+            <div class="world-body">
+                <div class="mission-list">
+                    ${w.weeks.map(n => buildMissionHTML(n)).join('')}
+                </div>
+            </div>`;
+        container.appendChild(card);
+    });
+}
 
-        <section id="section-portfolio" class="page-section">
-            <h2 class="section-title">Evidencias de Aprendizaje</h2>
-            <div class="grid-unidades" id="studentGrid"></div>
-        </section>
-    </main>
+function buildMissionHTML(num) {
+    const sNum = String(num).padStart(2,'0');
+    const key  = `Semana${sNum}`;
+    return `
+        <div class="mission-item" id="mission-${key}">
+            <div class="mission-header" onclick="toggleMission(this, '${key}')">
+                <span class="mission-num">S${sNum}</span>
+                <span class="mission-title">SEMANA ACADÉMICA ${sNum}</span>
+                <span class="mission-status loading" id="status-${key}">● PENDIENTE</span>
+                <span class="mission-arrow">▶</span>
+            </div>
+            <div class="file-grid" id="grid-${key}">
+                <div class="state-msg" id="msg-${key}">CARGANDO ARCHIVOS...</div>
+                <div class="file-items" id="files-${key}"></div>
+            </div>
+        </div>`;
+}
 
-    <script>
-        const REPO_USER = "JaredASD";
-        const REPO_NAME = "Base_de_datos_2";
+/* ============================================================
+   TOGGLE WORLD
+============================================================ */
+function toggleWorld(header) {
+    const card = header.closest('.world-card');
+    card.classList.toggle('open');
+    if (!isHacker) playJump();
+}
 
-        function switchSection(sectionId, btn) {
-            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-            document.getElementById('section-' + sectionId).classList.add('active');
-            btn.classList.add('active');
+/* ============================================================
+   TOGGLE MISSION + FETCH FILES
+============================================================ */
+const loadedWeeks = new Set();
+async function toggleMission(header, key) {
+    const item = document.getElementById('mission-'+key);
+    item.classList.toggle('open');
+    if (!isHacker) playCoin();
+
+    if (loadedWeeks.has(key)) return;
+    loadedWeeks.add(key);
+
+    const msgEl   = document.getElementById('msg-'+key);
+    const filesEl = document.getElementById('files-'+key);
+    const statEl  = document.getElementById('status-'+key);
+
+    try {
+        const res = await fetch(`${GH_BASE}/${key}`);
+        if (!res.ok) {
+            msgEl.textContent   = 'SIN ARCHIVOS EN ESTA SEMANA';
+            msgEl.classList.add('err');
+            statEl.textContent  = '○ VACÍO';
+            statEl.className    = 'mission-status empty';
+            filesEl.innerHTML   = `<a href="${GH_TREE}/${key}" target="_blank" class="gh-btn">🐙 VER EN GITHUB</a>`;
+            return;
         }
+        const files = await res.json();
+        const actual = files.filter(f => f.type === 'file');
 
-        // Lógica para abrir/cerrar PDF
-        function openPDF(url, name) {
-    // Usamos el visor de Google para forzar la visualización del PDF de GitHub
-    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    
-    document.getElementById('pdfFrame').src = googleViewerUrl;
-    document.getElementById('pdfName').innerText = name;
-    document.getElementById('pdfDownloadLink').href = url;
-    document.getElementById('pdfModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; 
-}
-function closePDF() {
-    const modal = document.getElementById('pdfModal');
-    const frame = document.getElementById('pdfFrame');
-    
-    modal.style.display = 'none';
-    frame.src = ''; // Esto detiene la carga del PDF por completo
-    document.body.style.overflow = 'auto'; // Devuelve el scroll a la página
-}
+        msgEl.style.display = 'none';
+        statEl.textContent  = `✓ ${actual.length} ARCHIVO${actual.length!==1?'S':''}`;
+        statEl.className    = 'mission-status loaded';
 
-        const unidades = [
-            { nombre: "UNIDAD I: FUNDAMENTOS Y MODELADO", rango: [1,4] },
-            { nombre: "UNIDAD II: OPTIMIZACIÓN SQL", rango: [5,8] },
-            { nombre: "UNIDAD III: SEGURIDAD Y TRANSACCIONES", rango: [9,12] },
-            { nombre: "UNIDAD IV: ARQUITECTURAS MODERNAS", rango: [13,16] }
-        ];
+        // Store images in this week for navigation
+        const weekImages = actual.filter(f => getFileInfo(f.name).type === 'img').map(f => f.download_url);
 
-        const grid = document.getElementById('studentGrid');
-        unidades.forEach(u => {
-            let html = `<section class="unidad-card neu-card" style="padding: 30px; margin-bottom: 30px;">
-                <div class="card-header" style="font-size: 1.2rem; color: var(--accent-secondary); border-bottom: 2px solid; margin-bottom: 20px; padding-bottom: 10px;">${u.nombre}</div>
-                <div class="semanas-lista">`;
-            for(let i=u.rango[0]; i<=u.rango[1]; i++){
-                let sNum = i < 10 ? '0'+i : i;
-                let semanaKey = `Semana${sNum}`;
-                html += `
-                    <div class="semana-item neu-inset" onclick="toggleSemana(this, '${semanaKey}')">
-                        <div class="semana-header"><span class="semana-title">Semana Académica ${sNum}</span></div>
-                        <div id="list-${semanaKey}" class="file-container">
-                            <span style="font-size:0.7rem; color:#999;">Cargando archivos...</span>
-                        </div>
-                    </div>`;
-            }
-            html += `</div></section>`;
-            grid.innerHTML += html;
+        actual.forEach(file => {
+            const info = getFileInfo(file.name);
+            const el   = document.createElement('div');
+            el.className = 'file-item';
+            el.dataset.name = file.name.toLowerCase();
+            el.dataset.type = info.type;
+            el.innerHTML = `
+                <span class="file-icon">${info.icon}</span>
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-action">${info.action}</div>
+                </div>
+                <span class="file-size">${formatSize(file.size)}</span>`;
+
+            el.addEventListener('click', () => {
+                if (!isHacker) playCoin();
+                addScore(25);
+                if (info.type === 'pdf') {
+                    openPDF(file.download_url, file.name);
+                } else if (info.type === 'img') {
+                    openImg(file.download_url, file.name, weekImages);
+                } else {
+                    window.open(file.download_url, '_blank');
+                }
+            });
+            filesEl.appendChild(el);
         });
 
-        async function toggleSemana(element, semana) {
-            element.classList.toggle('active');
-            const container = document.getElementById(`list-${semana}`);
-            if (container.getAttribute('data-loaded') === 'true') return;
-
-            try {
-                const res = await fetch(`https://api.github.com/repos/${REPO_USER}/${REPO_NAME}/contents/${semana}`);
-                const ghBtn = `<a href="https://github.com/${REPO_USER}/${REPO_NAME}/tree/main/${semana}" target="_blank" class="file-btn neu-card btn-gh-direct">Ver carpeta en GitHub</a>`;
-
-                if (!res.ok) {
-                    container.innerHTML = `<span style="font-size:0.7rem;">Sin archivos.</span>${ghBtn}`;
-                    return;
-                }
-
-                const files = await res.json();
-                container.innerHTML = "";
-
-                files.forEach(file => {
-                    if (file.type === "file") {
-                        const isPDF = file.name.toLowerCase().endsWith('.pdf');
-                        const item = document.createElement('div');
-                        item.className = "file-btn neu-card";
-                        
-                        // Si es PDF, abre el visor. Si no, descarga directa.
-                        item.onclick = (e) => {
-                            e.stopPropagation();
-                            if (isPDF) {
-                                openPDF(file.download_url, file.name);
-                            } else {
-                                window.open(file.download_url, '_blank');
-                            }
-                        };
-
-                        item.innerHTML = `<span>📄 ${file.name}</span> <span style="color:var(--accent-primary)">${isPDF ? 'Previsualizar' : 'Descargar'}</span>`;
-                        container.appendChild(item);
-                    }
-                });
-
-                container.insertAdjacentHTML('beforeend', ghBtn);
-                container.setAttribute('data-loaded', 'true');
-            } catch (err) {
-                container.innerHTML = "<span>Error al cargar.</span>";
-            }
+        if (actual.length === 0) {
+            msgEl.textContent = 'SIN ARCHIVOS EN ESTA SEMANA';
+            msgEl.style.display = '';
         }
-    </script>
+
+        // GitHub link
+        const ghLink = document.createElement('a');
+        ghLink.href = `${GH_TREE}/${key}`; ghLink.target = '_blank';
+        ghLink.className = 'gh-btn';
+        ghLink.innerHTML = '🐙 VER CARPETA EN GITHUB';
+        filesEl.appendChild(ghLink);
+
+        if (!isHacker) showAchievement('📂', 'MISIÓN ABIERTA', `SEMANA ${key.replace('Semana','')}`);
+
+    } catch(err) {
+        msgEl.textContent = 'ERROR AL CARGAR';
+        msgEl.classList.add('err');
+        statEl.textContent = '! ERROR';
+        statEl.className = 'mission-status empty';
+    }
+}
+
+/* ============================================================
+   FILTER FILES
+============================================================ */
+let activeFilters = new Set();
+function toggleFilter(type) {
+    const btn = document.getElementById('f-'+type);
+    if (activeFilters.has(type)) { activeFilters.delete(type); btn.classList.remove('on'); }
+    else                         { activeFilters.add(type);    btn.classList.add('on'); }
+    applyFilters();
+    if (!isHacker) playCoin();
+}
+function filterFiles(query) { applyFilters(query); }
+function applyFilters(query) {
+    const q = (query ?? document.getElementById('search-input').value).toLowerCase();
+    document.querySelectorAll('.file-item').forEach(el => {
+        const nameMatch = !q || el.dataset.name.includes(q);
+        const typeMatch = activeFilters.size === 0 || activeFilters.has(el.dataset.type);
+        el.style.display = (nameMatch && typeMatch) ? '' : 'none';
+    });
+}
+
+/* ============================================================
+   PDF VIEWER
+============================================================ */
+function openPDF(url, name) {
+    const viewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    document.getElementById('pdf-frame').src   = viewer;
+    document.getElementById('pdf-title').textContent = name;
+    document.getElementById('pdf-download').href     = url;
+    document.getElementById('pdf-download').download = name;
+    document.getElementById('pdf-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closePDF() {
+    document.getElementById('pdf-modal').classList.remove('open');
+    document.getElementById('pdf-frame').src = '';
+    document.body.style.overflow = '';
+}
+
+/* ============================================================
+   IMAGE VIEWER
+============================================================ */
+let imgZoom = 1;
+let imgList = [];  // all images in current week
+let imgIdx  = 0;
+
+function openImg(url, name, allImgs=[]) {
+    imgList = allImgs.length ? allImgs : [url];
+    imgIdx  = imgList.indexOf(url);
+    if (imgIdx < 0) imgIdx = 0;
+    loadImage(url, name);
+    document.getElementById('img-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Update nav buttons
+    updateNavBtns();
+}
+function loadImage(url, name) {
+    imgZoom = 1;
+    const imgEl = document.getElementById('img-el');
+    imgEl.style.transform = `scale(${imgZoom})`;
+    imgEl.src = url;
+    imgEl.onload = () => {
+        document.getElementById('img-dims').textContent = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
+    };
+    document.getElementById('img-title').textContent   = name || url.split('/').pop();
+    document.getElementById('img-download').href       = url;
+    document.getElementById('img-download').download   = name || 'imagen';
+    document.getElementById('zoom-info').textContent   = '100%';
+}
+function updateNavBtns() {
+    document.getElementById('btn-prev').disabled = imgIdx <= 0;
+    document.getElementById('btn-next').disabled = imgIdx >= imgList.length - 1;
+}
+function navImage(dir) {
+    const newIdx = imgIdx + dir;
+    if (newIdx < 0 || newIdx >= imgList.length) return;
+    imgIdx = newIdx;
+    const url = imgList[imgIdx];
+    loadImage(url, url.split('/').pop());
+    updateNavBtns();
+    if (!isHacker) playCoin();
+}
+function closeImg() {
+    document.getElementById('img-modal').classList.remove('open');
+    document.getElementById('img-el').src = '';
+    document.body.style.overflow = '';
+    imgList = []; imgIdx = 0; imgZoom = 1;
+}
+function zoomIn()    { imgZoom = Math.min(imgZoom + 0.25, 4); applyZoom(); if (!isHacker) playJump(); }
+function zoomOut()   { imgZoom = Math.max(imgZoom - 0.25, 0.25); applyZoom(); }
+function resetZoom() { imgZoom = 1; applyZoom(); }
+function toggleZoom() {
+    imgZoom = imgZoom > 1 ? 1 : 2;
+    document.getElementById('img-el').style.cursor = imgZoom > 1 ? 'zoom-out' : 'zoom-in';
+    applyZoom();
+}
+function applyZoom() {
+    document.getElementById('img-el').style.transform = `scale(${imgZoom})`;
+    document.getElementById('zoom-info').textContent   = Math.round(imgZoom*100)+'%';
+}
+
+// Keyboard navigation in image viewer
+document.addEventListener('keydown', e => {
+    const imgOpen = document.getElementById('img-modal').classList.contains('open');
+    const pdfOpen = document.getElementById('pdf-modal').classList.contains('open');
+    if (imgOpen) {
+        if (e.key === 'Escape')     closeImg();
+        if (e.key === 'ArrowRight') navImage(1);
+        if (e.key === 'ArrowLeft')  navImage(-1);
+        if (e.key === '+' || e.key === '=') zoomIn();
+        if (e.key === '-')          zoomOut();
+        if (e.key === '0')          resetZoom();
+    }
+    if (pdfOpen && e.key === 'Escape') closePDF();
+});
+
+/* ============================================================
+   MODE LABEL UPDATE
+============================================================ */
+const origApply = window.applyMode;
+window.applyMode = function() {
+    origApply && origApply();
+    const lbl = document.getElementById('mode-label-txt');
+    if (lbl) {
+        const on = document.getElementById('mode-toggle').checked;
+        lbl.textContent = on ? 'DEEP_WEB' : 'RETRO';
+        lbl.style.color = on ? '#00ff41' : 'var(--gold)';
+    }
+};
+
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Bar animations
+    initBarAnimations();
+    // Show welcome achievement
+    setTimeout(() => {
+        if (!isHacker) showAchievement('👾', 'BIENVENIDO', 'MODO ESTUDIANTE');
+    }, 1500);
+    // Update mode label on load
+    const lbl = document.getElementById('mode-label-txt');
+    if (lbl) {
+        const saved = localStorage.getItem('visualMode') === 'hacker';
+        lbl.textContent = saved ? 'DEEP_WEB' : 'RETRO';
+        lbl.style.color = saved ? '#00ff41' : 'var(--gold)';
+    }
+    // Stars canvas always on
+    const cs = document.getElementById('c-stars');
+    if (cs) cs.style.opacity = '1';
+});
+</script>
 </body>
 </html>

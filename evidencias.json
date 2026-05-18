@@ -18,5 +18,15 @@
     "type": "pdf",
     "filename": "Resumen_07.pdf",
     "date": "18/5/2026"
+  },
+  {
+    "id": 1779146306795,
+    "week": 6,
+    "title": "Actividad_06",
+    "description": "preguntas_respondidas",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana06/Preguntas_respondidas.png",
+    "type": "img",
+    "filename": "Preguntas_respondidas.png",
+    "date": "18/5/2026"
   }
 ]

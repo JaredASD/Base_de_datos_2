@@ -2,270 +2,1205 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Admin | Gestión Académica</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN — Portafolio BD II</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos base que ya tenías */
-        .admin-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-        .btn-mini { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.3s; }
-        .btn-up { color: var(--accent-secondary); }
-        .btn-del { color: #ff7675; }
-        #fileInput { display: none; }
-        
-        .loading-overlay, .modal-overlay { 
-            display: none; position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: rgba(224, 229, 236, 0.9); z-index:2000; 
-            justify-content:center; align-items:center; flex-direction:column; 
-        }
+    /* ============================================================
+       ADMIN.HTML — SPECIFIC STYLES
+    ============================================================ */
 
-        .delete-modal { width: 90%; max-width: 400px; padding: 30px; text-align: center; }
-        .file-list { margin-top: 20px; max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; }
-        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px; border-radius: 10px; font-size: 0.9rem; }
-        .btn-confirm-del { background: none; border: none; color: #ff7675; cursor: pointer; font-weight: bold; }
-        .btn-close-modal { margin-top: 20px; width: 100%; padding: 10px; border: none; cursor: pointer; font-family: 'Oswald'; }
+    /* ── TOKEN SCREEN ── */
+    #auth-screen {
+        display: none;
+        position: fixed; inset: 0; z-index: 99000;
+        background: #050505;
+        flex-direction: column;
+        align-items: center; justify-content: center;
+        overflow: hidden;
+    }
+    #auth-screen.show { display: flex; }
+
+    /* Token screen scanlines */
+    #auth-screen::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px);
+        z-index: 1; pointer-events: none;
+        animation: crtFlk 0.1s infinite;
+    }
+    @keyframes crtFlk { 0%{opacity:1;}49%{opacity:1;}50%{opacity:.88;}51%{opacity:1;}100%{opacity:1;} }
+
+    /* Vignette */
+    #auth-screen::after {
+        content: '';
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.75) 100%);
+        z-index: 1; pointer-events: none;
+    }
+
+    .auth-box {
+        position: relative; z-index: 2;
+        width: min(520px, 96vw);
+        border: 2px solid rgba(255,214,10,0.35);
+        box-shadow: 0 0 40px rgba(255,214,10,0.08), 6px 6px 0 rgba(0,0,0,0.8);
+        background: rgba(10,10,20,0.98);
+        overflow: hidden;
+    }
+    .auth-title-bar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 16px;
+        background: var(--gold);
+        border-bottom: 2px solid rgba(0,0,0,0.5);
+    }
+    .auth-title-bar .tb-dot { width:10px;height:10px;border-radius:50%;background:#000;opacity:.4;flex-shrink:0; }
+    .auth-title-bar span {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.45rem; color: #000; letter-spacing: 2px; flex:1; text-align:center;
+    }
+    .auth-body { padding: 28px 28px 24px; }
+
+    /* ASCII / Pixel logo */
+    .auth-logo {
+        text-align: center; margin-bottom: 22px;
+        font-family: 'Press Start 2P', monospace;
+    }
+    .auth-logo .al-icon {
+        font-size: 2.4rem; display: block; margin-bottom: 10px;
+        animation: pixelBounce 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 12px rgba(255,214,10,0.6));
+    }
+    .auth-logo .al-title {
+        font-size: 0.55rem; color: var(--gold);
+        text-shadow: 2px 2px 0 #000, 0 0 12px rgba(255,214,10,0.4);
+        letter-spacing: 3px; display: block; margin-bottom: 4px;
+    }
+    .auth-logo .al-sub {
+        font-size: 0.35rem; color: var(--text3); letter-spacing: 2px;
+    }
+
+    .auth-divider {
+        height: 2px;
+        background: repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 8px,transparent 8px,transparent 14px);
+        opacity: 0.2; margin: 18px 0;
+    }
+
+    /* Token display box */
+    .token-display {
+        background: rgba(0,0,0,0.7);
+        border: 2px solid rgba(255,214,10,0.25);
+        padding: 12px 16px;
+        margin-bottom: 14px;
+        position: relative;
+    }
+    .token-label {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.32rem; color: var(--text3);
+        letter-spacing: 2px; margin-bottom: 8px; display: block;
+    }
+    .token-value {
+        font-family: 'Fira Code', monospace;
+        font-size: 0.7rem; color: rgba(255,255,255,0.15);
+        word-break: break-all; line-height: 1.5;
+        transition: color 0.3s;
+        cursor: pointer; user-select: none;
+    }
+    .token-value:hover { color: rgba(255,255,255,0.6); }
+    .token-value.revealed { color: rgba(255,214,10,0.7); }
+    .token-copy-btn {
+        position: absolute; top: 10px; right: 10px;
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        padding: 5px 9px; border: 1px solid rgba(255,214,10,0.3);
+        background: transparent; color: var(--gold); cursor: pointer;
+        transition: all 0.1s; box-shadow: 1px 1px 0 #000;
+    }
+    .token-copy-btn:hover { background: rgba(255,214,10,0.1); border-color: var(--gold); }
+    .token-copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    /* Password input */
+    .auth-input-wrap { position: relative; margin-bottom: 16px; }
+    .auth-input-label {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.35rem; color: var(--text2);
+        letter-spacing: 2px; display: block; margin-bottom: 8px;
+    }
+    .auth-input {
+        width: 100%;
+        font-family: 'Fira Code', monospace; font-size: 0.85rem;
+        padding: 12px 42px 12px 14px;
+        background: rgba(0,0,0,0.6); color: var(--gold);
+        border: 2px solid rgba(255,214,10,0.3);
+        outline: none; letter-spacing: 2px;
+        transition: border-color 0.2s;
+    }
+    .auth-input:focus { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,214,10,0.15); }
+    .auth-input.error { border-color: var(--red); animation: shakeInput 0.4s ease; }
+    @keyframes shakeInput {
+        0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);}
+        60%{transform:translateX(-4px);} 80%{transform:translateX(4px);}
+    }
+    .auth-eye {
+        position: absolute; right: 12px; bottom: 12px;
+        cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.2s;
+    }
+    .auth-eye:hover { opacity: 1; }
+
+    .auth-submit {
+        width: 100%;
+        font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+        padding: 14px;
+        background: var(--gold); color: #000;
+        border: none; box-shadow: 4px 4px 0 #000;
+        cursor: pointer; letter-spacing: 2px;
+        transition: all 0.1s;
+    }
+    .auth-submit:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #000; }
+    .auth-submit:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #000; }
+    .auth-submit.loading {
+        background: rgba(255,214,10,0.3); color: var(--gold);
+        border: 2px solid var(--gold); animation: blink 0.8s step-end infinite;
+    }
+
+    /* Auth status */
+    .auth-status {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        text-align: center; padding: 8px; margin-top: 12px;
+        letter-spacing: 1px; min-height: 28px;
+    }
+    .auth-status.ok  { color: var(--green); }
+    .auth-status.err { color: var(--red); }
+
+    /* Floating pixel chars in auth bg */
+    .auth-bg-char {
+        position: absolute; z-index: 0; pointer-events: none;
+        font-family: 'Press Start 2P', monospace; font-size: 0.6rem;
+        color: rgba(255,214,10,0.06);
+        animation: floatPixel var(--dur,6s) ease-in-out var(--del,0s) infinite;
+    }
+
+    /* ── NAVBAR ── */
+    .retro-nav {
+        position: sticky; top: 0; z-index: 500;
+        background: rgba(8,9,15,0.98);
+        border-bottom: 3px solid var(--red);
+        box-shadow: 0 3px 0 #000, 0 0 20px rgba(229,37,33,0.15);
+        padding: 0 24px;
+        transition: border-color 0.4s;
+    }
+    body.hacker-mode .retro-nav { border-color: rgba(0,255,65,0.5); }
+    .nav-inner {
+        max-width: 1100px; margin: 0 auto;
+        display: flex; justify-content: space-between; align-items: center;
+        height: 58px;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-box {
+        width: 36px; height: 36px; border: 2px solid var(--red);
+        box-shadow: 2px 2px 0 #000;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Press Start 2P', monospace; font-size: 0.45rem;
+        color: var(--red); background: var(--bg-card); flex-shrink: 0;
+    }
+    body.hacker-mode .nav-logo-box { border-color: #00ff41; color: #00ff41; }
+    .nav-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.42rem; color: var(--red); letter-spacing: 2px;
+        text-shadow: 2px 2px 0 #000;
+    }
+    body.hacker-mode .nav-title { color: #00ff41; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        padding: 8px 14px; border: 2px solid rgba(229,37,33,0.4);
+        background: transparent; color: var(--text2); cursor: pointer;
+        transition: all 0.12s; letter-spacing: 1px; box-shadow: 2px 2px 0 #000;
+        text-decoration: none;
+    }
+    .nav-btn:hover { border-color: var(--red); color: var(--red); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    body.hacker-mode .nav-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.5); }
+    body.hacker-mode .nav-btn:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
+
+    /* ── MAIN ── */
+    .admin-wrap {
+        max-width: 1100px; margin: 0 auto;
+        padding: 24px 20px 60px;
+        position: relative; z-index: 10;
+    }
+
+    /* ── UPLOAD CARD ── */
+    .panel-card {
+        background: var(--bg-card);
+        border: 3px solid rgba(229,37,33,0.4);
+        box-shadow: 5px 5px 0 #000;
+        margin-bottom: 22px; padding: 26px 28px;
+        transition: border-color 0.3s;
+    }
+    .panel-card:hover { border-color: rgba(229,37,33,0.7); }
+    body.hacker-mode .panel-card { background: rgba(5,5,5,0.97); border-color: rgba(0,255,65,0.25); box-shadow: 0 0 12px rgba(0,255,65,0.06); }
+    body.hacker-mode .panel-card:hover { border-color: rgba(0,255,65,0.6); }
+
+    /* Panel header */
+    .panel-header {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 22px; padding-bottom: 16px;
+        border-bottom: 2px solid rgba(229,37,33,0.15);
+    }
+    body.hacker-mode .panel-header { border-color: rgba(0,255,65,0.1); }
+    .panel-icon { font-size: 1.3rem; }
+    .panel-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.55rem; color: var(--red); text-shadow: 2px 2px 0 #000;
+        letter-spacing: 1px;
+    }
+    body.hacker-mode .panel-title { color: #00ff41; text-shadow: 0 0 6px rgba(0,255,65,0.4); }
+
+    /* Form fields */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .field-label {
+        font-family: 'Press Start 2P', monospace; font-size: 0.32rem;
+        color: var(--text2); letter-spacing: 2px;
+    }
+    body.hacker-mode .field-label { color: rgba(0,255,65,0.5); }
+    .pixel-input, .pixel-select, .pixel-textarea {
+        font-family: 'VT323', monospace; font-size: 1.1rem;
+        padding: 10px 14px; letter-spacing: 1px;
+        background: var(--bg-card2); color: var(--text);
+        border: 2px solid rgba(229,37,33,0.25); outline: none;
+        transition: border-color 0.2s; box-shadow: 2px 2px 0 #000;
+        width: 100%;
+    }
+    .pixel-input:focus, .pixel-select:focus, .pixel-textarea:focus {
+        border-color: var(--red); box-shadow: 3px 3px 0 #000;
+    }
+    .pixel-textarea { resize: vertical; min-height: 70px; }
+    body.hacker-mode .pixel-input,
+    body.hacker-mode .pixel-select,
+    body.hacker-mode .pixel-textarea {
+        background: rgba(0,0,0,0.7); color: #00ff41;
+        border-color: rgba(0,255,65,0.2);
+    }
+    body.hacker-mode .pixel-input:focus,
+    body.hacker-mode .pixel-select:focus,
+    body.hacker-mode .pixel-textarea:focus {
+        border-color: #00ff41; box-shadow: 0 0 8px rgba(0,255,65,0.2);
+    }
+
+    /* Type selector */
+    .type-row { display: flex; gap: 8px; margin-bottom: 18px; }
+    .type-btn {
+        flex: 1; font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        padding: 10px; border: 2px solid rgba(229,37,33,0.25);
+        background: var(--bg-card2); color: var(--text2);
+        cursor: pointer; letter-spacing: 1px; box-shadow: 2px 2px 0 #000;
+        transition: all 0.12s;
+    }
+    .type-btn:hover { border-color: var(--red); color: var(--red); }
+    .type-btn.active { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 2px 2px 0 #000; }
+    body.hacker-mode .type-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.5); background: rgba(0,0,0,0.6); }
+    body.hacker-mode .type-btn:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
+    body.hacker-mode .type-btn.active { background: rgba(0,255,65,0.1); color: #00ff41; border-color: #00ff41; }
+
+    /* Week selector grid */
+    .week-grid {
+        display: grid; grid-template-columns: repeat(8, 1fr);
+        gap: 6px; margin-top: 2px;
+    }
+    .week-cell {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        padding: 7px 4px; text-align: center;
+        border: 2px solid rgba(229,37,33,0.2);
+        background: var(--bg-card2); color: var(--text2);
+        cursor: pointer; box-shadow: 2px 2px 0 #000; transition: all 0.1s;
+    }
+    .week-cell:hover { border-color: var(--red); color: var(--red); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    .week-cell.selected { background: var(--red); color: #fff; border-color: var(--red); }
+    body.hacker-mode .week-cell { border-color: rgba(0,255,65,0.15); color: rgba(0,255,65,0.4); background: rgba(0,0,0,0.5); }
+    body.hacker-mode .week-cell:hover { border-color: rgba(0,255,65,0.8); color: #00ff41; }
+    body.hacker-mode .week-cell.selected { background: rgba(0,255,65,0.12); color: #00ff41; border-color: #00ff41; }
+
+    /* Drag & drop zone */
+    .drop-zone {
+        border: 3px dashed rgba(229,37,33,0.4);
+        background: rgba(229,37,33,0.03);
+        padding: 32px 20px;
+        text-align: center; cursor: pointer;
+        transition: all 0.2s; margin-bottom: 14px;
+        position: relative; overflow: hidden;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+        border-color: var(--red);
+        background: rgba(229,37,33,0.07);
+    }
+    .drop-zone.drag-over { box-shadow: 0 0 20px rgba(229,37,33,0.2); }
+    body.hacker-mode .drop-zone { border-color: rgba(0,255,65,0.25); background: rgba(0,255,65,0.02); }
+    body.hacker-mode .drop-zone:hover, body.hacker-mode .drop-zone.drag-over { border-color: #00ff41; background: rgba(0,255,65,0.05); }
+    .drop-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+    .drop-title {
+        font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+        color: var(--red); letter-spacing: 2px; margin-bottom: 6px;
+    }
+    body.hacker-mode .drop-title { color: #00ff41; }
+    .drop-sub {
+        font-family: 'VT323', monospace; font-size: 1rem;
+        color: var(--text2); letter-spacing: 1px;
+    }
+    body.hacker-mode .drop-sub { color: rgba(0,255,65,0.5); }
+    .drop-types {
+        display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px;
+    }
+    .drop-type-pill {
+        font-family: 'Press Start 2P', monospace; font-size: 0.28rem;
+        padding: 4px 8px; border: 1px solid rgba(229,37,33,0.3);
+        color: var(--text3); letter-spacing: 1px;
+    }
+    body.hacker-mode .drop-type-pill { border-color: rgba(0,255,65,0.15); color: rgba(0,255,65,0.3); }
+    #file-input { display: none; }
+
+    /* File queue */
+    .file-queue { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .queue-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px;
+        background: var(--bg-card2);
+        border: 2px solid rgba(229,37,33,0.2);
+        box-shadow: 2px 2px 0 #000; position: relative; overflow: hidden;
+    }
+    body.hacker-mode .queue-item { background: rgba(0,0,0,0.7); border-color: rgba(0,255,65,0.15); }
+    .qi-icon  { font-size: 1.2rem; flex-shrink: 0; }
+    .qi-info  { flex: 1; min-width: 0; }
+    .qi-name  {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        letter-spacing: 0.5px;
+    }
+    body.hacker-mode .qi-name { color: rgba(0,255,65,0.8); }
+    .qi-size  { font-family: 'VT323', monospace; font-size: 0.85rem; color: var(--text3); margin-top: 2px; }
+    body.hacker-mode .qi-size { color: rgba(0,255,65,0.4); }
+    .qi-bar   { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--red); width: 0%; transition: width 0.2s; box-shadow: 0 0 6px rgba(229,37,33,0.5); }
+    body.hacker-mode .qi-bar { background: #00ff41; box-shadow: 0 0 6px rgba(0,255,65,0.5); }
+    .qi-status {
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        color: var(--text3); flex-shrink: 0; letter-spacing: 1px;
+    }
+    .qi-status.done { color: var(--green); }
+    .qi-status.err  { color: var(--red); }
+    .qi-status.uploading { color: var(--gold); animation: blink 0.8s step-end infinite; }
+    .qi-remove {
+        width: 22px; height: 22px; flex-shrink: 0;
+        background: transparent; border: 1px solid rgba(229,37,33,0.3);
+        color: var(--red); cursor: pointer; font-size: 0.7rem;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.1s;
+    }
+    .qi-remove:hover { background: rgba(229,37,33,0.15); }
+
+    /* Preview image thumbnail */
+    .qi-thumb {
+        width: 36px; height: 36px; flex-shrink: 0;
+        object-fit: cover; border: 1px solid rgba(229,37,33,0.3);
+    }
+    body.hacker-mode .qi-thumb { border-color: rgba(0,255,65,0.2); filter: sepia(1) hue-rotate(70deg) saturate(2); }
+
+    /* Submit button */
+    .upload-btn {
+        width: 100%;
+        font-family: 'Press Start 2P', monospace; font-size: 0.55rem;
+        padding: 16px; letter-spacing: 2px;
+        background: var(--red); color: #fff;
+        border: none; box-shadow: 5px 5px 0 #000;
+        cursor: pointer; transition: all 0.1s;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .upload-btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #000; }
+    .upload-btn:active { transform: translate(2px,2px); box-shadow: 3px 3px 0 #000; }
+    .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .upload-btn.loading { animation: blink 0.8s step-end infinite; }
+    body.hacker-mode .upload-btn { background: rgba(0,255,65,0.12); color: #00ff41; border: 2px solid #00ff41; box-shadow: 0 0 12px rgba(0,255,65,0.2); }
+
+    /* ── MANAGEMENT TABLE ── */
+    .mgmt-wrap { overflow-x: auto; margin-top: 4px; }
+    .mgmt-table {
+        width: 100%; border-collapse: collapse;
+        font-family: 'VT323', monospace; font-size: 1.05rem;
+    }
+    .mgmt-table thead tr {
+        border-bottom: 3px solid rgba(229,37,33,0.3);
+    }
+    body.hacker-mode .mgmt-table thead tr { border-color: rgba(0,255,65,0.2); }
+    .mgmt-table th {
+        font-family: 'Press Start 2P', monospace; font-size: 0.35rem;
+        color: var(--red); padding: 10px 14px; text-align: left;
+        letter-spacing: 1px; white-space: nowrap;
+    }
+    body.hacker-mode .mgmt-table th { color: #00ff41; }
+    .mgmt-table td {
+        padding: 12px 14px; color: var(--text2);
+        border-bottom: 1px solid rgba(229,37,33,0.08);
+        vertical-align: middle;
+    }
+    body.hacker-mode .mgmt-table td { color: rgba(0,255,65,0.7); border-color: rgba(0,255,65,0.06); }
+    .mgmt-table tr:hover td { background: rgba(229,37,33,0.03); }
+    body.hacker-mode .mgmt-table tr:hover td { background: rgba(0,255,65,0.02); }
+    .td-week {
+        font-family: 'Press Start 2P', monospace; font-size: 0.38rem;
+        color: var(--red); white-space: nowrap;
+    }
+    body.hacker-mode .td-week { color: #00ff41; }
+    .td-title { font-size: 1.05rem; color: var(--text); font-weight: 400; }
+    body.hacker-mode .td-title { color: rgba(0,255,65,0.85); }
+    .td-desc { font-size: 0.85rem; color: var(--text3); }
+    .td-type {
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        padding: 4px 8px; border: 1px solid;
+        white-space: nowrap;
+    }
+    .td-type.pdf   { color: var(--red);  border-color: rgba(229,37,33,0.4); }
+    .td-type.img   { color: var(--blue); border-color: rgba(4,156,216,0.4); }
+    .td-type.link  { color: var(--green);border-color: rgba(67,176,71,0.4); }
+    .td-type.other { color: var(--text2);border-color: rgba(255,255,255,0.15); }
+    .table-actions { display: flex; gap: 6px; }
+    .ta-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.3rem;
+        padding: 5px 9px; border: 2px solid;
+        background: transparent; cursor: pointer;
+        transition: all 0.1s; box-shadow: 1px 1px 0 #000;
+    }
+    .ta-btn.view   { color: var(--blue);  border-color: rgba(4,156,216,0.4); }
+    .ta-btn.del    { color: var(--red);   border-color: rgba(229,37,33,0.4); }
+    .ta-btn.view:hover { border-color: var(--blue);  background: rgba(4,156,216,0.1); }
+    .ta-btn.del:hover  { border-color: var(--red);   background: rgba(229,37,33,0.1); }
+
+    /* Empty state */
+    .table-empty {
+        text-align: center; padding: 36px 20px;
+        font-family: 'Press Start 2P', monospace; font-size: 0.42rem;
+        color: var(--text3); letter-spacing: 2px;
+    }
+
+    /* Toast notification */
+    #toast {
+        position: fixed; bottom: 24px; left: 50%; z-index: 9999;
+        transform: translateX(-50%) translateY(80px);
+        transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    .toast-box {
+        font-family: 'Press Start 2P', monospace; font-size: 0.42rem;
+        padding: 12px 22px; letter-spacing: 1px;
+        border: 2px solid; box-shadow: 4px 4px 0 #000;
+        white-space: nowrap;
+    }
+    .toast-box.ok  { background: rgba(67,176,71,0.15);  color: var(--green); border-color: var(--green); }
+    .toast-box.err { background: rgba(229,37,33,0.15);  color: var(--red);   border-color: var(--red); }
+    .toast-box.inf { background: rgba(4,156,216,0.15);  color: var(--blue);  border-color: var(--blue); }
+
+    /* Delete confirm modal */
+    #del-modal {
+        display: none; position: fixed; inset: 0; z-index: 9700;
+        background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+    }
+    #del-modal.show { display: flex; }
+    .del-box {
+        background: var(--bg-card);
+        border: 3px solid var(--red); box-shadow: 6px 6px 0 #000;
+        padding: 28px; max-width: 380px; text-align: center;
+    }
+    .del-q  { font-family:'Press Start 2P',monospace; font-size:.52rem; color:var(--red); margin-bottom:14px; }
+    .del-sub{ font-family:'VT323',monospace; font-size:1.1rem; color:var(--text2); margin-bottom:22px; }
+    .del-row{ display:flex; gap:10px; justify-content:center; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .week-grid { grid-template-columns: repeat(4,1fr); }
+        .type-row  { flex-direction: column; }
+    }
     </style>
 </head>
 <body>
 
-    <div id="authPanel" class="loading-overlay" style="display:none; background: #e0e5ec;">
-        <div class="neu-card" style="padding: 30px; text-align: center; max-width: 400px;">
-            <h3 style="font-family: 'Oswald'; margin-bottom: 15px;">Acceso Administrativo</h3>
-            <p style="font-size: 0.8rem; color: #666; margin-bottom: 20px;">
-                Para gestionar archivos, por seguridad, copie y pegue el siguiente token:
-            </p>
-            
-            <code id="tokenToCopy" style="display:block; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 0.7rem; border: 1px dashed #6c5ce7;">
-    <span id="p1">ghp_</span><span id="p2">3hHxBjWgE4y0jGjH7FpOpj7mHvfpCO1Cs39i</span>
-</code>
-
-<button class="neu-button" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem; cursor:pointer;" 
-        onclick="copyStealthToken()">
-    COPIAR TOKEN
-</button>
-
-<script>
-    function copyStealthToken() {
-        // Unimos las dos partes solo cuando el usuario hace clic
-        const t = document.getElementById('p1').innerText + document.getElementById('p2').innerText;
-        navigator.clipboard.writeText(t.trim());
-        alert('Token copiado con éxito!');
-    }
-</script>
-
-            <input type="password" id="tokenInput" placeholder="Pegue el token aquí" 
-                   style="width: 100%; padding: 12px; border-radius: 10px; border: none; margin-bottom: 15px;" class="neu-inset">
-            
-            <button class="neu-button-accent" style="width: 100%; padding: 12px; cursor:pointer;" onclick="saveToken()">
-                INGRESAR AL PANEL
-            </button>
+<!-- ══ CANVAS / OVERLAYS ══ -->
+<canvas id="c-stars"></canvas>
+<canvas id="c-matrix"></canvas>
+<canvas id="c-grid"></canvas>
+<canvas id="c-particles"></canvas>
+<div id="scan-bar"></div>
+<div class="corner-hud tl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud tr"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud bl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud br"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="px-corner tl"></div><div class="px-corner tr"></div>
+<div class="px-corner bl"></div><div class="px-corner br"></div>
+<div id="hk-cursor"></div><div id="hk-dot"></div>
+<div id="hx-clock">
+    <div class="hxc-time">0x00:0x00:0x00</div>
+    <div id="hxc-date"></div><div id="hxc-epoch"></div>
+</div>
+<div class="data-stream L" id="dsL"></div>
+<div class="data-stream R" id="dsR"></div>
+<div id="log-console"><div class="log-header">ADMIN_PANEL: ACTIVE</div><div id="log-lines"></div></div>
+<div id="hack-overlay">
+    <div id="ho-title">MODO ADMIN</div>
+    <div style="font-size:.6rem;color:rgba(0,255,65,.5);letter-spacing:3px;margin-bottom:12px;">ACCESO DOCENTE</div>
+    <div id="ho-bar"><div id="ho-fill"></div></div>
+    <div id="ho-pct">0%</div><div id="ho-lines"></div>
+</div>
+<div id="screen-wipe"></div>
+<div id="achievement">
+    <div class="achievement-box">
+        <div class="achievement-icon">🎮</div>
+        <div class="achievement-text">
+            <div class="achievement-title">ACHIEVEMENT</div>
+            <div class="achievement-name">Loading...</div>
         </div>
     </div>
+</div>
 
-    <div id="mainContent" style="display:none;">
-        
-        <div id="loader" class="loading-overlay">
-            <div class="neu-card" style="padding:20px;">Procesando con GitHub...</div>
+<!-- ══ TOKEN SCREEN ══ -->
+<div id="auth-screen">
+    <!-- Floating bg chars -->
+    <div class="auth-bg-char" style="top:10%;left:5%;--dur:7s;--del:0s;">01</div>
+    <div class="auth-bg-char" style="top:20%;right:8%;--dur:9s;--del:1s;">BD</div>
+    <div class="auth-bg-char" style="top:70%;left:10%;--dur:6s;--del:2s;">SQL</div>
+    <div class="auth-bg-char" style="bottom:15%;right:12%;--dur:8s;--del:0.5s;">GH</div>
+    <div class="auth-bg-char" style="top:45%;left:3%;--dur:10s;--del:1.5s;">★</div>
+    <div class="auth-bg-char" style="top:55%;right:4%;--dur:7s;--del:3s;">▶</div>
+    <div class="auth-bg-char" style="bottom:30%;left:20%;--dur:11s;--del:2.5s;">FF</div>
+    <div class="auth-bg-char" style="top:30%;right:22%;--dur:8s;--del:1s;">41</div>
+
+    <div class="auth-box">
+        <!-- Title bar -->
+        <div class="auth-title-bar">
+            <div class="tb-dot"></div>
+            <div class="tb-dot"></div>
+            <div class="tb-dot"></div>
+            <span>SECURE_TERMINAL v2.6 — BD II ADMIN</span>
         </div>
 
-        <div id="deleteModal" class="modal-overlay">
-            <div class="delete-modal neu-card">
-                <h3 id="modalTitle" style="font-family: 'Oswald'; margin-bottom:10px;">Archivos en Semana</h3>
-                <div id="fileList" class="file-list"></div>
-                <button onclick="closeDeleteModal()" class="neu-button btn-close-modal">CERRAR</button>
+        <div class="auth-body">
+            <!-- Logo -->
+            <div class="auth-logo">
+                <span class="al-icon">🔐</span>
+                <span class="al-title">ACCESO DOCENTE</span>
+                <span class="al-sub">UPLA · FACULTAD DE INGENIERÍA · 2026</span>
+            </div>
+
+            <div class="auth-divider"></div>
+
+            <!-- Token display -->
+            <div class="token-display">
+                <span class="token-label">▶ TOKEN DE ACCESO (CLIC PARA REVELAR)</span>
+                <div class="token-value" id="token-val"
+                     onclick="revealToken()"
+                     title="Clic para revelar">
+                    ████████████████████████████████████████████
+                </div>
+                <button class="token-copy-btn" id="copy-btn" onclick="copyToken(event)">COPIAR</button>
+            </div>
+
+            <!-- Password input -->
+            <div class="auth-input-wrap">
+                <span class="auth-input-label">▶ PEGA EL TOKEN AQUÍ</span>
+                <input type="password" class="auth-input" id="token-input"
+                       placeholder="ghp_••••••••••••••••••••••••"
+                       onkeydown="if(event.key==='Enter')submitToken()">
+                <span class="auth-eye" id="eye-btn" onclick="toggleEye()">👁</span>
+            </div>
+
+            <button class="auth-submit" id="auth-submit" onclick="submitToken()">
+                ▶ INGRESAR AL PANEL
+            </button>
+
+            <div class="auth-status" id="auth-status"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ DELETE CONFIRM ══ -->
+<div id="del-modal">
+    <div class="del-box">
+        <div class="del-q">⚠ ELIMINAR RECURSO?</div>
+        <div class="del-sub" id="del-name">Este recurso será eliminado del portafolio.</div>
+        <div class="del-row">
+            <button class="upload-btn" style="width:auto;padding:10px 20px;font-size:.42rem;" onclick="confirmDelete()">SÍ, ELIMINAR</button>
+            <button class="ta-btn view" style="padding:10px 20px;" onclick="closeDelModal()">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast"><div class="toast-box ok" id="toast-box">OK</div></div>
+
+<!-- ══ HIDDEN FILE INPUT ══ -->
+<input type="file" id="file-input" multiple accept="*/*">
+
+<!-- ══ NAVBAR (visible once authenticated) ══ -->
+<nav class="retro-nav" id="main-nav" style="display:none;">
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <div class="nav-logo-box">AD</div>
+            <div class="nav-title">ADMIN — BASE DE DATOS II</div>
+        </div>
+        <div class="nav-right">
+            <label class="switch">
+                <input type="checkbox" id="mode-toggle" onchange="applyMode()">
+                <span class="sw-slider"></span>
+            </label>
+            <button class="nav-btn" onclick="doLogout()">⏏ SALIR</button>
+        </div>
+    </div>
+</nav>
+
+<!-- ══ ADMIN CONTENT ══ -->
+<div class="admin-wrap" id="main-content" style="display:none;">
+
+    <!-- ── UPLOAD PANEL ── -->
+    <div class="panel-card">
+        <div class="panel-header">
+            <span class="panel-icon">📤</span>
+            <span class="panel-title">PUBLICAR RECURSO</span>
+        </div>
+
+        <!-- Type selector -->
+        <div class="type-row">
+            <button class="type-btn active" id="tbf" onclick="setType('file')">📄 SUBIR ARCHIVO</button>
+            <button class="type-btn"        id="tbl" onclick="setType('link')">🔗 AGREGAR ENLACE</button>
+        </div>
+
+        <!-- Form fields -->
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="field-label">▶ TÍTULO DEL RECURSO</label>
+                <input type="text" class="pixel-input" id="res-title"
+                       placeholder="Ej: Diagrama ER — Lab 02">
+            </div>
+            <div class="form-field">
+                <label class="field-label">▶ DESCRIPCIÓN (OPCIONAL)</label>
+                <input type="text" class="pixel-input" id="res-desc"
+                       placeholder="Breve descripción del contenido">
+            </div>
+            <div class="form-field full">
+                <label class="field-label">▶ SEMANA ACADÉMICA</label>
+                <div class="week-grid" id="week-grid"></div>
+            </div>
+            <div class="form-field full" id="link-area" style="display:none;">
+                <label class="field-label">▶ URL DEL RECURSO</label>
+                <input type="url" class="pixel-input" id="res-url" placeholder="https://...">
             </div>
         </div>
 
-        <nav class="navbar">
-            <div class="nav-container">
-                <div class="logo-wrapper neu-inset"><img src="LogoUpla.png" class="nav-logo"></div>
-                <div class="nav-links">
-                    <span class="nav-link" style="color: var(--accent-primary)">MODO ADMINISTRADOR</span>
-                    <a href="#" onclick="logout()" class="nav-login neu-button-accent">Salir</a>
+        <!-- Drop zone (file mode) -->
+        <div id="drop-zone-wrap">
+            <div class="drop-zone" id="drop-zone"
+                 onclick="document.getElementById('file-input').click()"
+                 ondragover="onDragOver(event)"
+                 ondragleave="onDragLeave(event)"
+                 ondrop="onDrop(event)">
+                <span class="drop-icon">📁</span>
+                <div class="drop-title">ARRASTRA ARCHIVOS AQUÍ</div>
+                <div class="drop-sub">o haz clic para seleccionar</div>
+                <div class="drop-types">
+                    <span class="drop-type-pill">PDF</span>
+                    <span class="drop-type-pill">JPG / PNG</span>
+                    <span class="drop-type-pill">DOCX</span>
+                    <span class="drop-type-pill">XLSX</span>
+                    <span class="drop-type-pill">SQL</span>
+                    <span class="drop-type-pill">ZIP</span>
+                    <span class="drop-type-pill">CUALQUIER TIPO</span>
                 </div>
             </div>
-        </nav>
+            <!-- File queue -->
+            <div class="file-queue" id="file-queue"></div>
+        </div>
 
-        <main class="container">
-            <h2 class="section-title">Estructura Académica (Admin)</h2>
-            <input type="file" id="fileInput">
-            <div class="grid-unidades" id="adminGrid"></div>
-        </main>
+        <button class="upload-btn" id="upload-btn" onclick="startUpload()">
+            <span id="upload-btn-icon">⬆</span>
+            <span id="upload-btn-txt">PUBLICAR EN EL PORTAFOLIO</span>
+        </button>
     </div>
 
-    <script>
-        // Verificación de Rol
-        if(localStorage.getItem('userRole') !== 'admin') window.location.href = "index.html";
+    <!-- ── MANAGEMENT TABLE ── -->
+    <div class="panel-card">
+        <div class="panel-header">
+            <span class="panel-icon">📋</span>
+            <span class="panel-title">RECURSOS PUBLICADOS</span>
+            <button class="ta-btn view" style="margin-left:auto;" onclick="loadTable()">↺ RECARGAR</button>
+        </div>
+        <div class="mgmt-wrap">
+            <table class="mgmt-table">
+                <thead>
+                    <tr>
+                        <th>SEMANA</th>
+                        <th>RECURSO</th>
+                        <th>TIPO</th>
+                        <th>FECHA</th>
+                        <th>ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="mgmt-body">
+                    <tr><td colspan="5"><div class="table-empty">CARGANDO RECURSOS...</div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        // --- CONFIGURACIÓN ---
-        const REPO_PATH = "JaredASD/Base_de_datos_2"; 
-        let GITHUB_TOKEN = localStorage.getItem('gh_token');
-        let currentSemana = ""; // Variable global para saber en qué semana estamos
+</div><!-- /admin-wrap -->
 
-        // Control de visibilidad al cargar
-        window.onload = () => {
-            const authPanel = document.getElementById('authPanel');
-            const mainContent = document.getElementById('mainContent');
+<script src="main.js"></script>
+<script>
+/* ============================================================
+   CONFIG
+============================================================ */
+const REPO_PATH = "JaredASD/Base_de_datos_2";
+let GH_TOKEN = localStorage.getItem('gh_token');
+let currentType = 'file';
+let selectedWeek = 1;
+let fileQueue = [];       // { file, status, id }
+let dbToDelete = null;    // { id, name }
+let tokenRevealed = false;
 
-            if (!GITHUB_TOKEN) {
-                authPanel.style.display = 'flex';
-                mainContent.style.display = 'none';
-            } else {
-                authPanel.style.display = 'none';
-                mainContent.style.display = 'block';
-                renderGrid(); // Dibujar la cuadrícula solo si hay acceso
-            }
-        };
+/* ============================================================
+   TOKEN (hidden, split for obfuscation)
+============================================================ */
+const T1 = "ghp_";
+const T2 = "3hHxBjWgE4y0jGjH7FpOpj7mHvfpCO1Cs39i";
+const FULL_TOKEN = T1 + T2;
 
-        function saveToken() {
-            const input = document.getElementById('tokenInput').value.trim();
-            if(input) {
-                localStorage.setItem('gh_token', input);
-                location.reload();
-            }
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Stars always on
+    const cs = document.getElementById('c-stars');
+    if (cs) cs.style.opacity = '1';
+
+    if (!GH_TOKEN) {
+        document.getElementById('auth-screen').classList.add('show');
+    } else {
+        showMainPanel();
+    }
+    buildWeekGrid();
+    document.getElementById('file-input').addEventListener('change', onFileSelect);
+});
+
+/* ============================================================
+   AUTH SCREEN
+============================================================ */
+let revealTimer;
+function revealToken() {
+    const el = document.getElementById('token-val');
+    tokenRevealed = !tokenRevealed;
+    if (tokenRevealed) {
+        el.textContent = FULL_TOKEN;
+        el.classList.add('revealed');
+        // Auto-hide after 8s
+        revealTimer = setTimeout(() => {
+            tokenRevealed = false;
+            el.textContent = '████████████████████████████████████████████';
+            el.classList.remove('revealed');
+        }, 8000);
+    } else {
+        clearTimeout(revealTimer);
+        el.textContent = '████████████████████████████████████████████';
+        el.classList.remove('revealed');
+    }
+}
+
+function copyToken(e) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(FULL_TOKEN).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '✓ COPIADO';
+        btn.classList.add('copied');
+        showToast('TOKEN COPIADO AL PORTAPAPELES', 'ok');
+        setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 2500);
+    });
+}
+
+function toggleEye() {
+    const inp = document.getElementById('token-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function submitToken() {
+    const val = document.getElementById('token-input').value.trim();
+    const btn = document.getElementById('auth-submit');
+    const status = document.getElementById('auth-status');
+    if (!val) {
+        document.getElementById('token-input').classList.add('error');
+        setTimeout(() => document.getElementById('token-input').classList.remove('error'), 500);
+        return;
+    }
+    btn.textContent = '▶ VERIFICANDO...';
+    btn.classList.add('loading');
+    status.textContent = '';
+    // Verify token with a lightweight GitHub API call
+    fetch(`https://api.github.com/repos/${REPO_PATH}`, {
+        headers: { 'Authorization': `token ${val}` }
+    }).then(r => {
+        if (r.ok) {
+            status.textContent = '✓ ACCESO CONCEDIDO';
+            status.className = 'auth-status ok';
+            localStorage.setItem('gh_token', val);
+            GH_TOKEN = val;
+            setTimeout(showMainPanel, 800);
+        } else {
+            status.textContent = '✕ TOKEN INVÁLIDO';
+            status.className = 'auth-status err';
+            document.getElementById('token-input').classList.add('error');
+            setTimeout(() => document.getElementById('token-input').classList.remove('error'), 500);
+            btn.textContent = '▶ INGRESAR AL PANEL';
+            btn.classList.remove('loading');
         }
+    }).catch(() => {
+        status.textContent = '✕ ERROR DE CONEXIÓN';
+        status.className = 'auth-status err';
+        btn.textContent = '▶ INGRESAR AL PANEL';
+        btn.classList.remove('loading');
+    });
+}
 
-        function logout() {
-            localStorage.removeItem('gh_token');
-            localStorage.removeItem('userRole');
-            window.location.href = "index.html";
+function showMainPanel() {
+    document.getElementById('auth-screen').classList.remove('show');
+    document.getElementById('main-nav').style.display = 'block';
+    document.getElementById('main-content').style.display = 'block';
+    loadTable();
+    if (!isHacker) showAchievement('🔓', 'ACCESO ADMIN', 'BIENVENIDO DOCENTE');
+    setTimeout(() => initBarAnimations(), 300);
+}
+
+function doLogout() {
+    localStorage.removeItem('gh_token');
+    GH_TOKEN = null;
+    navigate('index');
+}
+
+/* ============================================================
+   WEEK GRID
+============================================================ */
+function buildWeekGrid() {
+    const grid = document.getElementById('week-grid');
+    for (let i = 1; i <= 16; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'week-cell' + (i === 1 ? ' selected' : '');
+        cell.textContent = 'S' + String(i).padStart(2,'0');
+        cell.onclick = () => selectWeek(i);
+        cell.id = 'wc-' + i;
+        grid.appendChild(cell);
+    }
+}
+function selectWeek(n) {
+    selectedWeek = n;
+    document.querySelectorAll('.week-cell').forEach(c => c.classList.remove('selected'));
+    document.getElementById('wc-'+n).classList.add('selected');
+    if (!isHacker) playCoin();
+}
+
+/* ============================================================
+   TYPE TOGGLE
+============================================================ */
+function setType(type) {
+    currentType = type;
+    document.getElementById('tbf').classList.toggle('active', type === 'file');
+    document.getElementById('tbl').classList.toggle('active', type === 'link');
+    document.getElementById('link-area').style.display      = type === 'link' ? 'block' : 'none';
+    document.getElementById('drop-zone-wrap').style.display = type === 'file' ? 'block' : 'none';
+    if (!isHacker) playJump();
+}
+
+/* ============================================================
+   DRAG & DROP
+============================================================ */
+function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    addFilesToQueue([...e.dataTransfer.files]);
+}
+function onFileSelect(e) {
+    addFilesToQueue([...e.target.files]);
+    e.target.value = '';
+}
+
+/* ============================================================
+   FILE QUEUE
+============================================================ */
+const ICONS = {pdf:'📄',jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🎞',webp:'🖼',
+    doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',
+    sql:'🗄',txt:'📃',zip:'🗜',rar:'🗜',mp4:'🎬',svg:'🖼'};
+function getIcon(name) { return ICONS[name.split('.').pop().toLowerCase()] || '📦'; }
+function fmtSize(b) {
+    if (b < 1024) return b+'B';
+    if (b < 1048576) return (b/1024).toFixed(1)+'KB';
+    return (b/1048576).toFixed(1)+'MB';
+}
+
+function addFilesToQueue(files) {
+    files.forEach(f => {
+        const id = Date.now() + Math.random();
+        fileQueue.push({ id, file: f, status: 'pending' });
+        renderQueueItem({ id, file: f, status: 'pending' });
+        if (!isHacker) playCoin();
+        addScore(10);
+    });
+}
+
+function renderQueueItem(qi) {
+    const queueEl = document.getElementById('file-queue');
+    const ext = qi.file.name.split('.').pop().toLowerCase();
+    const isImg = ['jpg','jpeg','png','gif','webp','svg'].includes(ext);
+    const div = document.createElement('div');
+    div.className = 'queue-item'; div.id = 'qi-'+qi.id;
+    div.innerHTML = `
+        ${isImg ? `<img class="qi-thumb" id="qt-${qi.id}" src="">` : `<span class="qi-icon">${getIcon(qi.file.name)}</span>`}
+        <div class="qi-info">
+            <div class="qi-name">${qi.file.name}</div>
+            <div class="qi-size">${fmtSize(qi.file.size)}</div>
+        </div>
+        <span class="qi-status" id="qs-${qi.id}">PENDIENTE</span>
+        <button class="qi-remove" onclick="removeFromQueue(${qi.id})" title="Quitar">✕</button>
+        <div class="qi-bar" id="qb-${qi.id}"></div>`;
+    queueEl.appendChild(div);
+    // Image preview
+    if (isImg) {
+        const reader = new FileReader();
+        reader.onload = e => { const img = document.getElementById('qt-'+qi.id); if(img) img.src = e.target.result; };
+        reader.readAsDataURL(qi.file);
+    }
+}
+
+function removeFromQueue(id) {
+    fileQueue = fileQueue.filter(qi => qi.id !== id);
+    const el = document.getElementById('qi-'+id);
+    if (el) { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='.2s'; setTimeout(()=>el.remove(),200); }
+}
+
+function setQueueItemStatus(id, status, pct=0) {
+    const statEl = document.getElementById('qs-'+id);
+    const barEl  = document.getElementById('qb-'+id);
+    if (statEl) { statEl.textContent = status.toUpperCase(); statEl.className = 'qi-status '+['done','err','uploading'].find(s=>status.toLowerCase().includes(s))||''; }
+    if (barEl)  barEl.style.width = pct+'%';
+}
+
+/* ============================================================
+   UPLOAD
+============================================================ */
+async function startUpload() {
+    const title  = document.getElementById('res-title').value.trim();
+    const desc   = document.getElementById('res-desc').value.trim();
+    const btn    = document.getElementById('upload-btn');
+    const btnTxt = document.getElementById('upload-btn-txt');
+
+    if (!title) { showToast('ASIGNA UN TÍTULO AL RECURSO', 'err'); return; }
+    if (currentType === 'link') {
+        const url = document.getElementById('res-url').value.trim();
+        if (!url) { showToast('INGRESA LA URL DEL RECURSO', 'err'); return; }
+        btn.disabled = true; btnTxt.textContent = 'GUARDANDO...';
+        await saveToDatabase(url, title, desc, 'link', 'link');
+        btn.disabled = false; btnTxt.textContent = 'PUBLICAR EN EL PORTAFOLIO';
+        return;
+    }
+    if (fileQueue.filter(q=>q.status==='pending').length === 0) {
+        showToast('ARRASTRA ARCHIVOS PRIMERO', 'err'); return;
+    }
+    btn.disabled = true; btn.classList.add('loading');
+    btnTxt.textContent = 'SUBIENDO ARCHIVOS...';
+
+    const pending = fileQueue.filter(q => q.status === 'pending');
+    let uploaded = 0;
+    for (const qi of pending) {
+        qi.status = 'uploading';
+        setQueueItemStatus(qi.id, 'uploading', 10);
+        try {
+            const url = await uploadFileToGH(qi.file, (pct) => setQueueItemStatus(qi.id, 'uploading', pct));
+            await saveToDatabase(url, title || qi.file.name, desc, guessType(qi.file.name), qi.file.name);
+            qi.status = 'done';
+            setQueueItemStatus(qi.id, 'done', 100);
+            uploaded++;
+            addScore(200);
+        } catch(e) {
+            qi.status = 'error';
+            setQueueItemStatus(qi.id, 'err', 0);
+            showToast('ERROR: ' + qi.file.name, 'err');
         }
+    }
+    btn.disabled = false; btn.classList.remove('loading');
+    btnTxt.textContent = 'PUBLICAR EN EL PORTAFOLIO';
+    if (uploaded > 0) {
+        showToast(`✓ ${uploaded} ARCHIVO${uploaded>1?'S':''} PUBLICADO${uploaded>1?'S':''}`, 'ok');
+        showAchievement('📤','RECURSO SUBIDO', title.substring(0,18).toUpperCase());
+        fileQueue = fileQueue.filter(q => q.status !== 'done');
+        setTimeout(loadTable, 800);
+    }
+}
 
-        // Renderizado de la Grid
-        function renderGrid() {
-            const unidades = [
-                { nombre: "Unidad 01", desc: "Fundamentos y Modelado Avanzado", rango: [1,4] },
-                { nombre: "Unidad 02", desc: "Optimización y Consultas SQL", rango: [5,8] },
-                { nombre: "Unidad 03", desc: "Seguridad y Transacciones", rango: [9,12] },
-                { nombre: "Unidad 04", desc: "Bases de Datos NoSQL y Big Data", rango: [13,16] }
-            ];
-
-            const grid = document.getElementById('adminGrid');
-            grid.innerHTML = "";
-            unidades.forEach(u => {
-                let html = `<section class="unidad-card neu-card"><div class="card-header">${u.nombre}</div><p class="unidad-desc">${u.desc}</p><div class="semanas-grid">`;
-                for(let i=u.rango[0]; i<=u.rango[1]; i++){
-                    let sNum = i < 10 ? '0'+i : i;
-                    html += `
-                        <div class="semana-item neu-inset">
-                            S${i}
-                            <div class="admin-actions">
-                                <button class="btn-mini btn-up neu-button" onclick="openFile('Semana${sNum}')" title="Subir">↑</button>
-                                <button class="btn-mini btn-del neu-button" onclick="loadFilesToDelete('Semana${sNum}')" title="Borrar">×</button>
-                            </div>
-                        </div>`;
-                }
-                html += `</div></section>`;
-                grid.innerHTML += html;
-            });
-        }
-
-        // --- FUNCIONALIDAD SUBIR ---
-        function openFile(s) { currentSemana = s; document.getElementById('fileInput').click(); }
-
-        document.getElementById('fileInput').onchange = function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64 = reader.result.split(',')[1];
-                showLoader(true);
-                const url = `https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${file.name}`;
-                
-                try {
-                    const res = await fetch(url, {
-                        method: 'PUT',
-                        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: `Upload ${file.name}`, content: base64 })
-                    });
-
-                    if(res.status === 401) { 
-                        handleAuthError(); 
-                        return; 
-                    }
-
-                    if(res.ok) alert("✅ Archivo subido correctamente.");
-                    else alert("Error al subir: " + res.status);
-                } catch(e) {
-                    alert("Error de conexión.");
-                }
-                showLoader(false);
-            };
-        };
-
-        // --- FUNCIONALIDAD BORRAR ---
-        async function loadFilesToDelete(semana) {
-            currentSemana = semana;
-            const listContainer = document.getElementById('fileList');
-            document.getElementById('modalTitle').innerText = "Archivos en " + semana;
-            listContainer.innerHTML = "Buscando archivos...";
-            document.getElementById('deleteModal').style.display = "flex";
-
+async function uploadFileToGH(file, onProgress) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            onProgress(30);
+            const base64 = reader.result.split(',')[1];
+            const sNum   = String(selectedWeek).padStart(2,'0');
+            const path   = `Semana${sNum}/${file.name}`;
+            onProgress(50);
             try {
-                const res = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${semana}`, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+                const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Upload: ${file.name}`, content: base64 })
                 });
+                onProgress(90);
+                if (r.ok) {
+                    const d = await r.json();
+                    resolve(d.content.download_url);
+                } else { reject(new Error('GitHub upload failed')); }
+            } catch(e) { reject(e); }
+        };
+        reader.onerror = reject;
+    });
+}
 
-                if(res.status === 401) { handleAuthError(); return; }
+function guessType(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    if (ext === 'pdf') return 'pdf';
+    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) return 'img';
+    return 'other';
+}
 
-                const files = await res.json();
+/* ============================================================
+   DATABASE (evidencias.json)
+============================================================ */
+async function saveToDatabase(uri, title, desc, type, filename) {
+    let dbData = [], sha = null;
+    try {
+        const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`, {
+            headers: { 'Authorization': `token ${GH_TOKEN}` }
+        });
+        if (r.ok) { const f = await r.json(); sha = f.sha; dbData = JSON.parse(atob(f.content.replace(/\n/g,''))); }
+    } catch(e) {}
 
-                if (res.status === 404 || !Array.isArray(files) || files.length === 0) {
-                    listContainer.innerHTML = "No hay archivos en esta carpeta.";
-                    return;
-                }
+    dbData.push({
+        id: Date.now(), week: selectedWeek, title, description: desc,
+        url: uri, type, filename: filename || '',
+        date: new Date().toLocaleDateString('es-PE')
+    });
 
-                listContainer.innerHTML = "";
-                files.forEach(file => {
-                    if(file.type === "file") {
-                        const item = document.createElement('div');
-                        item.className = "file-item neu-inset";
-                        item.innerHTML = `
-                            <span style="word-break: break-all;">${file.name}</span>
-                            <button class="btn-confirm-del" onclick="executeDelete('${file.name}', '${file.sha}')">ELIMINAR</button>
-                        `;
-                        listContainer.appendChild(item);
-                    }
-                });
-            } catch (err) {
-                listContainer.innerHTML = "Error al conectar con GitHub.";
-            }
-        }
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(dbData, null, 2))));
+    const body = { message: `DB Update: ${title}`, content };
+    if (sha) body.sha = sha;
+    const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`, {
+        method: 'PUT', headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error('DB save failed');
+}
 
-        async function executeDelete(fileName, sha) {
-            if(!confirm(`¿Estás seguro de eliminar "${fileName}"?`)) return;
-            showLoader(true);
-            
-            try {
-                const res = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${currentSemana}/${fileName}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Delete ${fileName}`, sha: sha })
-                });
+/* ============================================================
+   LOAD TABLE
+============================================================ */
+async function loadTable() {
+    const tbody = document.getElementById('mgmt-body');
+    tbody.innerHTML = `<tr><td colspan="5"><div class="table-empty">⏳ CARGANDO EVIDENCIAS...</div></td></tr>`;
+    try {
+        const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`,
+            { headers: GH_TOKEN ? { 'Authorization': `token ${GH_TOKEN}` } : {} });
+        if (!r.ok) { tbody.innerHTML=`<tr><td colspan="5"><div class="table-empty">SIN REGISTROS AÚN</div></td></tr>`; return; }
+        const f = await r.json();
+        const data = JSON.parse(atob(f.content.replace(/\n/g,'')));
+        if (!data.length) { tbody.innerHTML=`<tr><td colspan="5"><div class="table-empty">SIN REGISTROS AÚN</div></td></tr>`; return; }
 
-                if(res.status === 401) { handleAuthError(); return; }
+        tbody.innerHTML = '';
+        data.sort((a,b) => b.week - a.week).forEach(item => {
+            const typeCls = { pdf:'pdf', img:'img', link:'link' }[item.type] || 'other';
+            const typeLabel = { pdf:'📄 PDF', img:'🖼 IMG', link:'🔗 ENLACE', other:'📦 OTRO' }[item.type] || '📦 OTRO';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="td-week">S${String(item.week).padStart(2,'0')}</span></td>
+                <td>
+                    <div class="td-title">${item.title}</div>
+                    ${item.description ? `<div class="td-desc">${item.description}</div>` : ''}
+                </td>
+                <td><span class="td-type ${typeCls}">${typeLabel}</span></td>
+                <td style="font-size:.9rem;color:var(--text3);white-space:nowrap;">${item.date||'—'}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="ta-btn view" onclick="window.open('${item.url}','_blank')">VER</button>
+                        <button class="ta-btn del"  onclick="openDelModal(${item.id},'${item.title.replace(/'/g,"\\'")}')">DEL</button>
+                    </div>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="table-empty" style="color:var(--red);">ERROR AL CARGAR</div></td></tr>`;
+    }
+}
 
-                if(res.ok) {
-                    alert("🗑️ Archivo eliminado.");
-                    closeDeleteModal();
-                } else {
-                    alert("Error al intentar eliminar.");
-                }
-            } catch(e) { alert("Error de red."); }
-            showLoader(false);
-        }
+/* ============================================================
+   DELETE
+============================================================ */
+function openDelModal(id, name) {
+    dbToDelete = id;
+    document.getElementById('del-name').textContent = '"' + name + '"';
+    document.getElementById('del-modal').classList.add('show');
+}
+function closeDelModal() { document.getElementById('del-modal').classList.remove('show'); dbToDelete = null; }
+async function confirmDelete() {
+    if (!dbToDelete) return;
+    closeDelModal();
+    showToast('ELIMINANDO...', 'inf');
+    try {
+        const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`,
+            { headers: { 'Authorization': `token ${GH_TOKEN}` } });
+        const f = await r.json();
+        let data = JSON.parse(atob(f.content.replace(/\n/g,'')));
+        data = data.filter(d => d.id !== dbToDelete);
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+        await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`, {
+            method: 'PUT', headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'DB Delete entry', content, sha: f.sha })
+        });
+        showToast('✓ RECURSO ELIMINADO', 'ok');
+        addScore(-50);
+        loadTable();
+    } catch(e) { showToast('ERROR AL ELIMINAR', 'err'); }
+    dbToDelete = null;
+}
 
-        // Manejo de error de Token
-        function handleAuthError() {
-            alert("El token es inválido o ha expirado. Por favor, ingrésalo de nuevo.");
-            localStorage.removeItem('gh_token');
-            location.reload();
-        }
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer;
+function showToast(msg, type='ok') {
+    const el  = document.getElementById('toast');
+    const box = document.getElementById('toast-box');
+    box.textContent = msg;
+    box.className   = 'toast-box ' + type;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
 
-        function closeDeleteModal() { document.getElementById('deleteModal').style.display = "none"; }
-        function showLoader(show) { document.getElementById('loader').style.display = show ? "flex" : "none"; }
-        
-    </script>
+/* ============================================================
+   OVERRIDE navigate() for admin
+============================================================ */
+window.navigate = function(role) {
+    localStorage.setItem('userRole', role);
+    if (role === 'index') {
+        const wipe = document.getElementById('screen-wipe');
+        if (wipe) { wipe.classList.add('active'); setTimeout(()=>{ window.location.href='index.html'; },480); }
+        else window.location.href = 'index.html';
+    }
+};
+</script>
 </body>
 </html>

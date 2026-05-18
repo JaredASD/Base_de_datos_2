@@ -3,88 +3,961 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jared Josue Meza Medina | Base de Datos II</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <title>BASE DE DATOS II — UPLA 2026</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+    /* ── INDEX-SPECIFIC STYLES ── */
+
+    /* HUD row (top of page) */
+    .hud-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 900px;
+        width: 100%;
+        padding: 8px 0 18px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.45rem;
+        color: var(--text3);
+        letter-spacing: 1px;
+        animation: fadeUp 0.5s ease both;
+    }
+    .hud-lives  { color: var(--red);  }
+    .hud-score  { color: var(--gold); }
+    .hud-level  { color: var(--blue); }
+    body.hacker-mode .hud-row { color: rgba(0,255,65,0.3); }
+    body.hacker-mode .hud-lives,
+    body.hacker-mode .hud-score,
+    body.hacker-mode .hud-level { color: rgba(0,255,65,0.5); }
+
+    /* ── HERO CARD ── */
+    .hero-card {
+        max-width: 900px; width: 100%;
+        padding: 48px 52px 40px;
+        border-radius: 4px;
+        text-align: center;
+        animation: fadeUp 0.7s 0.1s ease both;
+        border: 3px solid var(--gold);
+        box-shadow: 6px 6px 0 #000, 0 0 40px rgba(255,214,10,0.12);
+        background: linear-gradient(180deg, #1e1e4e 0%, #0f0f2e 100%);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent, transparent 5px,
+            rgba(255,255,255,0.012) 5px, rgba(255,255,255,0.012) 6px
+        );
+        pointer-events: none;
+    }
+    /* animated color border */
+    .hero-card { animation: fadeUp 0.7s 0.1s ease both, borderCycle 6s linear 1.5s infinite; }
+
+    /* Pixel corner decorations inside card */
+    .card-px-corner {
+        position: absolute;
+        width: 16px; height: 16px;
+        pointer-events: none;
+    }
+    .card-px-corner::before, .card-px-corner::after {
+        content: ''; position: absolute; background: var(--gold); opacity: 0.4;
+    }
+    .card-px-corner::before { width: 100%; height: 2px; top:0; left:0; }
+    .card-px-corner::after  { width: 2px; height: 100%; top:0; left:0; }
+    .card-px-corner.tl { top:8px; left:8px; }
+    .card-px-corner.tr { top:8px; right:8px; transform:scaleX(-1); }
+    .card-px-corner.bl { bottom:8px; left:8px; transform:scaleY(-1); }
+    .card-px-corner.br { bottom:8px; right:8px; transform:scale(-1); }
+
+    /* Guild badge */
+    .guild-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.42rem;
+        letter-spacing: 2px;
+        color: var(--gold);
+        border: 2px solid var(--gold);
+        padding: 7px 16px;
+        box-shadow: 2px 2px 0 #000, 0 0 12px rgba(255,214,10,0.2);
+        margin-bottom: 28px;
+        display: inline-block;
+    }
+    .guild-badge .blink-cursor { color: var(--green); }
+    body.hacker-mode .guild-badge {
+        color: #00ff41 !important;
+        border-color: rgba(0,255,65,0.5) !important;
+        box-shadow: 0 0 12px rgba(0,255,65,0.2) !important;
+    }
+
+    /* Main title */
+    .main-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 2.8rem;
+        line-height: 1.3;
+        color: var(--white);
+        text-shadow: 4px 4px 0 #000, 0 0 30px rgba(255,214,10,0.2);
+        margin-bottom: 6px;
+        animation: rgbPulse 3s ease infinite;
+        letter-spacing: 2px;
+    }
+    .main-title .t-gold { color: var(--gold); text-shadow: 4px 4px 0 #000, 0 0 20px rgba(255,214,10,0.6); }
+    body.hacker-mode .main-title {
+        color: #00ff41 !important;
+        animation: glitchUltra 2.5s infinite !important;
+        text-shadow: 0 0 12px rgba(0,255,65,0.9), 0 0 40px rgba(0,255,65,0.4), 4px 4px 0 #000 !important;
+    }
+    body.hacker-mode .main-title .t-gold {
+        color: #00b8ff !important;
+        text-shadow: 0 0 12px rgba(0,184,255,0.8) !important;
+    }
+
+    .sub-title {
+        font-family: 'VT323', monospace;
+        font-size: 1.4rem;
+        color: var(--text2);
+        letter-spacing: 4px;
+        margin-bottom: 22px;
+        text-transform: uppercase;
+    }
+    body.hacker-mode .sub-title { color: rgba(0,255,65,0.45) !important; }
+
+    /* Pixel divider */
+    .px-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 18px auto;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.55rem;
+        color: var(--gold);
+        text-shadow: 2px 2px 0 #000;
+    }
+    .px-divider::before, .px-divider::after {
+        content: '══════';
+        letter-spacing: -2px;
+    }
+
+    /* Hero description */
+    .hero-desc {
+        font-family: 'VT323', monospace;
+        font-size: 1.3rem;
+        color: var(--text2);
+        line-height: 1.7;
+        max-width: 640px;
+        margin: 0 auto 30px;
+        letter-spacing: 1px;
+    }
+    body.hacker-mode .hero-desc { color: rgba(0,255,65,0.55) !important; }
+
+    /* Player card */
+    .player-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        border-top: 2px solid rgba(255,214,10,0.2);
+        padding-top: 22px;
+        margin-top: 6px;
+    }
+    body.hacker-mode .player-card { border-color: rgba(0,255,65,0.12) !important; }
+    .player-avatar {
+        width: 52px; height: 52px;
+        background: var(--bg-card2);
+        border: 3px solid var(--gold);
+        box-shadow: 3px 3px 0 #000;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.7rem; color: var(--gold);
+        flex-shrink: 0;
+    }
+    body.hacker-mode .player-avatar {
+        border-color: #00ff41 !important; color: #00ff41 !important;
+        box-shadow: 0 0 10px rgba(0,255,65,0.4) !important;
+    }
+    .player-info { text-align: left; }
+    .player-tag {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem; color: var(--green); letter-spacing: 2px; margin-bottom: 5px;
+    }
+    .player-name {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.62rem; color: var(--white);
+        text-shadow: 2px 2px 0 #000;
+    }
+    .player-class {
+        font-family: 'VT323', monospace;
+        font-size: 0.95rem; color: var(--text2); letter-spacing: 2px; margin-top: 3px;
+    }
+    body.hacker-mode .player-name  { color: #00ff41 !important; }
+    body.hacker-mode .player-class { color: rgba(0,255,65,0.5) !important; }
+    body.hacker-mode .player-tag   { color: rgba(0,255,65,0.6) !important; }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+        display: flex;
+        max-width: 900px; width: 100%;
+        border: 3px solid rgba(255,214,10,0.3);
+        box-shadow: 4px 4px 0 #000;
+        background: var(--bg-card2);
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.25s ease both;
+    }
+    .stat-cell {
+        flex: 1;
+        padding: 22px 16px;
+        text-align: center;
+        border-right: 2px solid rgba(255,214,10,0.12);
+        position: relative;
+        transition: background 0.2s;
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-cell:hover { background: rgba(255,214,10,0.05); }
+    .stat-icon { font-size: 1.2rem; margin-bottom: 6px; display: block; }
+    .stat-num {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 1.4rem; color: var(--gold);
+        text-shadow: 3px 3px 0 #000;
+        display: block;
+    }
+    .stat-lbl {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem; color: var(--text2); letter-spacing: 1px;
+        margin-top: 5px; display: block; text-transform: uppercase;
+    }
+    body.hacker-mode .stats-strip { border-color: rgba(0,255,65,0.2) !important; background: rgba(0,0,0,0.9) !important; }
+    body.hacker-mode .stat-num { color: #00ff41 !important; text-shadow: 0 0 8px rgba(0,255,65,0.5) !important; }
+    body.hacker-mode .stat-lbl { color: rgba(0,255,65,0.45) !important; }
+    body.hacker-mode .stat-cell { border-color: rgba(0,255,65,0.1) !important; }
+
+    /* ── INFO GRID ── */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        max-width: 900px; width: 100%;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.35s ease both;
+    }
+    .info-card {
+        padding: 26px 28px;
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.35);
+        box-shadow: 4px 4px 0 #000;
+        border-radius: 2px;
+    }
+    .info-card:hover {
+        transform: translate(-2px,-2px);
+        box-shadow: 6px 6px 0 #000;
+        border-color: var(--gold);
+    }
+    body.hacker-mode .info-card {
+        background: rgba(5,5,5,0.95) !important;
+        border-color: rgba(0,255,65,0.25) !important;
+        box-shadow: 0 0 12px rgba(0,255,65,0.06) !important;
+    }
+    body.hacker-mode .info-card:hover { border-color: rgba(0,255,65,0.7) !important; box-shadow: 0 0 20px rgba(0,255,65,0.15) !important; }
+
+    .card-header {
+        display: flex; align-items: center; gap: 10px;
+        margin-bottom: 16px;
+        border-bottom: 2px solid rgba(255,214,10,0.15);
+        padding-bottom: 14px;
+    }
+    body.hacker-mode .card-header { border-color: rgba(0,255,65,0.1) !important; }
+    .card-icon {
+        width: 36px; height: 36px;
+        background: var(--bg-card2);
+        border: 2px solid var(--gold);
+        box-shadow: 2px 2px 0 #000;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; flex-shrink: 0;
+    }
+    body.hacker-mode .card-icon { border-color: rgba(0,255,65,0.4) !important; box-shadow: 0 0 8px rgba(0,255,65,0.15) !important; }
+    .card-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.5rem; letter-spacing: 1px; color: var(--gold);
+        text-shadow: 2px 2px 0 #000; line-height: 1.5;
+    }
+    body.hacker-mode .card-title { color: #00ff41 !important; text-shadow: 0 0 6px rgba(0,255,65,0.4) !important; }
+
+    .ilist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .ilist li {
+        font-family: 'VT323', monospace;
+        font-size: 1.1rem; color: var(--text2);
+        line-height: 1.4;
+        display: flex; align-items: flex-start; gap: 8px;
+    }
+    .ilist li::before { content: '▸'; color: var(--gold); flex-shrink: 0; margin-top: 1px; }
+    body.hacker-mode .ilist li { color: rgba(0,255,65,0.65) !important; }
+    body.hacker-mode .ilist li::before { color: #00ff41 !important; }
+
+    /* ── STATS / XP CARD ── */
+    .xp-card {
+        max-width: 900px; width: 100%;
+        padding: 26px 32px;
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.35);
+        box-shadow: 4px 4px 0 #000;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .xp-row { display: flex; flex-direction: column; gap: 12px; }
+    .xp-item { display: grid; grid-template-columns: 130px 1fr 36px; align-items: center; gap: 10px; }
+    .xp-name {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem; color: var(--text2); letter-spacing: 1px;
+    }
+    .xp-val {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.42rem; color: var(--gold); text-align: right;
+        text-shadow: 1px 1px 0 #000;
+    }
+    body.hacker-mode .xp-card { background: rgba(5,5,5,0.95) !important; border-color: rgba(0,255,65,0.2) !important; }
+    body.hacker-mode .xp-name { color: rgba(0,255,65,0.5) !important; }
+    body.hacker-mode .xp-val  { color: #00ff41 !important; }
+    body.hacker-mode .pixel-bar-wrap { border-color: rgba(0,255,65,0.2) !important; }
+    body.hacker-mode .pixel-bar-fill { background-color: #00ff41 !important; box-shadow: 0 0 8px rgba(0,255,65,0.4) !important; }
+
+    /* ── POWER-UPS (tech stack) ── */
+    .powerups-card {
+        max-width: 900px; width: 100%;
+        padding: 24px 30px;
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.35);
+        box-shadow: 4px 4px 0 #000;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.45s ease both;
+    }
+    .powerup-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .pu-pill {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem;
+        padding: 7px 13px;
+        background: var(--bg-card2);
+        border: 2px solid rgba(255,214,10,0.4);
+        box-shadow: 2px 2px 0 #000;
+        color: var(--text2);
+        cursor: default;
+        transition: all 0.1s;
+        letter-spacing: 1px;
+    }
+    .pu-pill:hover {
+        transform: translate(-1px,-1px);
+        box-shadow: 3px 3px 0 #000;
+        border-color: var(--gold);
+        color: var(--gold);
+        background: rgba(255,214,10,0.08);
+    }
+    body.hacker-mode .powerups-card { background: rgba(5,5,5,0.95) !important; border-color: rgba(0,255,65,0.2) !important; }
+    body.hacker-mode .pu-pill { background: transparent !important; border-color: rgba(0,255,65,0.2) !important; color: rgba(0,255,65,0.55) !important; box-shadow: none !important; }
+    body.hacker-mode .pu-pill:hover { border-color: rgba(0,255,65,0.7) !important; color: #00ff41 !important; box-shadow: 0 0 10px rgba(0,255,65,0.2) !important; }
+
+    /* ── SPEECH BUBBLE (quote) ── */
+    .speech-bubble {
+        max-width: 900px; width: 100%;
+        padding: 28px 36px 28px 44px;
+        background: var(--bg-card);
+        border: 3px solid var(--blue);
+        box-shadow: 4px 4px 0 #000, 0 0 20px rgba(4,156,216,0.1);
+        position: relative;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.5s ease both;
+    }
+    .speech-bubble::before {
+        content: '"';
+        position: absolute; left: 16px; top: 10px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 2.5rem; color: var(--blue); opacity: 0.25;
+        line-height: 1;
+    }
+    /* Pixel tail */
+    .speech-bubble::after {
+        content: '';
+        position: absolute; bottom: -12px; left: 40px;
+        width: 18px; height: 10px;
+        background: var(--blue);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+    body.hacker-mode .speech-bubble { border-color: rgba(0,255,65,0.4) !important; box-shadow: 0 0 16px rgba(0,255,65,0.1) !important; }
+    body.hacker-mode .speech-bubble::before { color: rgba(0,255,65,0.2) !important; }
+    body.hacker-mode .speech-bubble::after { background: rgba(0,255,65,0.4) !important; }
+    .quote-text {
+        font-family: 'VT323', monospace;
+        font-size: 1.3rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    .quote-author {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem; color: var(--blue); letter-spacing: 2px;
+    }
+    body.hacker-mode .quote-text   { color: rgba(0,255,65,0.75) !important; }
+    body.hacker-mode .quote-author { color: rgba(0,255,65,0.4) !important; }
+
+    /* ── SELECT CHARACTER ── */
+    .select-section {
+        max-width: 900px; width: 100%;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.55s ease both;
+    }
+    .chars-row { display: flex; gap: 22px; justify-content: center; }
+    .role-card {
+        width: 210px;
+        padding: 30px 22px 26px;
+        border: none;
+        cursor: pointer;
+        display: flex; flex-direction: column; align-items: center;
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.4);
+        box-shadow: 5px 5px 0 #000;
+        border-radius: 2px;
+        transition: transform 0.1s, box-shadow 0.1s, border-color 0.2s;
+        position: relative; overflow: hidden;
+    }
+    .role-card:hover {
+        transform: translate(-3px,-3px);
+        box-shadow: 8px 8px 0 #000;
+        border-color: var(--gold);
+    }
+    .role-card:active { transform: translate(2px,2px); box-shadow: 3px 3px 0 #000; }
+    /* Scanline on card */
+    .role-card::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(255,255,255,0.02) 4px,rgba(255,255,255,0.02) 5px);
+        pointer-events: none;
+    }
+    /* Press to select indicator */
+    .role-card::after {
+        content: 'PRESS A';
+        position: absolute; bottom: 8px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.3rem; color: var(--gold); opacity: 0;
+        letter-spacing: 1px;
+        transition: opacity 0.2s;
+    }
+    .role-card:hover::after { opacity: 0.7; animation: blink 0.8s step-end infinite; }
+
+    body.hacker-mode .role-card {
+        background: rgba(5,5,5,0.95) !important;
+        border-color: rgba(0,255,65,0.3) !important;
+        box-shadow: 0 0 20px rgba(0,255,65,0.08) !important;
+    }
+    body.hacker-mode .role-card:hover {
+        transform: translate(-3px,-3px);
+        border-color: rgba(0,255,65,0.9) !important;
+        box-shadow: 0 0 30px rgba(0,255,65,0.35), 8px 8px 0 rgba(0,255,65,0.2) !important;
+    }
+    body.hacker-mode .role-card::after { color: #00ff41 !important; }
+
+    .role-icon {
+        width: 80px; height: 80px;
+        margin-bottom: 18px;
+        animation: pixelBounce 2s ease-in-out infinite;
+        image-rendering: pixelated;
+    }
+    body.hacker-mode .role-icon {
+        filter: drop-shadow(0 0 8px rgba(0,255,65,0.7)) saturate(0) brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(90deg);
+    }
+    .role-lbl {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.58rem; font-weight: 400;
+        letter-spacing: 2px; color: var(--white);
+        text-shadow: 2px 2px 0 #000;
+        margin-bottom: 8px;
+    }
+    body.hacker-mode .role-lbl { color: #00ff41 !important; text-shadow: 0 0 8px rgba(0,255,65,0.5) !important; }
+    .role-sub {
+        font-family: 'VT323', monospace;
+        font-size: 0.85rem; color: var(--text2);
+        letter-spacing: 1px; text-align: center; line-height: 1.4;
+    }
+    body.hacker-mode .role-sub { color: rgba(0,255,65,0.4) !important; }
+    /* Stat bars under character */
+    .char-stats { width: 100%; margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .char-stat-row { display: flex; align-items: center; gap: 6px; }
+    .char-stat-name {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.28rem; color: var(--text3); width: 28px; flex-shrink: 0;
+    }
+
+    /* ── WORLD MAP TIMELINE ── */
+    .world-card {
+        max-width: 900px; width: 100%;
+        padding: 26px 32px;
+        background: var(--bg-card);
+        border: 3px solid rgba(255,214,10,0.35);
+        box-shadow: 4px 4px 0 #000;
+        margin-bottom: 22px;
+        animation: fadeUp 0.7s 0.6s ease both;
+    }
+    .worlds-row { display: flex; gap: 0; position: relative; margin-top: 8px; }
+    .worlds-row::before {
+        content: '';
+        position: absolute; top: 18px; left: 0; right: 0; height: 3px;
+        background: repeating-linear-gradient(90deg, var(--gold) 0, var(--gold) 12px, transparent 12px, transparent 20px);
+        z-index: 0; opacity: 0.4;
+    }
+    body.hacker-mode .worlds-row::before {
+        background: repeating-linear-gradient(90deg, #00ff41 0, #00ff41 12px, transparent 12px, transparent 20px);
+    }
+    .world-item { flex: 1; text-align: center; position: relative; padding-top: 38px; }
+    .world-dot {
+        width: 18px; height: 18px;
+        border: 3px solid var(--gold);
+        background: var(--bg-card2);
+        box-shadow: 2px 2px 0 #000;
+        position: absolute; top: 10px; left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.5rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .world-dot:hover { background: var(--gold); transform: translateX(-50%) translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+    body.hacker-mode .world-dot { border-color: #00ff41 !important; background: #050505 !important; box-shadow: 0 0 8px rgba(0,255,65,0.3) !important; }
+    body.hacker-mode .world-dot:hover { background: #00ff41 !important; }
+    .world-lbl {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.38rem; color: var(--gold); letter-spacing: 1px;
+        text-shadow: 1px 1px 0 #000;
+    }
+    .world-name {
+        font-family: 'VT323', monospace;
+        font-size: 0.85rem; color: var(--text2); margin-top: 4px; line-height: 1.3;
+    }
+    body.hacker-mode .world-lbl { color: #00ff41 !important; }
+    body.hacker-mode .world-name { color: rgba(0,255,65,0.5) !important; }
+
+    /* ── FOOTER ── */
+    .index-footer {
+        max-width: 900px; width: 100%;
+        display: flex; justify-content: space-between; align-items: center;
+        border-top: 2px solid rgba(255,214,10,0.15);
+        padding-top: 18px;
+        margin-top: 8px;
+        animation: fadeUp 0.7s 0.65s ease both;
+    }
+    .footer-l, .footer-r {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.36rem; color: var(--text3); letter-spacing: 1px;
+    }
+    body.hacker-mode .footer-l, body.hacker-mode .footer-r { color: rgba(0,255,65,0.25) !important; }
+
+    @media (max-width: 700px) {
+        .main-title { font-size: 1.6rem; }
+        .info-grid   { grid-template-columns: 1fr; }
+        .chars-row   { flex-direction: column; align-items: center; }
+        .hero-card   { padding: 32px 20px 28px; }
+        .hud-row     { font-size: 0.38rem; }
+        .stats-strip { flex-wrap: wrap; }
+        .stat-cell   { flex: 1 1 45%; }
+        .index-footer { flex-direction: column; gap: 10px; text-align: center; }
+        .worlds-row  { flex-direction: column; gap: 14px; }
+        .worlds-row::before { display: none; }
+    }
+    </style>
 </head>
 <body>
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo-wrapper neu-inset">
-                <img src="LogoUpla.png" alt="Logo Universidad" class="nav-logo">
+<!-- ══ CANVAS LAYERS ══ -->
+<canvas id="c-stars"></canvas>
+<canvas id="c-matrix"></canvas>
+<canvas id="c-grid"></canvas>
+<canvas id="c-particles"></canvas>
+
+<!-- ══ OVERLAYS ══ -->
+<div id="scan-bar"></div>
+<div class="corner-hud tl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud tr"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud bl"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="corner-hud br"><svg width="44" height="44"><polyline points="0,44 0,0 44,0"/></svg></div>
+<div class="px-corner tl"></div>
+<div class="px-corner tr"></div>
+<div class="px-corner bl"></div>
+<div class="px-corner br"></div>
+
+<!-- ══ CURSOR ══ -->
+<div id="hk-cursor"></div>
+<div id="hk-dot"></div>
+
+<!-- ══ HEX CLOCK ══ -->
+<div id="hx-clock">
+    <div class="hxc-time">0x00:0x00:0x00</div>
+    <div id="hxc-date">0x00/0x00/0x0000</div>
+    <div id="hxc-epoch">UNIX: 0x00000000</div>
+</div>
+
+<!-- ══ DATA STREAMS ══ -->
+<div class="data-stream L" id="dsL"></div>
+<div class="data-stream R" id="dsR"></div>
+
+<!-- ══ LOG CONSOLE ══ -->
+<div id="log-console">
+    <div class="log-header">SYS_STATUS: ACTIVE</div>
+    <div id="log-lines"></div>
+</div>
+
+<!-- ══ HACK OVERLAY ══ -->
+<div id="hack-overlay">
+    <div id="ho-title">INICIANDO ACCESO_SEGURO</div>
+    <div style="font-size:.6rem;color:rgba(0,255,65,.5);letter-spacing:3px;margin-bottom:12px;">VERIFICANDO CREDENCIALES...</div>
+    <div id="ho-bar"><div id="ho-fill"></div></div>
+    <div id="ho-pct">0%</div>
+    <div id="ho-lines"></div>
+</div>
+
+<!-- ══ SCREEN WIPE (retro transition) ══ -->
+<div id="screen-wipe"></div>
+
+<!-- ══ ACHIEVEMENT TOAST ══ -->
+<div id="achievement">
+    <div class="achievement-box">
+        <div class="achievement-icon">🎮</div>
+        <div class="achievement-text">
+            <div class="achievement-title">ACHIEVEMENT</div>
+            <div class="achievement-name">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ SWITCH ══ -->
+<div class="sw-wrap">
+    <span class="sw-label">MODO RETRO</span>
+    <label class="switch">
+        <input type="checkbox" id="mode-toggle" onchange="applyMode()">
+        <span class="sw-slider"></span>
+    </label>
+    <span class="sw-label">DEEP_WEB_MODE</span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN PAGE
+═══════════════════════════════════════════ -->
+<div class="page-wrap" id="page-wrap">
+
+    <!-- HUD ROW -->
+    <div class="hud-row">
+        <span class="hud-lives">❤ ❤ ❤ &nbsp;LIVES</span>
+        <span class="hud-score">SCORE: <span id="score-display">000000</span></span>
+        <span class="hud-level">WORLD 1-1</span>
+    </div>
+
+    <!-- HERO CARD -->
+    <div class="hero-card">
+        <div class="card-px-corner tl"></div>
+        <div class="card-px-corner tr"></div>
+        <div class="card-px-corner bl"></div>
+        <div class="card-px-corner br"></div>
+
+        <div class="guild-badge">
+            <span class="blink-cursor">▶</span>
+            UPLA | FACULTAD DE INGENIERÍA
+        </div>
+
+        <h1 class="main-title" id="main-title">
+            BASE DE DATOS <span class="t-gold" id="title-span">II</span>
+        </h1>
+        <p class="sub-title" data-decrypt="ARQUITECTURAS · OPTIMIZACIÓN · SEGURIDAD"
+                             id="sub-title">ARQUITECTURAS · OPTIMIZACIÓN · SEGURIDAD</p>
+
+        <div class="px-divider">★ PORTAFOLIO ACADÉMICO ★</div>
+
+        <p class="hero-desc" data-decrypt="Gestión avanzada de sistemas de información. Documentación de arquitecturas relacionales, optimización de recursos y seguridad de datos a gran escala. Cada semana es un nuevo nivel desbloqueado."
+           id="hero-desc">
+            Gestión avanzada de sistemas de información. Documentación de
+            arquitecturas relacionales, optimización de recursos y seguridad
+            de datos a gran escala. Cada semana es un nuevo nivel desbloqueado.
+        </p>
+
+        <div class="player-card">
+            <div class="player-avatar">P1</div>
+            <div class="player-info">
+                <div class="player-tag">▶ PLAYER ONE</div>
+                <div class="player-name" id="p-name" data-decrypt="JARED JOSUE MEZA MEDINA">JARED JOSUE MEZA MEDINA</div>
+                <div class="player-class">ING. SISTEMAS Y COMPUTACIÓN · 2026</div>
             </div>
-            
-            <div class="nav-links">
-                <a href="#" class="nav-link neu-button">Inicio</a>
-                <a href="#proyectos" class="nav-link neu-button">Proyectos</a>
-                <a href="login.html" class="nav-login neu-button-accent">Acceder</a>
+        </div>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip pixel-card" style="border-radius:2px;">
+        <div class="stat-cell">
+            <span class="stat-icon">📅</span>
+            <span class="stat-num">16</span>
+            <span class="stat-lbl">SEMANAS</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-icon">🗺️</span>
+            <span class="stat-num">04</span>
+            <span class="stat-lbl">MUNDOS</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-icon">⚔️</span>
+            <span class="stat-num">12</span>
+            <span class="stat-lbl">MISIONES</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-icon">🔧</span>
+            <span class="stat-num">08</span>
+            <span class="stat-lbl">POWER-UPS</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-icon">🏆</span>
+            <span class="stat-num">2026</span>
+            <span class="stat-lbl">COHORTE</span>
+        </div>
+    </div>
+
+    <!-- SECTION: MISIÓN PRINCIPAL -->
+    <div class="section-header" style="max-width:900px;width:100%;margin-bottom:16px;animation:fadeUp .7s .32s ease both;">
+        ★ MISIÓN PRINCIPAL ★
+    </div>
+
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">OBJETIVOS</div>
+            </div>
+            <ul class="ilist">
+                <li>Dominar la arquitectura interna de SGBD relacionales y el modelo de almacenamiento en disco.</li>
+                <li>Diseñar estrategias avanzadas de indexación: B-Tree, Hash y Bitmap Index.</li>
+                <li>Optimizar consultas SQL con análisis de planes de ejecución reales.</li>
+                <li>Gestionar concurrencia garantizando propiedades ACID en entornos multiusuario.</li>
+                <li>Implementar políticas de seguridad, auditoría y recuperación ante fallos.</li>
+            </ul>
+        </div>
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon">⚙️</div>
+                <div class="card-title">GAMEPLAY</div>
+            </div>
+            <ul class="ilist">
+                <li>Clases teórico-prácticas con labs en SQL Server 2022 y PostgreSQL 16.</li>
+                <li>Análisis de casos reales de empresas con BD a gran escala en producción.</li>
+                <li>Proyectos integradores al cierre de cada unidad temática (boss fight).</li>
+                <li>Quizzes semanales, evaluaciones parciales y examen integrador final.</li>
+                <li>Este portafolio digital como evidencia progresiva de cada misión completada.</li>
+            </ul>
+        </div>
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon">🧠</div>
+                <div class="card-title">HABILIDADES</div>
+            </div>
+            <ul class="ilist">
+                <li>Modelar y administrar BD complejas con criterio profesional e industrial.</li>
+                <li>Diagnosticar y resolver problemas de rendimiento en consultas de alta carga.</li>
+                <li>Comprender control de concurrencia, bloqueos, deadlocks y MVCC.</li>
+                <li>Diseñar arquitecturas de alta disponibilidad, replicación y failover.</li>
+            </ul>
+        </div>
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon">🏆</div>
+                <div class="card-title">PUNTUACIÓN</div>
+            </div>
+            <ul class="ilist">
+                <li><strong style="color:var(--gold);">Portafolio digital:</strong> 30% — Log de progreso semana a semana.</li>
+                <li><strong style="color:var(--gold);">Labs de práctica:</strong> 25% — Misiones en SGBD reales.</li>
+                <li><strong style="color:var(--gold);">Examen por unidad:</strong> 25% — Boss fight teórico-práctico.</li>
+                <li><strong style="color:var(--gold);">Proyecto integrador:</strong> 20% — Dungeon final con todo lo aprendido.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- PLAYER STATS / XP BARS -->
+    <div class="section-header" style="max-width:900px;width:100%;margin-bottom:16px;animation:fadeUp .7s .38s ease both;">
+        ★ PLAYER STATS ★
+    </div>
+    <div class="xp-card pixel-card" style="border-radius:2px;">
+        <div class="xp-row">
+            <div class="xp-item">
+                <span class="xp-name">SQL MASTERY</span>
+                <div class="pixel-bar-wrap">
+                    <div class="pixel-bar-fill" data-width="82"></div>
+                </div>
+                <span class="xp-val">82%</span>
+            </div>
+            <div class="xp-item">
+                <span class="xp-name">INDEXACIÓN</span>
+                <div class="pixel-bar-wrap">
+                    <div class="pixel-bar-fill blue" data-width="75"></div>
+                </div>
+                <span class="xp-val">75%</span>
+            </div>
+            <div class="xp-item">
+                <span class="xp-name">CONCURRENCIA</span>
+                <div class="pixel-bar-wrap">
+                    <div class="pixel-bar-fill red" data-width="68"></div>
+                </div>
+                <span class="xp-val">68%</span>
+            </div>
+            <div class="xp-item">
+                <span class="xp-name">SEGURIDAD BD</span>
+                <div class="pixel-bar-wrap">
+                    <div class="pixel-bar-fill green" data-width="71"></div>
+                </div>
+                <span class="xp-val">71%</span>
+            </div>
+            <div class="xp-item">
+                <span class="xp-name">OPTIMIZACIÓN</span>
+                <div class="pixel-bar-wrap">
+                    <div class="pixel-bar-fill" data-width="79"></div>
+                </div>
+                <span class="xp-val">79%</span>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <header class="hero">
-        <div class="hero-content neu-card">
-            <span class="badge">Estudiante de Ingeniería</span>
-            <h1>BASE DE DATOS <span class="roman">II</span></h1>
-            <div class="divider"></div>
-            <p class="owner">Un portafolio de: <strong>Jared Josue Meza Medina</strong></p>
+    <!-- POWER-UPS (tech stack) -->
+    <div class="section-header" style="max-width:900px;width:100%;margin-bottom:16px;animation:fadeUp .7s .43s ease both;">
+        🍄 POWER-UPS DESBLOQUEADOS 🍄
+    </div>
+    <div class="powerups-card pixel-card" style="border-radius:2px;">
+        <div class="powerup-pills">
+            <span class="pu-pill" data-sound-hover>🗄 SQL SERVER 22</span>
+            <span class="pu-pill" data-sound-hover>🐘 POSTGRESQL 16</span>
+            <span class="pu-pill" data-sound-hover>🔮 ORACLE DB</span>
+            <span class="pu-pill" data-sound-hover>🐬 MYSQL 8</span>
+            <span class="pu-pill" data-sound-hover>📜 T-SQL</span>
+            <span class="pu-pill" data-sound-hover>📜 PL/pgSQL</span>
+            <span class="pu-pill" data-sound-hover>⚡ ENTITY FW</span>
+            <span class="pu-pill" data-sound-hover>🛠 SSMS</span>
+            <span class="pu-pill" data-sound-hover>🦫 DBEAVER</span>
+            <span class="pu-pill" data-sound-hover>⚡ REDIS</span>
+            <span class="pu-pill" data-sound-hover>🍃 MONGODB</span>
+            <span class="pu-pill" data-sound-hover>📊 POWER BI</span>
         </div>
-    </header>
+    </div>
 
-    <main class="container" id="proyectos">
-        <h2 class="section-title">Estructura Académica</h2>
-        
-        <div class="grid-unidades">
-            <section class="unidad-card neu-card">
-                <div class="card-header">Unidad 01</div>
-                <p class="unidad-desc">Fundamentos y Modelado Avanzado</p>
-                <div class="semanas-grid">
-                    <div class="semana-item neu-inset">S1</div>
-                    <div class="semana-item neu-inset">S2</div>
-                    <div class="semana-item neu-inset">S3</div>
-                    <div class="semana-item neu-inset">S4</div>
-                </div>
-            </section>
-
-            <section class="unidad-card neu-card">
-                <div class="card-header">Unidad 02</div>
-                <p class="unidad-desc">Optimización y Consultas SQL</p>
-                <div class="semanas-grid">
-                    <div class="semana-item neu-inset">S5</div>
-                    <div class="semana-item neu-inset">S6</div>
-                    <div class="semana-item neu-inset">S7</div>
-                    <div class="semana-item neu-inset">S8</div>
-                </div>
-            </section>
-
-            <section class="unidad-card neu-card">
-                <div class="card-header">Unidad 03</div>
-                <p class="unidad-desc">Seguridad y Transacciones</p>
-                <div class="semanas-grid">
-                    <div class="semana-item neu-inset">S9</div>
-                    <div class="semana-item neu-inset">S10</div>
-                    <div class="semana-item neu-inset">S11</div>
-                    <div class="semana-item neu-inset">S12</div>
-                </div>
-            </section>
-
-            <section class="unidad-card neu-card">
-                <div class="card-header">Unidad 04</div>
-                <p class="unidad-desc">Bases de Datos NoSQL y Big Data</p>
-                <div class="semanas-grid">
-                    <div class="semana-item neu-inset">S13</div>
-                    <div class="semana-item neu-inset">S14</div>
-                    <div class="semana-item neu-inset">S15</div>
-                    <div class="semana-item neu-inset">S16</div>
-                </div>
-            </section>
+    <!-- SPEECH BUBBLE / QUOTE -->
+    <div class="speech-bubble" style="margin-top:10px;">
+        <div class="quote-text" id="q-text" data-decrypt='"Los datos son el petróleo del siglo XXI. Sin arquitectura, sin optimización, sin seguridad — no son más que ruido. El verdadero poder está en quien sabe estructurarlos."'>
+            "Los datos son el petróleo del siglo XXI. Sin arquitectura, sin
+            optimización, sin seguridad — no son más que ruido. El verdadero
+            poder está en quien sabe estructurarlos."
         </div>
-    </main>
+        <div class="quote-author" id="q-author">— REFLEXIÓN DEL CURSO · BASE DE DATOS II · UPLA 2026</div>
+    </div>
 
-    <footer class="neu-inset">
-        &copy; 2026 Jared Josue Meza Medina | Ingeniería de Sistemas
-    </footer>
+    <!-- SELECT CHARACTER -->
+    <div class="select-section">
+        <div class="section-header" style="margin-bottom:18px;">
+            🎮 SELECT YOUR CHARACTER 🎮
+        </div>
+        <div class="chars-row">
+            <button onclick="navigate('estudiante')" class="role-card">
+                <img src="estudiante.png" alt="Estudiante" class="role-icon">
+                <span class="role-lbl" data-text="ESTUDIANTE">ESTUDIANTE</span>
+                <span class="role-sub">Ver contenido, semanas<br>y recursos del curso</span>
+                <div class="char-stats">
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">INT</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill blue" data-width="90"></div>
+                        </div>
+                    </div>
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">STR</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill red" data-width="60"></div>
+                        </div>
+                    </div>
+                </div>
+            </button>
 
+            <button onclick="navigate('admin')" class="role-card">
+                <img src="administrador.png" alt="Docente" class="role-icon" style="animation-delay:0.3s;">
+                <span class="role-lbl" data-text="DOCENTE">DOCENTE</span>
+                <span class="role-sub">Panel de administración<br>y gestión de contenidos</span>
+                <div class="char-stats">
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">INT</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill blue" data-width="95"></div>
+                        </div>
+                    </div>
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">STR</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill red" data-width="85"></div>
+                        </div>
+                    </div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- WORLD MAP / TIMELINE -->
+    <div class="section-header" style="max-width:900px;width:100%;margin-bottom:16px;animation:fadeUp .7s .58s ease both;">
+        🗺️ MAPA DEL SEMESTRE 🗺️
+    </div>
+    <div class="world-card pixel-card" style="border-radius:2px;">
+        <div class="worlds-row">
+            <div class="world-item">
+                <div class="world-dot">1</div>
+                <div class="world-lbl">S1–S4</div>
+                <div class="world-name">WORLD 1<br>Fundamentos<br>& Arquitectura</div>
+            </div>
+            <div class="world-item">
+                <div class="world-dot">2</div>
+                <div class="world-lbl">S5–S8</div>
+                <div class="world-name">WORLD 2<br>Indexación<br>& Performance</div>
+            </div>
+            <div class="world-item">
+                <div class="world-dot">3</div>
+                <div class="world-lbl">S9–S12</div>
+                <div class="world-name">WORLD 3<br>Concurrencia<br>& Transacciones</div>
+            </div>
+            <div class="world-item">
+                <div class="world-dot" style="border-color:var(--red);">👑</div>
+                <div class="world-lbl" style="color:var(--red);">S13–S16</div>
+                <div class="world-name">WORLD 4<br>Seguridad<br>& Final Boss</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="index-footer">
+        <div class="footer-l">© 2026 JARED JOSUE MEZA MEDINA · UPLA</div>
+        <div class="footer-r">SEMESTRE 2026-I · HUANCAYO, PERÚ</div>
+    </div>
+
+</div><!-- /page-wrap -->
+
+<script src="main.js"></script>
+
+<script>
+// Index-specific: pill hover sounds
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-sound-hover]').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            if (!isHacker) playJump();
+        });
+        el.addEventListener('click', () => {
+            if (!isHacker) { playCoin(); addScore(10); }
+        });
+    });
+    // World dot interactions
+    document.querySelectorAll('.world-dot').forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+            playCoin(); addScore(50);
+            showAchievement('🗺️', 'WORLD ' + (i+1), 'SELECCIONADO');
+        });
+    });
+});
+</script>
 </body>
 </html>

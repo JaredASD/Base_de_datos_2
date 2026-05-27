@@ -38,5 +38,15 @@
     "type": "other",
     "filename": "base.txt",
     "date": "26/5/2026"
+  },
+  {
+    "id": 1779915242148,
+    "week": 8,
+    "title": "proyectos",
+    "description": "asda",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana08/proyectos.pdf",
+    "type": "pdf",
+    "filename": "proyectos.pdf",
+    "date": "27/5/2026"
   }
 ]

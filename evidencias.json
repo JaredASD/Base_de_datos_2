@@ -28,5 +28,15 @@
     "type": "img",
     "filename": "Preguntas_respondidas.png",
     "date": "18/5/2026"
+  },
+  {
+    "id": 1779846908872,
+    "week": 8,
+    "title": "asd",
+    "description": "asd",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana08/base.txt",
+    "type": "other",
+    "filename": "base.txt",
+    "date": "26/5/2026"
   }
 ]

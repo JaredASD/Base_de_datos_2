@@ -411,7 +411,7 @@
         border: 2px solid rgba(255,214,10,0.3);
         box-shadow: 0 0 40px rgba(0,0,0,0.8);
         transition: transform 0.2s ease;
-        cursor: zoom-in;
+        cursor: grab;
     }
     body.hacker-mode .img-viewer img { border-color: rgba(0,255,65,0.3); }
     .img-controls {
@@ -948,8 +948,16 @@ function closePDF() {
    IMAGE VIEWER
 ============================================================ */
 let imgZoom = 1;
-let imgList = [];  // all images in current week
+let imgList = [];
 let imgIdx  = 0;
+
+let imgPosX = 0;
+let imgPosY = 0;
+
+let isDragging = false;
+
+let startX = 0;
+let startY = 0;
 
 function openImg(url, name, allImgs=[]) {
     imgList = allImgs.length ? allImgs : [url];
@@ -963,6 +971,9 @@ function openImg(url, name, allImgs=[]) {
 }
 function loadImage(url, name) {
     imgZoom = 1;
+
+imgPosX = 0;
+imgPosY = 0;
     const imgEl = document.getElementById('img-el');
     imgEl.style.transform = `scale(${imgZoom})`;
     imgEl.src = url;
@@ -988,10 +999,20 @@ function navImage(dir) {
     if (!isHacker) playCoin();
 }
 function closeImg() {
+    
     document.getElementById('img-modal').classList.remove('open');
     document.getElementById('img-el').src = '';
     document.body.style.overflow = '';
-    imgList = []; imgIdx = 0; imgZoom = 1;
+
+    imgList = [];
+    imgIdx = 0;
+
+    imgZoom = 1;
+
+    imgPosX = 0;
+    imgPosY = 0;
+
+    isDragging = false;
 }
 function zoomIn()    { imgZoom = Math.min(imgZoom + 0.25, 4); applyZoom(); if (!isHacker) playJump(); }
 function zoomOut()   { imgZoom = Math.max(imgZoom - 0.25, 0.25); applyZoom(); }
@@ -1002,10 +1023,52 @@ function toggleZoom() {
     applyZoom();
 }
 function applyZoom() {
-    document.getElementById('img-el').style.transform = `scale(${imgZoom})`;
-    document.getElementById('zoom-info').textContent   = Math.round(imgZoom*100)+'%';
-}
 
+    const img = document.getElementById('img-el');
+
+    img.style.transform =
+        `translate(${imgPosX}px, ${imgPosY}px) scale(${imgZoom})`;
+
+    document.getElementById('zoom-info').textContent =
+        Math.round(imgZoom * 100) + '%';
+}
+const viewer =
+    document.getElementById('img-viewer');
+
+const img =
+    document.getElementById('img-el');
+
+img.addEventListener('mousedown', e => {
+
+    if (imgZoom <= 1) return;
+
+    isDragging = true;
+
+    startX = e.clientX - imgPosX;
+    startY = e.clientY - imgPosY;
+
+    img.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mousemove', e => {
+
+    if (!isDragging) return;
+
+    imgPosX = e.clientX - startX;
+    imgPosY = e.clientY - startY;
+
+    applyZoom();
+});
+
+document.addEventListener('mouseup', () => {
+
+    isDragging = false;
+
+    img.style.cursor =
+        imgZoom > 1
+            ? 'grab'
+            : 'zoom-in';
+});
 // Keyboard navigation in image viewer
 document.addEventListener('keydown', e => {
     const imgOpen = document.getElementById('img-modal').classList.contains('open');

@@ -689,7 +689,52 @@
             </div>
         </div>
     </div>
+<div class="select-section">
+        <div class="section-header" style="margin-bottom:18px;">
+            🎮 SELECT YOUR CHARACTER 🎮
+        </div>
+        <div class="chars-row">
+            <button onclick="navigate('estudiante')" class="role-card">
+                <img src="estudiante.png" alt="Estudiante" class="role-icon">
+                <span class="role-lbl" data-text="ESTUDIANTE">ESTUDIANTE</span>
+                <span class="role-sub">Ver contenido, semanas<br>y recursos del curso</span>
+                <div class="char-stats">
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">INT</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill blue" data-width="90"></div>
+                        </div>
+                    </div>
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">STR</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill red" data-width="60"></div>
+                        </div>
+                    </div>
+                </div>
+            </button>
 
+            <button onclick="navigate('admin')" class="role-card">
+                <img src="administrador.png" alt="Docente" class="role-icon" style="animation-delay:0.3s;">
+                <span class="role-lbl" data-text="DOCENTE">ADMIN</span>
+                <span class="role-sub">Panel de administración<br>y gestión de contenidos</span>
+                <div class="char-stats">
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">INT</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill blue" data-width="95"></div>
+                        </div>
+                    </div>
+                    <div class="char-stat-row">
+                        <span class="char-stat-name">STR</span>
+                        <div class="pixel-bar-wrap" style="flex:1;">
+                            <div class="pixel-bar-fill red" data-width="85"></div>
+                        </div>
+                    </div>
+                </div>
+            </button>
+        </div>
+    </div>
     <!-- STATS STRIP -->
     <div class="stats-strip pixel-card" style="border-radius:2px;">
         <div class="stat-cell">
@@ -852,53 +897,6 @@
         <div class="quote-author" id="q-author">— REFLEXIÓN DEL CURSO · BASE DE DATOS II · UPLA 2026</div>
     </div>
 
-    <!-- SELECT CHARACTER -->
-    <div class="select-section">
-        <div class="section-header" style="margin-bottom:18px;">
-            🎮 SELECT YOUR CHARACTER 🎮
-        </div>
-        <div class="chars-row">
-            <button onclick="navigate('estudiante')" class="role-card">
-                <img src="estudiante.png" alt="Estudiante" class="role-icon">
-                <span class="role-lbl" data-text="ESTUDIANTE">ESTUDIANTE</span>
-                <span class="role-sub">Ver contenido, semanas<br>y recursos del curso</span>
-                <div class="char-stats">
-                    <div class="char-stat-row">
-                        <span class="char-stat-name">INT</span>
-                        <div class="pixel-bar-wrap" style="flex:1;">
-                            <div class="pixel-bar-fill blue" data-width="90"></div>
-                        </div>
-                    </div>
-                    <div class="char-stat-row">
-                        <span class="char-stat-name">STR</span>
-                        <div class="pixel-bar-wrap" style="flex:1;">
-                            <div class="pixel-bar-fill red" data-width="60"></div>
-                        </div>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="navigate('admin')" class="role-card">
-                <img src="administrador.png" alt="Docente" class="role-icon" style="animation-delay:0.3s;">
-                <span class="role-lbl" data-text="DOCENTE">DOCENTE</span>
-                <span class="role-sub">Panel de administración<br>y gestión de contenidos</span>
-                <div class="char-stats">
-                    <div class="char-stat-row">
-                        <span class="char-stat-name">INT</span>
-                        <div class="pixel-bar-wrap" style="flex:1;">
-                            <div class="pixel-bar-fill blue" data-width="95"></div>
-                        </div>
-                    </div>
-                    <div class="char-stat-row">
-                        <span class="char-stat-name">STR</span>
-                        <div class="pixel-bar-wrap" style="flex:1;">
-                            <div class="pixel-bar-fill red" data-width="85"></div>
-                        </div>
-                    </div>
-                </div>
-            </button>
-        </div>
-    </div>
 
     <!-- WORLD MAP / TIMELINE -->
     <div class="section-header" style="max-width:900px;width:100%;margin-bottom:16px;animation:fadeUp .7s .58s ease both;">

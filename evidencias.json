@@ -48,5 +48,15 @@
     "type": "pdf",
     "filename": "proyectos.pdf",
     "date": "27/5/2026"
+  },
+  {
+    "id": 1781319447751,
+    "week": 8,
+    "title": "infografia",
+    "description": "infografia",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana08/Infografia_1.png",
+    "type": "img",
+    "filename": "Arquitectura_SQL__Grados_y_Títulos.png",
+    "date": "12/6/2026"
   }
 ]

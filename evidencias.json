@@ -56,7 +56,7 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana08/Infografia_1.png",
     "type": "img",
-    "filename": "Arquitectura_SQL__Grados_y_TÃÂÃÂÃÂÃÂ­tulos.png",
+    "filename": "Arquitectura_SQL__Grados_y_TÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­tulos.png",
     "date": "12/6/2026"
   },
   {
@@ -66,7 +66,7 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/Infografia_1.png",
     "type": "img",
-    "filename": "Arquitectura_SQL__Grados_y_TÃÂÃÂ­tulos.png",
+    "filename": "Arquitectura_SQL__Grados_y_TÃÂÃÂÃÂÃÂ­tulos.png",
     "date": "12/6/2026"
   },
   {
@@ -76,7 +76,7 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/Infografia_2.png",
     "type": "img",
-    "filename": "LÃÂ³gica_SQL_de_ValidaciÃÂ³n_AcadÃÂ©mica.png",
+    "filename": "LÃÂÃÂ³gica_SQL_de_ValidaciÃÂÃÂ³n_AcadÃÂÃÂ©mica.png",
     "date": "12/6/2026"
   },
   {
@@ -86,7 +86,7 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/Esquemas_infografia.png",
     "type": "img",
-    "filename": "LÃ³gica_de_AutomatizaciÃ³n_Sistema_UPLA.png",
+    "filename": "LÃÂ³gica_de_AutomatizaciÃÂ³n_Sistema_UPLA.png",
     "date": "12/6/2026"
   },
   {
@@ -96,7 +96,17 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/Indices_infografia.png",
     "type": "img",
-    "filename": "Optimización_de_consultas_e_índices.png",
+    "filename": "OptimizaciÃ³n_de_consultas_e_Ã­ndices.png",
+    "date": "12/6/2026"
+  },
+  {
+    "id": 1781319730299,
+    "week": 9,
+    "title": "infografia",
+    "description": "infografia",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/SP_infografia.png",
+    "type": "img",
+    "filename": "Lógica_de_Automatización_Sistema_UPLA (1).png",
     "date": "12/6/2026"
   }
 ]

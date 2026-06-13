@@ -56,6 +56,16 @@
     "description": "infografia",
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana08/Infografia_1.png",
     "type": "img",
+    "filename": "Arquitectura_SQL__Grados_y_TÃ­tulos.png",
+    "date": "12/6/2026"
+  },
+  {
+    "id": 1781319544621,
+    "week": 9,
+    "title": "infografia",
+    "description": "infografia",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana09/Infografia_1.png",
+    "type": "img",
     "filename": "Arquitectura_SQL__Grados_y_Títulos.png",
     "date": "12/6/2026"
   }

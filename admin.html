@@ -678,6 +678,13 @@
                        placeholder="Ej: Diagrama ER — Lab 02">
             </div>
             <div class="form-field">
+    <label class="field-label">▶ NOMBRE DEL ARCHIVO EN GITHUB</label>
+    <input type="text"
+           class="pixel-input"
+           id="custom-file-name"
+           placeholder="Ej: Laboratorio 01">
+</div>
+            <div class="form-field">
                 <label class="field-label">▶ DESCRIPCIÓN (OPCIONAL)</label>
                 <input type="text" class="pixel-input" id="res-desc"
                        placeholder="Breve descripción del contenido">
@@ -1005,7 +1012,23 @@ async function startUpload() {
         const url = document.getElementById('res-url').value.trim();
         if (!url) { showToast('INGRESA LA URL DEL RECURSO', 'err'); return; }
         btn.disabled = true; btnTxt.textContent = 'GUARDANDO...';
-        await saveToDatabase(url, title, desc, 'link', 'link');
+        const customName =
+    document.getElementById('custom-file-name')
+    .value
+    .trim();
+
+const savedName =
+    customName
+    ? customName + qi.file.name.substring(qi.file.name.lastIndexOf('.'))
+    : qi.file.name;
+
+await saveToDatabase(
+    url,
+    title || savedName,
+    desc,
+    guessType(savedName),
+    savedName
+);
         btn.disabled = false; btnTxt.textContent = 'PUBLICAR EN EL PORTAFOLIO';
         return;
     }
@@ -1038,6 +1061,7 @@ async function startUpload() {
     if (uploaded > 0) {
         showToast(`✓ ${uploaded} ARCHIVO${uploaded>1?'S':''} PUBLICADO${uploaded>1?'S':''}`, 'ok');
         showAchievement('📤','RECURSO SUBIDO', title.substring(0,18).toUpperCase());
+        document.getElementById('custom-file-name').value = '';
         fileQueue = fileQueue.filter(q => q.status !== 'done');
         setTimeout(loadTable, 800);
     }
@@ -1050,8 +1074,31 @@ async function uploadFileToGH(file, onProgress) {
         reader.onload = async () => {
             onProgress(30);
             const base64 = reader.result.split(',')[1];
-            const sNum   = String(selectedWeek).padStart(2,'0');
-            const path   = `Semana${sNum}/${file.name}`;
+            const sNum = String(selectedWeek).padStart(2,'0');
+
+const customName =
+    document.getElementById('custom-file-name')
+    .value
+    .trim();
+
+let finalName;
+
+if(customName){
+
+    const extension =
+        file.name.substring(
+            file.name.lastIndexOf('.')
+        );
+
+    finalName = customName + extension;
+
+}else{
+
+    finalName = file.name;
+
+}
+
+const path = `Semana${sNum}/${finalName}`;
             onProgress(50);
             try {
                 const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/${path}`, {
@@ -1105,43 +1152,271 @@ async function saveToDatabase(uri, title, desc, type, filename) {
     if (!r.ok) throw new Error('DB save failed');
 }
 
+async function deleteFile(folder, fileName, sha) {
+
+    const ok = confirm(
+        `¿Eliminar ${fileName}?`
+    );
+
+    if (!ok) return;
+
+    try {
+
+        const response = await fetch(
+            `https://api.github.com/repos/${REPO_PATH}/contents/${folder}/${fileName}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `token ${GH_TOKEN}`,
+                    Accept: "application/vnd.github+json"
+                },
+                body: JSON.stringify({
+                    message: `Eliminar ${fileName}`,
+                    sha: sha
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        alert("Archivo eliminado");
+
+        loadTable();
+
+    } catch {
+
+        alert("No se pudo eliminar");
+    }
+}
+
+async function renameFile(folder, oldName, sha) {
+
+    const newName = prompt(
+        "Nuevo nombre:",
+        oldName
+    );
+
+    if (!newName || newName === oldName)
+        return;
+
+    try {
+
+        const getFile = await fetch(
+            `https://api.github.com/repos/${REPO_PATH}/contents/${folder}/${oldName}`,
+            {
+                headers: {
+                    Authorization: `token ${GH_TOKEN}`
+                }
+            }
+        );
+
+        const fileData = await getFile.json();
+
+        const createNew = await fetch(
+            `https://api.github.com/repos/${REPO_PATH}/contents/${folder}/${newName}`,
+            {
+                method: "PUT",
+                headers: {
+                    Authorization: `token ${GH_TOKEN}`,
+                    Accept: "application/vnd.github+json"
+                },
+                body: JSON.stringify({
+                    message: `Renombrar ${oldName} a ${newName}`,
+                    content: fileData.content
+                })
+            }
+        );
+
+        if (!createNew.ok)
+            throw new Error();
+
+        const deleteOld = await fetch(
+            `https://api.github.com/repos/${REPO_PATH}/contents/${folder}/${oldName}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `token ${GH_TOKEN}`,
+                    Accept: "application/vnd.github+json"
+                },
+                body: JSON.stringify({
+                    message: `Eliminar ${oldName}`,
+                    sha: sha
+                })
+            }
+        );
+
+        if (!deleteOld.ok)
+            throw new Error();
+
+        alert("Archivo renombrado");
+
+        loadTable();
+
+    } catch {
+
+        alert("Error al renombrar archivo");
+    }
+}
 /* ============================================================
    LOAD TABLE
 ============================================================ */
 async function loadTable() {
     const tbody = document.getElementById('mgmt-body');
-    tbody.innerHTML = `<tr><td colspan="5"><div class="table-empty">⏳ CARGANDO EVIDENCIAS...</div></td></tr>`;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                <div class="table-empty">
+                    ⏳ CARGANDO ARCHIVOS DEL REPOSITORIO...
+                </div>
+            </td>
+        </tr>`;
+
     try {
-        const r = await fetch(`https://api.github.com/repos/${REPO_PATH}/contents/evidencias.json`,
-            { headers: GH_TOKEN ? { 'Authorization': `token ${GH_TOKEN}` } : {} });
-        if (!r.ok) { tbody.innerHTML=`<tr><td colspan="5"><div class="table-empty">SIN REGISTROS AÚN</div></td></tr>`; return; }
-        const f = await r.json();
-        const data = JSON.parse(atob(f.content.replace(/\n/g,'')));
-        if (!data.length) { tbody.innerHTML=`<tr><td colspan="5"><div class="table-empty">SIN REGISTROS AÚN</div></td></tr>`; return; }
+
+        const carpetas = [
+            "Semana01",
+            "Semana02",
+            "Semana03",
+            "Semana04",
+            "Semana05",
+            "Semana06",
+            "Semana07",
+            "Semana08",
+            "Semana09"
+        ];
 
         tbody.innerHTML = '';
-        data.sort((a,b) => b.week - a.week).forEach(item => {
-            const typeCls = { pdf:'pdf', img:'img', link:'link' }[item.type] || 'other';
-            const typeLabel = { pdf:'📄 PDF', img:'🖼 IMG', link:'🔗 ENLACE', other:'📦 OTRO' }[item.type] || '📦 OTRO';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><span class="td-week">S${String(item.week).padStart(2,'0')}</span></td>
-                <td>
-                    <div class="td-title">${item.title}</div>
-                    ${item.description ? `<div class="td-desc">${item.description}</div>` : ''}
+
+        for (const carpeta of carpetas) {
+
+            const semana = carpeta.replace("Semana", "");
+
+            const r = await fetch(
+                `https://api.github.com/repos/${REPO_PATH}/contents/${carpeta}`,
+                {
+                    headers: GH_TOKEN
+                        ? { Authorization: `token ${GH_TOKEN}` }
+                        : {}
+                }
+            );
+
+            if (!r.ok) continue;
+
+            const archivos = await r.json();
+
+            const separador = document.createElement('tr');
+
+            separador.innerHTML = `
+                <td colspan="5"
+                    style="
+                        background:rgba(255,214,10,.15);
+                        font-weight:bold;
+                        text-align:left;
+                        padding:12px;
+                    ">
+                    📚 UNIDAD / SEMANA ${semana}
                 </td>
-                <td><span class="td-type ${typeCls}">${typeLabel}</span></td>
-                <td style="font-size:.9rem;color:var(--text3);white-space:nowrap;">${item.date||'—'}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="ta-btn view" onclick="window.open('${item.url}','_blank')">VER</button>
-                        <button class="ta-btn del"  onclick="openDelModal(${item.id},'${item.title.replace(/'/g,"\\'")}')">DEL</button>
+            `;
+
+            tbody.appendChild(separador);
+
+            archivos.forEach(file => {
+
+                if (file.type !== "file") return;
+
+                let tipo = "📦 OTRO";
+
+                const nombre = file.name.toLowerCase();
+
+                if (nombre.endsWith(".pdf")) tipo = "📄 PDF";
+                else if (
+                    nombre.endsWith(".png") ||
+                    nombre.endsWith(".jpg") ||
+                    nombre.endsWith(".jpeg")
+                ) tipo = "🖼 IMAGEN";
+                else if (
+                    nombre.endsWith(".docx") ||
+                    nombre.endsWith(".doc")
+                ) tipo = "📝 WORD";
+                else if (
+                    nombre.endsWith(".xlsx") ||
+                    nombre.endsWith(".xls")
+                ) tipo = "📊 EXCEL";
+
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="td-week">
+                            ${semana}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="td-title">
+                            ${file.name}
+                        </div>
+                    </td>
+
+                    <td>
+                        ${tipo}
+                    </td>
+
+                    <td>
+                        —
+                    </td>
+
+                    <td>
+    <div class="table-actions">
+
+        <button
+            class="ta-btn view"
+            onclick="window.open('${file.download_url}','_blank')">
+            VER
+        </button>
+
+        <button
+            class="ta-btn edit"
+            onclick="renameFile(
+                '${carpeta}',
+                '${file.name}',
+                '${file.sha}'
+            )">
+            RENOMBRAR
+        </button>
+
+        <button
+            class="ta-btn delete"
+            onclick="deleteFile(
+                '${carpeta}',
+                '${file.name}',
+                '${file.sha}'
+            )">
+            ELIMINAR
+        </button>
+
+    </div>
+</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+    } catch (e) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="table-empty"
+                         style="color:var(--red);">
+                        ERROR AL CARGAR ARCHIVOS
                     </div>
-                </td>`;
-            tbody.appendChild(tr);
-        });
-    } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="5"><div class="table-empty" style="color:var(--red);">ERROR AL CARGAR</div></td></tr>`;
+                </td>
+            </tr>`;
     }
 }
 

@@ -570,11 +570,26 @@
 </head>
 <body>
 
+<!-- ══ AMBIENT GLOW ══ -->
+<div class="glow-orb o1"></div>
+<div class="glow-orb o2"></div>
+<div class="glow-orb o3"></div>
+
 <!-- ══ CANVAS LAYERS ══ -->
 <canvas id="c-stars"></canvas>
 <canvas id="c-matrix"></canvas>
 <canvas id="c-grid"></canvas>
 <canvas id="c-particles"></canvas>
+
+<!-- ══ HACKER MODE FAB (always visible, top-right, every page) ══ -->
+<div class="hacker-fab-wrap">
+    <button type="button" class="hacker-toggle" id="hacker-fab" onclick="toggleHackerMode()" aria-pressed="false">
+        <span class="ht-dot"></span>
+        <span class="ht-icon">💀</span>
+        <span class="ht-label">MODO HACKER</span>
+    </button>
+    <input type="checkbox" id="mode-toggle" onchange="applyMode()" style="display:none;">
+</div>
 
 <!-- ══ OVERLAYS ══ -->
 <div id="scan-bar"></div>
@@ -631,16 +646,6 @@
     </div>
 </div>
 
-<!-- ══ SWITCH ══ -->
-<div class="sw-wrap">
-    <span class="sw-label">MODO RETRO</span>
-    <label class="switch">
-        <input type="checkbox" id="mode-toggle" onchange="applyMode()">
-        <span class="sw-slider"></span>
-    </label>
-    <span class="sw-label">DEEP_WEB_MODE</span>
-</div>
-
 <!-- ══════════════════════════════════════════
      MAIN PAGE
 ═══════════════════════════════════════════ -->
@@ -689,7 +694,8 @@
             </div>
         </div>
     </div>
-<div class="select-section">
+<!-- SELECT CHARACTER -->
+    <div class="select-section">
         <div class="section-header" style="margin-bottom:18px;">
             🎮 SELECT YOUR CHARACTER 🎮
         </div>
@@ -716,7 +722,7 @@
 
             <button onclick="navigate('admin')" class="role-card">
                 <img src="administrador.png" alt="Docente" class="role-icon" style="animation-delay:0.3s;">
-                <span class="role-lbl" data-text="DOCENTE">ADMIN</span>
+                <span class="role-lbl" data-text="DOCENTE">DOCENTE</span>
                 <span class="role-sub">Panel de administración<br>y gestión de contenidos</span>
                 <div class="char-stats">
                     <div class="char-stat-row">

@@ -1238,22 +1238,64 @@ function buildSelectedWorld(w) {
 }
 
 function buildMissionHTML(num) {
+
     const sNum = String(num).padStart(2,'0');
     const key  = `Semana${sNum}`;
+
     return `
         <div class="mission-item" id="mission-${key}">
-            <div class="mission-header" onclick="toggleMission(this, '${key}')">
+
+            <div class="mission-header"
+                onclick="toggleMission(this, '${key}')">
+
                 <span class="mission-num">S${sNum}</span>
-                <span class="mission-title">SEMANA ACADÉMICA ${sNum}</span>
-                <span class="mission-status loading" id="status-${key}">● PENDIENTE</span>
+
+                <span class="mission-title">
+                    SEMANA ACADÉMICA ${sNum}
+                </span>
+
+                <span class="mission-status loading"
+                    id="status-${key}">
+
+                    ● PENDIENTE
+
+                </span>
+
                 <span class="mission-arrow">▶</span>
+
             </div>
+
             <div class="file-grid" id="grid-${key}">
-                <div class="state-msg" id="msg-${key}">CARGANDO ARCHIVOS...</div>
-                <div class="file-items" id="files-${key}"></div>
+
+                <div class="state-msg"
+                    id="msg-${key}">
+
+                    CARGANDO ARCHIVOS...
+
+                </div>
+
+                <div class="file-items"
+                    id="files-${key}">
+                </div>
+
+                ${num === 10 ? `
+                <div style="text-align:center; margin-top:20px;">
+
+                    <button class="pixel-btn"
+                        onclick="window.open('tarea.html','_blank')">
+
+                        🎮 ABRIR TAREA
+
+                    </button>
+
+                </div>
+                ` : ''}
+
             </div>
+
         </div>`;
 }
+
 
 /* ============================================================
    TOGGLE WORLD

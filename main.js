@@ -600,6 +600,9 @@ function applyMode() {
     if (!toggle) return;
     isHacker = toggle.checked;
 
+    // Sync any floating hacker-toggle buttons (icon/text/checked state)
+    syncHackerButtons();
+
     // Screen shake
     document.body.classList.add('shaking');
     setTimeout(() => document.body.classList.remove('shaking'), 500);
@@ -685,12 +688,39 @@ function applyMode() {
 }
 
 /* ================================================================
+   HACKER TOGGLE BUTTON (big floating FAB) — helpers
+================================================================ */
+function toggleHackerMode() {
+    const toggle = document.getElementById('mode-toggle');
+    if (!toggle) return;
+    toggle.checked = !toggle.checked;
+    applyMode();
+}
+function syncHackerButtons() {
+    document.querySelectorAll('.hacker-toggle').forEach(btn => {
+        const label = btn.querySelector('.ht-label');
+        const icon  = btn.querySelector('.ht-icon');
+        if (isHacker) {
+            if (label) label.textContent = 'DEEP_WEB: ON';
+            if (icon)  icon.textContent = '🟢';
+            btn.setAttribute('aria-pressed', 'true');
+        } else {
+            if (label) label.textContent = 'MODO HACKER';
+            if (icon)  icon.textContent = '💀';
+            btn.setAttribute('aria-pressed', 'false');
+        }
+    });
+}
+
+/* ================================================================
    PERSIST MODE ON LOAD
 ================================================================ */
 function checkSavedMode() {
     if (localStorage.getItem('visualMode') === 'hacker') {
         const toggle = document.getElementById('mode-toggle');
         if (toggle) { toggle.checked = true; applyMode(); }
+    } else {
+        syncHackerButtons();
     }
 }
 

@@ -8,5 +8,15 @@
     "type": "img",
     "filename": "Tipos de recuperacion (Simple, Full, Bulk-Logged).png",
     "date": "20/6/2026"
+  },
+  {
+    "id": 1782009112331,
+    "week": 10,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana10/Propiedades%20y%20configuraciones%20de%20bases%20de%20datos.png",
+    "type": "img",
+    "filename": "Propiedades y configuraciones de bases de datos.png",
+    "date": "20/6/2026"
   }
 ]

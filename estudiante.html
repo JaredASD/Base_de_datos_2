@@ -411,7 +411,7 @@
         border: 2px solid rgba(255,214,10,0.3);
         box-shadow: 0 0 40px rgba(0,0,0,0.8);
         transition: transform 0.2s ease;
-        cursor: grab;
+        cursor: zoom-in;
     }
     body.hacker-mode .img-viewer img { border-color: rgba(0,255,65,0.3); }
     .img-controls {
@@ -447,16 +447,293 @@
     @media (max-width: 500px) {
         .world-title  { font-size: 0.4rem; }
         .tab-btn      { font-size: 0.38rem; padding: 8px 12px; }
+        .retro-nav    { padding-right: 56px; }
+    }
+
+    /* ================================================================
+       WORLD MAP — retro video-game level select
+    ================================================================ */
+    .map-screen {
+        position: relative;
+        background:
+            radial-gradient(ellipse 700px 400px at 50% -10%, rgba(255,214,10,0.10), transparent 65%),
+            linear-gradient(180deg, #11112c 0%, #0c0c22 55%, #08081a 100%);
+        border: 3px solid rgba(255,214,10,0.4);
+        box-shadow: 6px 6px 0 #000, 0 0 40px rgba(255,214,10,0.08);
+        padding: 26px 20px 34px;
+        margin-bottom: 26px;
+        overflow: hidden;
+        min-height: 480px;
+        animation: fadeUp 0.5s ease both;
+    }
+    body.hacker-mode .map-screen {
+        border-color: rgba(0,255,65,0.4);
+        background:
+            radial-gradient(ellipse 700px 400px at 50% -10%, rgba(0,255,65,0.08), transparent 65%),
+            linear-gradient(180deg, #060a06 0%, #050505 55%, #030303 100%);
+        box-shadow: 6px 6px 0 #000, 0 0 40px rgba(0,255,65,0.08);
+    }
+    /* twinkling decorative stars inside map box */
+    .map-screen::before {
+        content: '';
+        position: absolute; inset: 0;
+        background-image:
+            radial-gradient(1.5px 1.5px at 10% 15%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1.5px 1.5px at 25% 60%, rgba(255,255,255,0.35), transparent),
+            radial-gradient(1.5px 1.5px at 70% 20%, rgba(255,255,255,0.4), transparent),
+            radial-gradient(1.5px 1.5px at 85% 70%, rgba(255,255,255,0.3), transparent),
+            radial-gradient(1.5px 1.5px at 45% 85%, rgba(255,255,255,0.4), transparent),
+            radial-gradient(1.5px 1.5px at 60% 45%, rgba(255,255,255,0.25), transparent);
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    .map-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 6px; position: relative; z-index: 2;
+        flex-wrap: wrap; gap: 10px;
+    }
+    .map-title {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.62rem; color: var(--gold);
+        text-shadow: 2px 2px 0 #000;
+        letter-spacing: 1px;
+    }
+    body.hacker-mode .map-title { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,0.5); }
+    .map-hint {
+        font-family: 'VT323', monospace;
+        font-size: 1.05rem; color: var(--text2);
+        letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+    }
+    body.hacker-mode .map-hint { color: rgba(0,255,65,0.55); }
+    .map-hint .key {
+        display: inline-block;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.42rem;
+        padding: 5px 8px;
+        border: 2px solid var(--gold);
+        background: var(--bg-card2);
+        box-shadow: 2px 2px 0 #000;
+        color: var(--gold);
+    }
+    body.hacker-mode .map-hint .key { border-color: #00ff41; color: #00ff41; box-shadow: none; }
+
+    /* SVG path container */
+    .map-path-wrap {
+        position: relative;
+        width: 100%;
+        height: 360px;
+        margin-top: 18px;
+        z-index: 2;
+    }
+    .map-path-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .map-path-line {
+        fill: none;
+        stroke: rgba(255,214,10,0.35);
+        stroke-width: 6;
+        stroke-linecap: round;
+        stroke-dasharray: 2 16;
+    }
+    body.hacker-mode .map-path-line { stroke: rgba(0,255,65,0.3); }
+    .map-path-line.lit {
+        stroke: var(--gold);
+        stroke-dasharray: none;
+        opacity: 0.85;
+        filter: drop-shadow(0 0 4px rgba(255,214,10,0.5));
+    }
+    body.hacker-mode .map-path-line.lit { stroke: #00ff41; filter: drop-shadow(0 0 6px rgba(0,255,65,0.6)); }
+
+    /* Level nodes */
+    .map-node {
+        position: absolute;
+        width: 86px; height: 86px;
+        transform: translate(-50%,-50%);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer;
+        z-index: 3;
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+    .map-node-circle {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, var(--bg-card2), var(--bg-card) 70%);
+        border: 4px solid rgba(255,214,10,0.5);
+        box-shadow: 4px 4px 0 #000, 0 0 0 rgba(255,214,10,0);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 1.1rem; color: var(--gold);
+        transition: transform 0.15s, box-shadow 0.25s, border-color 0.25s;
+        position: relative;
+    }
+    body.hacker-mode .map-node-circle {
+        border-color: rgba(0,255,65,0.5); color: #00ff41;
+        background: radial-gradient(circle at 35% 30%, rgba(10,10,10,0.9), rgba(4,4,4,0.95) 70%);
+    }
+    .map-node:hover .map-node-circle,
+    .map-node.current .map-node-circle {
+        transform: scale(1.12);
+        border-color: var(--gold);
+        box-shadow: 5px 5px 0 #000, 0 0 22px rgba(255,214,10,0.55);
+    }
+    body.hacker-mode .map-node:hover .map-node-circle,
+    body.hacker-mode .map-node.current .map-node-circle {
+        border-color: #00ff41;
+        box-shadow: 5px 5px 0 #000, 0 0 22px rgba(0,255,65,0.5);
+    }
+    .map-node.boss .map-node-circle { border-color: rgba(229,37,33,0.6); color: var(--red); }
+    .map-node.boss:hover .map-node-circle,
+    .map-node.boss.current .map-node-circle { border-color: var(--red); box-shadow: 5px 5px 0 #000, 0 0 22px rgba(229,37,33,0.55); }
+
+    .map-node-label {
+        margin-top: 10px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.36rem;
+        color: var(--text2);
+        text-align: center;
+        letter-spacing: 0.5px;
+        text-shadow: 1px 1px 0 #000;
+        line-height: 1.5;
+        white-space: nowrap;
+    }
+    body.hacker-mode .map-node-label { color: rgba(0,255,65,0.6); }
+    .map-node:hover .map-node-label,
+    .map-node.current .map-node-label { color: var(--white); }
+    body.hacker-mode .map-node:hover .map-node-label,
+    body.hacker-mode .map-node.current .map-node-label { color: #00ff41; }
+
+    .map-node-weeks {
+        position: absolute; bottom: -2px; right: -2px;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 0.32rem;
+        background: var(--blue); color: #fff;
+        padding: 3px 5px;
+        box-shadow: 1px 1px 0 #000;
+        border-radius: 2px;
+    }
+    body.hacker-mode .map-node-weeks { background: #003a1a; color: #00ff41; box-shadow: none; border: 1px solid rgba(0,255,65,0.4); }
+
+    /* Pulsing ring under currently-selected node (keyboard focus) */
+    .map-node.current .map-node-circle::after {
+        content: '';
+        position: absolute; inset: -10px;
+        border-radius: 50%;
+        border: 2px solid var(--gold);
+        animation: mapPing 1.3s ease-out infinite;
+    }
+    body.hacker-mode .map-node.current .map-node-circle::after { border-color: #00ff41; }
+    @keyframes mapPing {
+        0%   { transform: scale(0.85); opacity: 0.9; }
+        100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    /* Player sprite that walks along the path */
+    .map-player {
+        position: absolute;
+        width: 30px; height: 30px;
+        transform: translate(-50%,-100%);
+        z-index: 4;
+        transition: left 0.35s cubic-bezier(.4,0,.2,1), top 0.35s cubic-bezier(.4,0,.2,1);
+        pointer-events: none;
+        font-size: 1.6rem;
+        line-height: 1;
+        text-align: center;
+        filter: drop-shadow(2px 2px 0 #000);
+        animation: mapPlayerBob 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes mapPlayerBob {
+        from { transform: translate(-50%,-100%) translateY(0); }
+        to   { transform: translate(-50%,-100%) translateY(-6px); }
+    }
+
+    /* Footer hint bar inside map */
+    .map-footer {
+        display: flex; align-items: center; justify-content: center; gap: 22px;
+        margin-top: 10px; position: relative; z-index: 2;
+        flex-wrap: wrap;
+    }
+    .map-footer .mf-item {
+        font-family: 'VT323', monospace; font-size: 1rem; color: var(--text3);
+        display: flex; align-items: center; gap: 6px;
+    }
+    body.hacker-mode .map-footer .mf-item { color: rgba(0,255,65,0.35); }
+    .map-footer .key {
+        font-family: 'Press Start 2P', monospace; font-size: 0.36rem;
+        padding: 4px 7px; border: 2px solid rgba(255,214,10,0.4);
+        background: var(--bg-card2); color: var(--gold);
+        box-shadow: 1px 1px 0 #000;
+    }
+    body.hacker-mode .map-footer .key { border-color: rgba(0,255,65,0.4); color: #00ff41; box-shadow: none; }
+
+    /* Selected-unit content area */
+    .unit-content-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px;
+        margin-bottom: 18px;
+        animation: fadeUp 0.4s ease both;
+    }
+    .map-back-btn {
+        font-family: 'Press Start 2P', monospace; font-size: 0.42rem;
+        letter-spacing: 1px;
+        padding: 11px 18px;
+        background: var(--bg-card2); color: var(--gold);
+        border: 2px solid var(--gold);
+        box-shadow: 3px 3px 0 #000;
+        cursor: pointer; transition: all 0.12s;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .map-back-btn:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 #000; }
+    .map-back-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #000; }
+    body.hacker-mode .map-back-btn { border-color: #00ff41; color: #00ff41; background: rgba(0,0,0,0.8); }
+
+    .unit-content-title {
+        font-family: 'Press Start 2P', monospace; font-size: 0.55rem;
+        color: var(--white); text-shadow: 2px 2px 0 #000; letter-spacing: 1px;
+    }
+    body.hacker-mode .unit-content-title { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,0.4); }
+
+    #portfolio-content { display: none; }
+    #portfolio-content.active { display: block; }
+    #portfolio-map.hidden { display: none; }
+
+    @media (max-width: 760px) {
+        .map-path-wrap { height: 560px; }
+        .map-node { width: 70px; height: 70px; }
+        .map-node-circle { width: 52px; height: 52px; font-size: 0.9rem; }
+        .map-node-label { font-size: 0.32rem; }
+        .map-footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .map-footer .mf-item { font-size: 0.85rem; }
+        .map-header { flex-direction: column; align-items: flex-start; }
+        .map-hint { font-size: 0.85rem; flex-wrap: wrap; }
+    }
+    @media (max-width: 500px) {
+        .map-footer { display: none; }
     }
     </style>
 </head>
 <body>
+
+<!-- ══ AMBIENT GLOW ══ -->
+<div class="glow-orb o1"></div>
+<div class="glow-orb o2"></div>
+<div class="glow-orb o3"></div>
 
 <!-- ══ CANVAS LAYERS ══ -->
 <canvas id="c-stars"></canvas>
 <canvas id="c-matrix"></canvas>
 <canvas id="c-grid"></canvas>
 <canvas id="c-particles"></canvas>
+
+<!-- ══ HACKER MODE FAB (always visible, top-right, every page) ══ -->
+<div class="hacker-fab-wrap">
+    <button type="button" class="hacker-toggle" id="hacker-fab" onclick="toggleHackerMode()" aria-pressed="false">
+        <span class="ht-dot"></span>
+        <span class="ht-icon">💀</span>
+        <span class="ht-label">MODO HACKER</span>
+    </button>
+    <input type="checkbox" id="mode-toggle" onchange="applyMode()" style="display:none;">
+</div>
 
 <!-- ══ HACKER OVERLAYS ══ -->
 <div id="scan-bar"></div>
@@ -548,11 +825,6 @@
             <div class="nav-title">BASE DE DATOS II — PLAYER 1</div>
         </div>
         <div class="nav-right">
-            <!-- Mode Switch (compact) -->
-            <label class="switch" style="margin-right:4px;">
-                <input type="checkbox" id="mode-toggle" onchange="applyMode()">
-                <span class="sw-slider"></span>
-            </label>
             <a href="index.html" class="nav-btn danger" onclick="playWarp()">⏏ SALIR</a>
         </div>
     </div>
@@ -668,17 +940,53 @@
     <!-- ── TAB: PORTFOLIO ── -->
     <div id="tab-portfolio" class="tab-section">
 
-        <!-- Filter bar -->
-        <div class="filter-bar">
-            <input type="text" class="filter-input" id="search-input"
-                   placeholder="BUSCAR ARCHIVO..." oninput="filterFiles(this.value)">
-            <button class="filter-badge" onclick="toggleFilter('pdf')"   id="f-pdf">📄 PDF</button>
-            <button class="filter-badge" onclick="toggleFilter('img')"   id="f-img">🖼 IMÁGENES</button>
-            <button class="filter-badge" onclick="toggleFilter('other')" id="f-other">📦 OTROS</button>
+        <!-- ══ WORLD MAP (retro level-select) ══ -->
+        <div id="portfolio-map">
+            <div class="map-screen" id="map-screen" tabindex="0">
+                <div class="map-header">
+                    <div class="map-title">🗺️ SELECCIONA TU UNIDAD</div>
+                    <div class="map-hint">
+                        <span class="key">◀</span><span class="key">▶</span> MOVERSE
+                        <span class="key" style="margin-left:8px;">ENTER</span> ENTRAR
+                    </div>
+                </div>
+
+                <div class="map-path-wrap" id="map-path-wrap">
+                    <svg class="map-path-svg" id="map-path-svg" viewBox="0 0 900 360" preserveAspectRatio="none">
+                        <path class="map-path-line" d="" id="map-path-bg"></path>
+                        <path class="map-path-line lit" d="" id="map-path-lit"></path>
+                    </svg>
+                    <div class="map-player" id="map-player">🧙</div>
+                    <!-- Nodes injected by JS -->
+                </div>
+
+                <div class="map-footer">
+                    <span class="mf-item"><span class="key">◀</span><span class="key">▶</span> mover por el camino</span>
+                    <span class="mf-item"><span class="key">ENTER</span> / <span class="key">ESPACIO</span> seleccionar nivel</span>
+                    <span class="mf-item">🖱️ también puedes hacer clic directo</span>
+                </div>
+            </div>
         </div>
 
-        <!-- World list (rendered by JS) -->
-        <div class="world-list" id="world-list"></div>
+        <!-- ══ SELECTED UNIT CONTENT ══ -->
+        <div id="portfolio-content">
+            <div class="unit-content-bar">
+                <button class="map-back-btn" onclick="backToMap()">🗺️ ◀ VOLVER AL MAPA</button>
+                <div class="unit-content-title" id="unit-content-title">UNIDAD</div>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="filter-bar">
+                <input type="text" class="filter-input" id="search-input"
+                       placeholder="BUSCAR ARCHIVO..." oninput="filterFiles(this.value)">
+                <button class="filter-badge" onclick="toggleFilter('pdf')"   id="f-pdf">📄 PDF</button>
+                <button class="filter-badge" onclick="toggleFilter('img')"   id="f-img">🖼 IMÁGENES</button>
+                <button class="filter-badge" onclick="toggleFilter('other')" id="f-other">📦 OTROS</button>
+            </div>
+
+            <!-- World list (rendered by JS) -->
+            <div class="world-list" id="world-list"></div>
+        </div>
     </div>
 
 </div><!-- /main-wrap -->
@@ -759,95 +1067,191 @@ function switchTab(id, btn) {
     document.getElementById('tab-'+id).classList.add('active');
     btn.classList.add('active');
     if (!isHacker) playCoin();
-    if (id === 'portfolio' && !worldsBuilt) buildWorlds();
+    if (id === 'portfolio') {
+        // Siempre arrancamos en el mapa de niveles al entrar a CONTENIDO
+        showMap();
+        if (!mapBuilt) buildMap();
+    }
 }
 
 /* ============================================================
-   BUILD WORLD LIST (DOM)
+   WORLD MAP — retro level select
 ============================================================ */
-let worldsBuilt = false;
-function buildWorlds() {
-    worldsBuilt = true;
+let mapBuilt = false;
+let mapCursor = 0;          // index of node currently highlighted by keyboard
+let mapNodePositions = [];  // {x,y} in viewBox units, per world index
+
+function showMap() {
+    document.getElementById('portfolio-map').classList.remove('hidden');
+    document.getElementById('portfolio-content').classList.remove('active');
+    const screen = document.getElementById('map-screen');
+    if (screen) screen.focus({ preventScroll: true });
+}
+function backToMap() {
+    if (!isHacker) playWarp();
+    showMap();
+}
+
+function buildMap() {
+    mapBuilt = true;
+    const wrap = document.getElementById('map-path-wrap');
+    const VB_W = 900, VB_H = 360;
+
+    // Curvy serpentine layout across 4 worlds (S-shape, classic world-map feel)
+    const layout = [
+        { x: 90,  y: 270 },
+        { x: 330, y: 110 },
+        { x: 580, y: 270 },
+        { x: 810, y: 110 },
+    ];
+    mapNodePositions = layout;
+
+    // Build smooth curved path through the 4 points
+    function curvePath(pts) {
+        let d = `M ${pts[0].x} ${pts[0].y}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i], p1 = pts[i+1];
+            const midX = (p0.x + p1.x) / 2;
+            d += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
+        return d;
+    }
+    const fullPath = curvePath(layout);
+    document.getElementById('map-path-bg').setAttribute('d', fullPath);
+    document.getElementById('map-path-lit').setAttribute('d', fullPath);
+
+    // Remove old nodes (keep svg + player)
+    wrap.querySelectorAll('.map-node').forEach(n => n.remove());
+
+    WORLDS.forEach((w, i) => {
+        const pos = layout[i];
+        const isBoss = i === WORLDS.length - 1;
+        const node = document.createElement('button');
+        node.type = 'button';
+        node.className = 'map-node' + (isBoss ? ' boss' : '');
+        node.id = 'map-node-' + i;
+        node.style.left = (pos.x / VB_W * 100) + '%';
+        node.style.top  = (pos.y / VB_H * 100) + '%';
+        node.setAttribute('aria-label', w.title);
+        node.innerHTML = `
+            <div class="map-node-circle">
+                ${isBoss ? '👑' : (i+1)}
+                <span class="map-node-weeks">S${w.weeks[0]}-${w.weeks[w.weeks.length-1]}</span>
+            </div>
+            <div class="map-node-label">${w.label}<br>${w.title}</div>`;
+        node.addEventListener('click', () => {
+            mapCursor = i;
+            updateMapCursor(true);
+            selectWorld(i);
+        });
+        node.addEventListener('mouseenter', () => { if (!isHacker) playJump(); });
+        wrap.appendChild(node);
+    });
+
+    updateMapCursor(false);
+
+    if (!isHacker) showAchievement('🗺️', 'MAPA CARGADO', 'ELIGE TU UNIDAD');
+}
+
+function placePlayerAt(i) {
+    const wrap = document.getElementById('map-path-wrap');
+    const player = document.getElementById('map-player');
+    const pos = mapNodePositions[i];
+    if (!pos || !wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const VB_W = 900, VB_H = 360;
+    player.style.left = (pos.x / VB_W * 100) + '%';
+    player.style.top  = (pos.y / VB_H * 100) + '%';
+}
+
+function updateMapCursor(sound) {
+    document.querySelectorAll('.map-node').forEach((n, idx) => {
+        n.classList.toggle('current', idx === mapCursor);
+    });
+    placePlayerAt(mapCursor);
+    if (sound && !isHacker) playJump();
+}
+
+function moveMapCursor(dir) {
+    const next = mapCursor + dir;
+    if (next < 0 || next >= WORLDS.length) return; // clamp — movement only along the level line
+    mapCursor = next;
+    updateMapCursor(true);
+}
+
+function selectWorld(i) {
+    const w = WORLDS[i];
+    if (!w) return;
+    if (!isHacker) { playPowerUp(); addScore(50); }
+    else playClick();
+
+    document.getElementById('unit-content-title').textContent = `${w.label} · ${w.title}`;
+    document.getElementById('portfolio-map').classList.add('hidden');
+    document.getElementById('portfolio-content').classList.add('active');
+
+    buildSelectedWorld(w);
+    if (!isHacker) showAchievement('🚪', w.label, 'NIVEL SELECCIONADO');
+}
+
+/* Keyboard navigation — restricted to the level line (left/right only) */
+document.addEventListener('keydown', (e) => {
+    const mapVisible = document.getElementById('portfolio-map') &&
+                        !document.getElementById('portfolio-map').classList.contains('hidden') &&
+                        document.getElementById('tab-portfolio').classList.contains('active');
+    if (!mapVisible) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault(); moveMapCursor(1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault(); moveMapCursor(-1);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault(); selectWorld(mapCursor);
+    }
+});
+
+/* ============================================================
+   BUILD SELECTED UNIT CONTENT (DOM) — only the chosen world
+============================================================ */
+function buildSelectedWorld(w) {
     const container = document.getElementById('world-list');
     container.innerHTML = '';
-    WORLDS.forEach(w => {
-        const card = document.createElement('div');
-        card.className = 'world-card';
-        card.id = w.id;
-        card.innerHTML = `
-            <div class="world-header" onclick="toggleWorld(this)">
-                <div class="world-number">${w.label}</div>
-                <div class="world-info">
-                    <div class="world-title">${w.title}</div>
-                    <div class="world-sub">${w.sub}</div>
-                </div>
-                <div class="world-toggle">▶</div>
+    loadedWeeks.clear();
+
+    const card = document.createElement('div');
+    card.className = 'world-card open';
+    card.id = w.id;
+    card.innerHTML = `
+        <div class="world-header" onclick="toggleWorld(this)">
+            <div class="world-number">${w.label}</div>
+            <div class="world-info">
+                <div class="world-title">${w.title}</div>
+                <div class="world-sub">${w.sub}</div>
             </div>
-            <div class="world-body">
-                <div class="mission-list">
-                    ${w.weeks.map(n => buildMissionHTML(n)).join('')}
-                </div>
-            </div>`;
-        container.appendChild(card);
-    });
+            <div class="world-toggle">▶</div>
+        </div>
+        <div class="world-body">
+            <div class="mission-list">
+                ${w.weeks.map(n => buildMissionHTML(n)).join('')}
+            </div>
+        </div>`;
+    container.appendChild(card);
 }
 
 function buildMissionHTML(num) {
-
     const sNum = String(num).padStart(2,'0');
     const key  = `Semana${sNum}`;
-
     return `
         <div class="mission-item" id="mission-${key}">
-
-            <div class="mission-header"
-                onclick="toggleMission(this, '${key}')">
-
+            <div class="mission-header" onclick="toggleMission(this, '${key}')">
                 <span class="mission-num">S${sNum}</span>
-
-                <span class="mission-title">
-                    SEMANA ACADÉMICA ${sNum}
-                </span>
-
-                <span class="mission-status loading"
-                    id="status-${key}">
-
-                    ● PENDIENTE
-
-                </span>
-
+                <span class="mission-title">SEMANA ACADÉMICA ${sNum}</span>
+                <span class="mission-status loading" id="status-${key}">● PENDIENTE</span>
                 <span class="mission-arrow">▶</span>
-
             </div>
-
             <div class="file-grid" id="grid-${key}">
-
-                <div class="state-msg"
-                    id="msg-${key}">
-
-                    CARGANDO ARCHIVOS...
-
-                </div>
-
-                <div class="file-items"
-                    id="files-${key}">
-                </div>
-
-                ${num === 10 ? `
-                <div style="text-align:center; margin-top:20px;">
-
-                    <button class="pixel-btn"
-                        onclick="window.open('tarea.html','_blank')">
-
-                        🎮 ABRIR TAREA
-
-                    </button>
-
-                </div>
-                ` : ''}
-
+                <div class="state-msg" id="msg-${key}">CARGANDO ARCHIVOS...</div>
+                <div class="file-items" id="files-${key}"></div>
             </div>
-
         </div>`;
 }
 
@@ -989,16 +1393,8 @@ function closePDF() {
    IMAGE VIEWER
 ============================================================ */
 let imgZoom = 1;
-let imgList = [];
+let imgList = [];  // all images in current week
 let imgIdx  = 0;
-
-let imgPosX = 0;
-let imgPosY = 0;
-
-let isDragging = false;
-
-let startX = 0;
-let startY = 0;
 
 function openImg(url, name, allImgs=[]) {
     imgList = allImgs.length ? allImgs : [url];
@@ -1012,9 +1408,6 @@ function openImg(url, name, allImgs=[]) {
 }
 function loadImage(url, name) {
     imgZoom = 1;
-
-imgPosX = 0;
-imgPosY = 0;
     const imgEl = document.getElementById('img-el');
     imgEl.style.transform = `scale(${imgZoom})`;
     imgEl.src = url;
@@ -1040,20 +1433,10 @@ function navImage(dir) {
     if (!isHacker) playCoin();
 }
 function closeImg() {
-    
     document.getElementById('img-modal').classList.remove('open');
     document.getElementById('img-el').src = '';
     document.body.style.overflow = '';
-
-    imgList = [];
-    imgIdx = 0;
-
-    imgZoom = 1;
-
-    imgPosX = 0;
-    imgPosY = 0;
-
-    isDragging = false;
+    imgList = []; imgIdx = 0; imgZoom = 1;
 }
 function zoomIn()    { imgZoom = Math.min(imgZoom + 0.25, 4); applyZoom(); if (!isHacker) playJump(); }
 function zoomOut()   { imgZoom = Math.max(imgZoom - 0.25, 0.25); applyZoom(); }
@@ -1064,52 +1447,10 @@ function toggleZoom() {
     applyZoom();
 }
 function applyZoom() {
-
-    const img = document.getElementById('img-el');
-
-    img.style.transform =
-        `translate(${imgPosX}px, ${imgPosY}px) scale(${imgZoom})`;
-
-    document.getElementById('zoom-info').textContent =
-        Math.round(imgZoom * 100) + '%';
+    document.getElementById('img-el').style.transform = `scale(${imgZoom})`;
+    document.getElementById('zoom-info').textContent   = Math.round(imgZoom*100)+'%';
 }
-const viewer =
-    document.getElementById('img-viewer');
 
-const img =
-    document.getElementById('img-el');
-
-img.addEventListener('mousedown', e => {
-
-    if (imgZoom <= 1) return;
-
-    isDragging = true;
-
-    startX = e.clientX - imgPosX;
-    startY = e.clientY - imgPosY;
-
-    img.style.cursor = 'grabbing';
-});
-
-document.addEventListener('mousemove', e => {
-
-    if (!isDragging) return;
-
-    imgPosX = e.clientX - startX;
-    imgPosY = e.clientY - startY;
-
-    applyZoom();
-});
-
-document.addEventListener('mouseup', () => {
-
-    isDragging = false;
-
-    img.style.cursor =
-        imgZoom > 1
-            ? 'grab'
-            : 'zoom-in';
-});
 // Keyboard navigation in image viewer
 document.addEventListener('keydown', e => {
     const imgOpen = document.getElementById('img-modal').classList.contains('open');

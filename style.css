@@ -60,13 +60,49 @@ html { scroll-behavior: smooth; }
 body {
     font-family: 'Exo 2', sans-serif;
     background-color: var(--bg);
+    background-image:
+        radial-gradient(ellipse 900px 600px at 18% -8%, rgba(255,214,10,0.16), transparent 60%),
+        radial-gradient(ellipse 800px 700px at 88% 8%, rgba(4,156,216,0.18), transparent 60%),
+        radial-gradient(ellipse 1000px 800px at 50% 115%, rgba(229,37,33,0.14), transparent 55%),
+        linear-gradient(180deg, #0f0f23 0%, #14143a 45%, #0a0a1f 100%);
+    background-attachment: fixed;
     color: var(--text);
     overflow-x: hidden;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect x='6' y='0' width='4' height='16' fill='%23ffd60a'/%3E%3Crect x='0' y='6' width='16' height='4' fill='%23ffd60a'/%3E%3C/svg%3E") 8 8, crosshair;
     transition: background-color 0.5s ease;
     min-height: 100vh;
+    position: relative;
 }
-body.hacker-mode { cursor: none !important; }
+body.hacker-mode {
+    cursor: none !important;
+    background-image:
+        radial-gradient(ellipse 900px 600px at 18% -8%, rgba(0,255,65,0.10), transparent 60%),
+        radial-gradient(ellipse 800px 700px at 88% 8%, rgba(0,184,255,0.10), transparent 60%),
+        radial-gradient(ellipse 1000px 800px at 50% 115%, rgba(0,255,65,0.08), transparent 55%),
+        linear-gradient(180deg, #050505 0%, #060a06 45%, #030303 100%);
+}
+
+/* ── AMBIENT GLOW ORBS (depth layer, always behind content) ── */
+.glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    animation: orbFloat 14s ease-in-out infinite;
+}
+.glow-orb.o1 { width: 420px; height: 420px; top: -120px;  left: -100px;  background: radial-gradient(circle, rgba(255,214,10,0.35), transparent 70%); animation-delay: 0s; }
+.glow-orb.o2 { width: 380px; height: 380px; top: 30%;      right: -140px; background: radial-gradient(circle, rgba(4,156,216,0.32), transparent 70%); animation-delay: -4s; }
+.glow-orb.o3 { width: 460px; height: 460px; bottom: -160px; left: 25%;    background: radial-gradient(circle, rgba(229,37,33,0.26), transparent 70%); animation-delay: -8s; }
+body.hacker-mode .glow-orb.o1 { background: radial-gradient(circle, rgba(0,255,65,0.22), transparent 70%); }
+body.hacker-mode .glow-orb.o2 { background: radial-gradient(circle, rgba(0,184,255,0.2), transparent 70%); }
+body.hacker-mode .glow-orb.o3 { background: radial-gradient(circle, rgba(0,255,65,0.16), transparent 70%); }
+@keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%     { transform: translate(30px,-20px) scale(1.08); }
+    66%     { transform: translate(-20px,25px) scale(0.95); }
+}
 
 /* ================================================================
    PIXEL SCANLINES — GAMING (always on, subtle)
@@ -254,7 +290,7 @@ body.hacker-mode .pixel-badge {
 .pixel-bar-fill.green  { background-color: var(--green); box-shadow: 0 0 8px rgba(67,176,71,0.5); }
 
 /* ================================================================
-   SWITCH / TOGGLE
+   SWITCH / TOGGLE — HACKER MODE BUTTON (big, loud, unmissable)
 ================================================================ */
 .sw-wrap {
     display: flex;
@@ -273,6 +309,75 @@ body.hacker-mode .pixel-badge {
     transition: color 0.4s;
 }
 body.hacker-mode .sw-label { color: rgba(0,255,65,0.6); }
+
+/* Big pill-style hacker toggle button — used standalone (.hacker-toggle) */
+.hacker-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px 10px 14px;
+    background: linear-gradient(135deg, rgba(0,255,65,0.16), rgba(0,184,255,0.10));
+    border: 2.5px solid #00ff41;
+    border-radius: 30px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    letter-spacing: 1.5px;
+    color: #00ff41;
+    box-shadow: 0 0 10px rgba(0,255,65,0.45), 0 0 28px rgba(0,255,65,0.22), 3px 3px 0 #000;
+    transition: transform 0.15s, box-shadow 0.25s, background 0.3s;
+    animation: hackerPulse 2.1s ease-in-out infinite;
+    z-index: 600;
+    white-space: nowrap;
+}
+.hacker-toggle .ht-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #aaffcc, #00ff41 60%);
+    box-shadow: 0 0 8px #00ff41, 0 0 16px rgba(0,255,65,0.6);
+    flex-shrink: 0;
+    transition: background 0.3s;
+}
+.hacker-toggle .ht-icon { font-size: 0.85rem; line-height: 1; }
+.hacker-toggle:hover {
+    transform: translate(-2px,-2px) scale(1.04);
+    box-shadow: 0 0 16px rgba(0,255,65,0.7), 0 0 40px rgba(0,255,65,0.3), 5px 5px 0 #000;
+}
+.hacker-toggle:active { transform: translate(1px,1px) scale(0.98); }
+
+/* ON state — body.hacker-mode active */
+body.hacker-mode .hacker-toggle {
+    background: linear-gradient(135deg, rgba(0,255,65,0.32), rgba(0,184,255,0.18));
+    border-color: #00ff41;
+    color: #eaffea;
+    box-shadow: 0 0 16px #00ff41, 0 0 44px rgba(0,255,65,0.5), 3px 3px 0 #000;
+}
+body.hacker-mode .hacker-toggle .ht-dot {
+    background: radial-gradient(circle at 35% 30%, #ffffff, #00ff41 55%);
+    box-shadow: 0 0 12px #00ff41, 0 0 26px #00ff41;
+}
+
+@keyframes hackerPulse {
+    0%,100% { box-shadow: 0 0 10px rgba(0,255,65,0.45), 0 0 28px rgba(0,255,65,0.22), 3px 3px 0 #000; }
+    50%     { box-shadow: 0 0 18px rgba(0,255,65,0.75), 0 0 46px rgba(0,255,65,0.4),  3px 3px 0 #000; }
+}
+
+/* Sweep shine effect across the button */
+.hacker-toggle::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 30px;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 65%);
+    background-size: 250% 100%;
+    background-position: 200% 0;
+    animation: htShine 3.2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes htShine {
+    0%, 60%, 100% { background-position: 200% 0; }
+    80% { background-position: -40% 0; }
+}
 
 .switch { position: relative; width: 60px; height: 28px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -308,6 +413,30 @@ input:checked + .sw-slider::before {
     box-shadow: 0 0 8px #00ff41;
     content: "█";
     font-size: 0.7rem;
+}
+
+/* ── FLOATING HACKER TOGGLE (fixed corner, always visible on every page/role) ── */
+.hacker-fab-wrap {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99500;
+    max-width: calc(100vw - 20px);
+}
+.hacker-toggle .ht-label { white-space: nowrap; }
+@media (max-width: 640px) {
+    .hacker-toggle {
+        font-size: 0.36rem;
+        padding: 8px 10px 8px 9px;
+        gap: 6px;
+        border-radius: 22px;
+    }
+    .hacker-toggle .ht-dot { width: 9px; height: 9px; }
+    .hacker-toggle .ht-icon { font-size: 0.65rem; }
+}
+@media (max-width: 420px) {
+    .hacker-toggle .ht-label { display: none; }
+    .hacker-toggle { padding: 9px; border-radius: 50%; gap: 0; }
+    .hacker-toggle .ht-icon { font-size: 0.9rem; }
 }
 
 /* ================================================================

@@ -18,5 +18,15 @@
     "type": "img",
     "filename": "Propiedades y configuraciones de bases de datos.png",
     "date": "20/6/2026"
+  },
+  {
+    "id": 1782009114505,
+    "week": 10,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana10/Estructura%20de%20almacenamiento%20y%20archivos%20de%20datos.png",
+    "type": "img",
+    "filename": "Estructura de almacenamiento y archivos de datos.png",
+    "date": "20/6/2026"
   }
 ]

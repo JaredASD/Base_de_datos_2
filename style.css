@@ -897,3 +897,330 @@ body.hacker-mode .site-footer-r {
 @media (max-width: 500px) {
     .section-header { font-size: 0.5rem; }
 }
+
+/* ================================================================
+   RETRO CHATBOT — 8-bit character assistant
+================================================================ */
+
+/* ── WRAPPER (fixed, bottom-left) ── */
+.rbot-wrap {
+    position: fixed;
+    bottom: 18px; left: 18px;
+    z-index: 9600;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    pointer-events: none;
+}
+
+/* ── CHAT BUBBLE (above character) ── */
+.rbot-window {
+    pointer-events: all;
+    width: 300px;
+    background: var(--bg-card);
+    border: 3px solid var(--gold);
+    box-shadow: 5px 5px 0 #000, 0 0 24px rgba(255,214,10,0.12);
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    max-height: 420px;
+    transform-origin: bottom left;
+    transition: transform 0.22s cubic-bezier(.4,0,.2,1), opacity 0.22s;
+    transform: scale(0) translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+}
+.rbot-window.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+body.hacker-mode .rbot-window {
+    border-color: #00ff41;
+    background: rgba(0,5,0,0.97);
+    box-shadow: 5px 5px 0 #000, 0 0 24px rgba(0,255,65,0.15);
+}
+
+/* titlebar */
+.rbot-titlebar {
+    background: var(--gold);
+    color: #000;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.38rem;
+    letter-spacing: 1.5px;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    user-select: none;
+}
+body.hacker-mode .rbot-titlebar {
+    background: #00ff41;
+}
+.rbot-titlebar-left { display: flex; align-items: center; gap: 7px; }
+.rbot-dot { width: 8px; height: 8px; border-radius: 50%; background: #000; opacity: 0.4; }
+
+.rbot-close-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.42rem;
+    background: none; border: none;
+    color: #000; cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.rbot-close-btn:hover { opacity: 1; }
+
+/* messages area */
+.rbot-messages {
+    padding: 12px 12px 8px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+}
+.rbot-messages::-webkit-scrollbar { width: 4px; }
+.rbot-messages::-webkit-scrollbar-track { background: transparent; }
+.rbot-messages::-webkit-scrollbar-thumb { background: rgba(255,214,10,0.3); border-radius: 2px; }
+body.hacker-mode .rbot-messages::-webkit-scrollbar-thumb { background: rgba(0,255,65,0.3); }
+
+/* individual message */
+.rbot-msg {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    animation: rbotMsgIn 0.2s ease both;
+}
+@keyframes rbotMsgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.rbot-msg-avatar {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+}
+.rbot-msg-bubble {
+    font-family: 'VT323', monospace;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    padding: 7px 10px;
+    border: 2px solid rgba(255,214,10,0.25);
+    background: var(--bg-card2);
+    color: var(--text);
+    box-shadow: 2px 2px 0 #000;
+    max-width: 220px;
+    word-break: break-word;
+}
+body.hacker-mode .rbot-msg-bubble {
+    border-color: rgba(0,255,65,0.2);
+    color: #b8ffcc;
+    background: rgba(0,20,0,0.8);
+}
+.rbot-msg.user { flex-direction: row-reverse; }
+.rbot-msg.user .rbot-msg-bubble {
+    background: rgba(255,214,10,0.08);
+    border-color: rgba(255,214,10,0.4);
+    color: var(--gold);
+    text-align: right;
+}
+body.hacker-mode .rbot-msg.user .rbot-msg-bubble {
+    background: rgba(0,255,65,0.06);
+    border-color: rgba(0,255,65,0.4);
+    color: #00ff41;
+}
+
+/* typing indicator */
+.rbot-typing {
+    display: flex; gap: 5px; align-items: center;
+    padding: 8px 10px;
+    font-size: 1.3rem;
+}
+.rbot-typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold);
+    animation: rbotDot 1.1s ease-in-out infinite;
+}
+body.hacker-mode .rbot-typing span { background: #00ff41; }
+.rbot-typing span:nth-child(2) { animation-delay: 0.18s; }
+.rbot-typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes rbotDot {
+    0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+    40%         { transform: scale(1.1); opacity: 1; }
+}
+
+/* options buttons */
+.rbot-options {
+    padding: 8px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    border-top: 2px solid rgba(255,214,10,0.12);
+}
+body.hacker-mode .rbot-options { border-top-color: rgba(0,255,65,0.12); }
+
+.rbot-opt-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.34rem;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: var(--bg-card2);
+    color: var(--text2);
+    border: 2px solid rgba(255,214,10,0.3);
+    box-shadow: 2px 2px 0 #000;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+    pointer-events: all;
+}
+.rbot-opt-btn:hover {
+    background: rgba(255,214,10,0.1);
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 #000;
+}
+.rbot-opt-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #000; }
+body.hacker-mode .rbot-opt-btn {
+    border-color: rgba(0,255,65,0.25);
+    color: rgba(0,255,65,0.7);
+    background: rgba(0,10,0,0.7);
+}
+body.hacker-mode .rbot-opt-btn:hover {
+    border-color: #00ff41; color: #00ff41;
+    background: rgba(0,255,65,0.08);
+}
+
+/* back button */
+.rbot-back-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.3rem;
+    padding: 5px 8px;
+    background: none;
+    border: 1px solid rgba(255,214,10,0.2);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.12s;
+    align-self: flex-start;
+    margin-top: 2px;
+}
+.rbot-back-btn:hover { border-color: var(--gold); color: var(--gold); }
+body.hacker-mode .rbot-back-btn { border-color: rgba(0,255,65,0.2); color: rgba(0,255,65,0.4); }
+body.hacker-mode .rbot-back-btn:hover { border-color: #00ff41; color: #00ff41; }
+
+/* ── CHARACTER (8-bit sprite, clickable) ── */
+.rbot-char-wrap {
+    pointer-events: all;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+/* speech bubble hint above sprite when chat closed */
+.rbot-hint-bubble {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: var(--bg-card);
+    border: 2px solid var(--gold);
+    box-shadow: 2px 2px 0 #000;
+    padding: 5px 8px;
+    font-family: 'VT323', monospace;
+    font-size: 0.95rem;
+    color: var(--gold);
+    white-space: nowrap;
+    animation: rbotHintBounce 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+.rbot-hint-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%; left: 14px;
+    border: 6px solid transparent;
+    border-top-color: var(--gold);
+}
+body.hacker-mode .rbot-hint-bubble {
+    border-color: #00ff41; color: #00ff41;
+    background: rgba(0,5,0,0.95);
+}
+body.hacker-mode .rbot-hint-bubble::after { border-top-color: #00ff41; }
+@keyframes rbotHintBounce {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-4px); }
+}
+.rbot-window.open ~ .rbot-char-wrap .rbot-hint-bubble { display: none; }
+
+/* the SVG sprite container */
+.rbot-sprite {
+    width: 52px; height: 68px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(2px 2px 0 #000);
+    animation: rbotIdle 0.7s steps(1) infinite;
+    transition: filter 0.3s;
+}
+body.hacker-mode .rbot-sprite {
+    filter: drop-shadow(2px 2px 0 #000) hue-rotate(90deg) saturate(1.5);
+}
+.rbot-char-wrap:hover .rbot-sprite {
+    filter: drop-shadow(2px 2px 0 #000) brightness(1.25);
+    animation: rbotWave 0.5s steps(1) infinite;
+}
+body.hacker-mode .rbot-char-wrap:hover .rbot-sprite {
+    filter: drop-shadow(2px 2px 0 #000) hue-rotate(90deg) saturate(1.5) brightness(1.3);
+}
+@keyframes rbotIdle {
+    0%  { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+@keyframes rbotWave {
+    0%  { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+/* name tag */
+.rbot-nametag {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.28rem;
+    color: var(--gold);
+    text-shadow: 1px 1px 0 #000;
+    letter-spacing: 1px;
+    margin-top: 3px;
+    text-align: center;
+}
+body.hacker-mode .rbot-nametag { color: #00ff41; }
+
+/* notification badge (unread messages) */
+.rbot-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--red);
+    border: 2px solid #000;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.28rem;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    animation: rbotBadgePop 0.3s ease;
+}
+@keyframes rbotBadgePop {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+}
+
+@media (max-width: 500px) {
+    .rbot-wrap { bottom: 10px; left: 10px; }
+    .rbot-window { width: 270px; }
+}

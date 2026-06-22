@@ -801,3 +801,507 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isHacker) showAchievement('🎮','BIENVENIDO','Portafolio cargado');
     }, 1500);
 });
+/* ================================================================
+   RETRO CHATBOT — BIT-BOT 8px  (shared across all pages)
+================================================================ */
+(function() {
+
+/* ── ÁRBOL DE CONVERSACIÓN ──────────────────────────────────────
+   Cada nodo tiene: id, msg (texto del bot), opts (array de opciones)
+   Cada opción: { label, next } donde next es id del siguiente nodo
+   Si next === '__back__' vuelve al menú anterior
+   Si next === '__root__' vuelve al inicio
+   Si next === '__end__'  solo muestra el mensaje, sin opciones
+─────────────────────────────────────────────────────────────── */
+const TREE = {
+
+  root: {
+    msg: '¡Hola! Soy BIT-BOT 8px, tu asistente retro 🎮 ¿En qué te ayudo?',
+    opts: [
+      { label: '🗺️ ¿Cómo usar esta página?', next: 'nav' },
+      { label: '📚 Dudas del curso BD II',    next: 'bd' },
+      { label: '👤 ¿Quién es el estudiante?', next: 'about' },
+      { label: '⭐ ¿Qué son los mundos?',     next: 'worlds' },
+    ]
+  },
+
+  /* ── NAVEGACIÓN ── */
+  nav: {
+    msg: '¿Sobre qué parte de la página quieres saber?',
+    opts: [
+      { label: '🏠 La página principal',        next: 'nav_index' },
+      { label: '🎓 Vista del estudiante',        next: 'nav_student' },
+      { label: '🔐 Vista del administrador',     next: 'nav_admin' },
+      { label: '💀 ¿Qué es el Modo Hacker?',    next: 'nav_hacker' },
+      { label: '◀ Volver',                       next: '__root__' },
+    ]
+  },
+  nav_index: {
+    msg: 'La página principal (index) es la pantalla de bienvenida del portafolio. Muestra el perfil del estudiante, las estadísticas del curso y las misiones académicas. Desde ahí puedes entrar como Estudiante o Admin. ¡Es como la pantalla START de un videojuego! 🕹️',
+    opts: [
+      { label: '¿Cómo entrar como Estudiante?', next: 'nav_student' },
+      { label: '¿Cómo entrar como Admin?',      next: 'nav_admin' },
+      { label: '◀ Volver al menú',              next: '__root__' },
+    ]
+  },
+  nav_student: {
+    msg: '¿Qué parte de la vista del Estudiante te interesa?',
+    opts: [
+      { label: '🗺️ El mapa de niveles',   next: 'nav_map' },
+      { label: '📂 Abrir semanas/archivos', next: 'nav_weeks' },
+      { label: '🖼️ El visor de imágenes', next: 'nav_imgs' },
+      { label: '👤 Mi perfil',             next: 'nav_profile' },
+      { label: '◀ Volver',                 next: 'nav' },
+    ]
+  },
+  nav_map: {
+    msg: 'Al entrar a la pestaña CONTENIDO verás el mapa de mundos estilo videojuego retro. Hay 4 unidades (mundos). Usa ◀▶ del teclado para moverte por el camino, y ENTER o clic para entrar al mundo seleccionado. El último mundo tiene una corona 👑 especial. 🗺️',
+    opts: [
+      { label: '¿Cómo vuelvo al mapa?',  next: 'nav_map_back' },
+      { label: '◀ Volver',               next: 'nav_student' },
+    ]
+  },
+  nav_map_back: {
+    msg: 'Una vez dentro de un mundo (unidad), verás el botón "🗺️ VOLVER AL MAPA" en la parte superior izquierda. ¡Haz clic ahí para regresar al mapa y elegir otro mundo! 👾',
+    opts: [
+      { label: '◀ Volver',  next: 'nav_student' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  nav_weeks: {
+    msg: 'Dentro de cada mundo verás las semanas del curso. Haz clic en una semana para expandirla y ver los archivos subidos. Si la semana tiene archivos, aparecerán como tarjetas con ícono según el tipo (PDF 📄, imagen 🖼️, otro 📦). ¡También puedes usar la barra de búsqueda para filtrar! 🔍',
+    opts: [
+      { label: '🖼️ ¿Cómo ver imágenes?', next: 'nav_imgs' },
+      { label: '◀ Volver',               next: 'nav_student' },
+    ]
+  },
+  nav_imgs: {
+    msg: 'Haz clic en cualquier imagen para abrirla en el visor. Dentro puedes: usar los botones + / - para zoom, arrastrar la imagen con el mouse cuando está con zoom, navegar entre imágenes de la misma semana con ◀▶, y cerrar con la X o la tecla Escape. 🖼️',
+    opts: [
+      { label: '◀ Volver',  next: 'nav_student' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  nav_profile: {
+    msg: 'La pestaña PERFIL muestra la información del estudiante: foto, carrera, barras de habilidades, misión académica y datos del curso. ¡Es como la pantalla de personaje en un RPG! ⚔️',
+    opts: [
+      { label: '◀ Volver',  next: 'nav_student' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  nav_admin: {
+    msg: 'El panel de administrador (admin.html) requiere un token de GitHub. Con ese token puedes subir archivos a las semanas, editarlos o eliminarlos. Solo el docente tiene acceso. 🔐',
+    opts: [
+      { label: '¿Qué es un token de GitHub?', next: 'nav_token' },
+      { label: '◀ Volver',                    next: 'nav' },
+    ]
+  },
+  nav_token: {
+    msg: 'Un Personal Access Token (PAT) de GitHub es una clave que genera el docente en su cuenta de GitHub (Settings → Developer settings → Tokens). Con permisos de "repo" permite subir archivos al repositorio que alimenta este portafolio. 🔑',
+    opts: [
+      { label: '◀ Volver',  next: 'nav_admin' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  nav_hacker: {
+    msg: 'El Modo Hacker 💀 es un modo visual alternativo que transforma la página a una estética Matrix/terminal verde. ¡Actívalo con el botón verde brillante en la esquina superior derecha! Todo cambia: colores, textos en glitch, lluvia de código... 🟢',
+    opts: [
+      { label: '¿Cómo lo desactivo?', next: 'nav_hacker_off' },
+      { label: '◀ Volver',           next: 'nav' },
+    ]
+  },
+  nav_hacker_off: {
+    msg: 'Haz clic de nuevo en el mismo botón (que ahora dirá "DEEP_WEB: ON") para volver al modo retro normal. El estado se guarda automáticamente, así que si recargas la página, recuerda el modo que elegiste. 🔄',
+    opts: [
+      { label: '◀ Volver',  next: 'nav_hacker' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+
+  /* ── BASE DE DATOS II ── */
+  bd: {
+    msg: '¿Sobre qué tema de Base de Datos II tienes dudas?',
+    opts: [
+      { label: '🗄️ Unidad 1 — Fundamentos y Arquitectura', next: 'bd_u1' },
+      { label: '⚡ Unidad 2 — Indexación y Performance',   next: 'bd_u2' },
+      { label: '🔒 Unidad 3 — Concurrencia y Transacciones', next: 'bd_u3' },
+      { label: '🛡️ Unidad 4 — Seguridad y Arquitecturas', next: 'bd_u4' },
+      { label: '◀ Volver al inicio',                       next: '__root__' },
+    ]
+  },
+  bd_u1: {
+    msg: '¿Qué te genera dudas en Fundamentos y Arquitectura?',
+    opts: [
+      { label: '¿Qué es el Modelado Relacional?', next: 'bd_relacional' },
+      { label: '¿Qué es la Normalización?',        next: 'bd_normal' },
+      { label: '¿Qué es el Álgebra Relacional?',  next: 'bd_algebra' },
+      { label: '◀ Volver',                         next: 'bd' },
+    ]
+  },
+  bd_relacional: {
+    msg: 'El Modelo Relacional organiza los datos en tablas (relaciones) con filas (tuplas) y columnas (atributos). Cada tabla tiene una clave primaria (PK) que identifica de forma única cada fila. Las tablas se relacionan entre sí usando claves foráneas (FK). 🗄️',
+    opts: [
+      { label: '¿Y la normalización?', next: 'bd_normal' },
+      { label: '◀ Volver',            next: 'bd_u1' },
+    ]
+  },
+  bd_normal: {
+    msg: 'Normalizar es organizar una BD para eliminar redundancias. Las formas normales más importantes son: 1FN (sin grupos repetidos), 2FN (sin dependencias parciales de la PK), 3FN (sin dependencias transitivas). En SQL Server trabajamos hasta 3FN o FNBC. 📐',
+    opts: [
+      { label: '¿Qué es FNBC?',   next: 'bd_fnbc' },
+      { label: '◀ Volver',        next: 'bd_u1' },
+    ]
+  },
+  bd_fnbc: {
+    msg: 'La Forma Normal de Boyce-Codd (FNBC) es más estricta que 3FN. Una tabla está en FNBC si para toda dependencia funcional X→Y, X es una superclave. Resuelve anomalías que 3FN no cubre. 🔍',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_normal' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_algebra: {
+    msg: 'El Álgebra Relacional es la base teórica del SQL. Sus operaciones principales son: σ (selección de filas), π (proyección de columnas), ⋈ (join), ∪ (unión), − (diferencia), × (producto cartesiano). En SQL Server estas operaciones se expresan con SELECT, WHERE, JOIN, etc. ➗',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u1' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_u2: {
+    msg: '¿Qué te genera dudas en Indexación y Performance?',
+    opts: [
+      { label: '¿Qué es un índice B-Tree?',       next: 'bd_btree' },
+      { label: '¿Índice Clustered vs Non-Clustered?', next: 'bd_clustered' },
+      { label: '¿Cómo analizo el Query Plan?',    next: 'bd_qplan' },
+      { label: '◀ Volver',                         next: 'bd' },
+    ]
+  },
+  bd_btree: {
+    msg: 'SQL Server usa índices B-Tree (Balanced Tree). Son estructuras en árbol donde los datos se ordenan jerárquicamente para búsquedas en O(log n). La raíz apunta a nodos internos que apuntan a las páginas de datos (hojas). Permiten búsquedas, rangos y ordenamientos rápidos. 🌳',
+    opts: [
+      { label: '¿Clustered vs Non-Clustered?', next: 'bd_clustered' },
+      { label: '◀ Volver',                     next: 'bd_u2' },
+    ]
+  },
+  bd_clustered: {
+    msg: 'Clustered Index: ordena físicamente los datos en disco según la clave. Solo puede haber UNO por tabla (normalmente la PK). Non-Clustered Index: estructura separada con punteros a los datos. Puede haber varios. Si buscas por columnas que no son PK, un Non-Clustered mejora mucho el rendimiento. ⚡',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u2' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_qplan: {
+    msg: 'El Query Execution Plan (Plan de ejecución) en SQL Server muestra cómo el motor ejecutará tu consulta. Actívalo con Ctrl+M o con el botón "Include Actual Execution Plan". Los operadores costosos (Table Scan, Hash Join) y el % de costo indican dónde optimizar. 📊',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u2' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_u3: {
+    msg: '¿Qué te genera dudas en Concurrencia y Transacciones?',
+    opts: [
+      { label: '¿Qué son las propiedades ACID?', next: 'bd_acid' },
+      { label: '¿Qué es un Deadlock?',           next: 'bd_deadlock' },
+      { label: '¿Qué es MVCC?',                  next: 'bd_mvcc' },
+      { label: '◀ Volver',                        next: 'bd' },
+    ]
+  },
+  bd_acid: {
+    msg: 'ACID son las 4 propiedades de las transacciones: ✅ Atomicidad (todo o nada), ✅ Consistencia (la BD pasa de un estado válido a otro), ✅ Aislamiento (las transacciones no se interfieren entre sí), ✅ Durabilidad (los cambios confirmados persisten aunque haya un fallo). BEGIN TRAN + COMMIT/ROLLBACK las garantizan. 🔒',
+    opts: [
+      { label: '¿Y los Deadlocks?', next: 'bd_deadlock' },
+      { label: '◀ Volver',         next: 'bd_u3' },
+    ]
+  },
+  bd_deadlock: {
+    msg: 'Un Deadlock ocurre cuando dos transacciones se bloquean mutuamente: A espera a B y B espera a A. SQL Server detecta esto automáticamente y mata a la víctima (la de menor costo de rollback). Para prevenirlos: accede a los recursos siempre en el mismo orden, y mantén transacciones cortas. ⚠️',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u3' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_mvcc: {
+    msg: 'MVCC (Multi-Version Concurrency Control) permite que lecturas no bloqueen escrituras. SQL Server lo implementa con el nivel de aislamiento SNAPSHOT. Cada transacción ve una versión consistente de los datos al momento en que inició, guardada en tempdb. Mejora el rendimiento en cargas concurrentes. 📸',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u3' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_u4: {
+    msg: '¿Qué te genera dudas en Seguridad y Arquitecturas?',
+    opts: [
+      { label: '¿Cómo funciona la seguridad en SQL Server?', next: 'bd_security' },
+      { label: '¿Qué es replicación/alta disponibilidad?',   next: 'bd_ha' },
+      { label: '¿Qué es un procedimiento almacenado?',       next: 'bd_sp' },
+      { label: '◀ Volver',                                    next: 'bd' },
+    ]
+  },
+  bd_security: {
+    msg: 'SQL Server maneja seguridad en capas: 🔐 Autenticación (Windows o SQL login), 🔐 Autorización (roles de servidor y BD, permisos GRANT/DENY/REVOKE), 🔐 Cifrado (TDE para datos en reposo, SSL para datos en tránsito), 🔐 Row-Level Security (filtrar filas por usuario). 🛡️',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u4' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_ha: {
+    msg: 'Alta Disponibilidad en SQL Server incluye: Always On Availability Groups (réplicas sincrónicas), Log Shipping (envío de logs a un servidor secundario), Database Mirroring (espejo en tiempo real, deprecado en versiones recientes) y Failover Cluster Instance (FCI). El objetivo: minimizar el tiempo de inactividad (RTO) y la pérdida de datos (RPO). 🏗️',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u4' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  bd_sp: {
+    msg: 'Un Stored Procedure (SP) es un bloque T-SQL precompilado guardado en la BD. Ventajas: reutilizable, más seguro (evita SQL injection), mejor rendimiento (plan de ejecución cacheado), permite lógica compleja con variables, condicionales y loops. Se crea con CREATE PROCEDURE y se ejecuta con EXEC. 📋',
+    opts: [
+      { label: '◀ Volver',  next: 'bd_u4' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+
+  /* ── SOBRE EL ESTUDIANTE ── */
+  about: {
+    msg: 'Este portafolio pertenece a Jared Josue Meza Medina, estudiante de Ingeniería de Sistemas y Computación en la UPLA, Ciclo V, semestre 2026-I. Especializado en gestión de datos y seguridad informática con SQL Server y PostgreSQL. 🎓',
+    opts: [
+      { label: '¿Qué tecnologías usa?',        next: 'about_tech' },
+      { label: '¿Dónde ver su repositorio?',   next: 'about_repo' },
+      { label: '◀ Volver al inicio',           next: '__root__' },
+    ]
+  },
+  about_tech: {
+    msg: 'Tecnologías del curso: SQL Server 2022 🗄️, PostgreSQL 16 🐘, T-SQL, PL/pgSQL, Triggers, Stored Procedures, Índices B-Tree, Replicación y Seguridad de BD. En el portafolio: HTML, CSS y JavaScript vanilla. ⚡',
+    opts: [
+      { label: '◀ Volver',  next: 'about' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+  about_repo: {
+    msg: 'El repositorio del curso está en GitHub: github.com/JaredASD/Base_de_datos_2. Ahí están todos los scripts T-SQL, evidencias y archivos de cada semana del semestre 2026-I. 🐙',
+    opts: [
+      { label: '◀ Volver',  next: 'about' },
+      { label: '🏠 Inicio', next: '__root__' },
+    ]
+  },
+
+  /* ── MUNDOS ── */
+  worlds: {
+    msg: 'El portafolio se organiza en 4 mundos (unidades), cada uno con 4 semanas de evidencias académicas. Aquí el resumen: 🗺️',
+    opts: [
+      { label: '🌱 World 1 — Fundamentos',     next: 'w1' },
+      { label: '⚡ World 2 — Indexación',      next: 'w2' },
+      { label: '🔒 World 3 — Concurrencia',    next: 'w3' },
+      { label: '👑 World 4 — Seguridad (BOSS)',next: 'w4' },
+      { label: '◀ Volver al inicio',           next: '__root__' },
+    ]
+  },
+  w1: {
+    msg: 'World 1 — FUNDAMENTOS Y ARQUITECTURA (Semanas 1-4): Modelado relacional, Álgebra relacional, Normalización (1FN, 2FN, 3FN, FNBC) y arquitectura interna de los SGBD. 🌱',
+    opts: [{ label: '◀ Volver', next: 'worlds' }, { label: '🏠 Inicio', next: '__root__' }]
+  },
+  w2: {
+    msg: 'World 2 — INDEXACIÓN Y PERFORMANCE (Semanas 5-8): Índices B-Tree, Clustered vs Non-Clustered, Query Execution Plans, optimización de consultas y estadísticas del motor. ⚡',
+    opts: [{ label: '◀ Volver', next: 'worlds' }, { label: '🏠 Inicio', next: '__root__' }]
+  },
+  w3: {
+    msg: 'World 3 — CONCURRENCIA Y TRANSACCIONES (Semanas 9-12): Propiedades ACID, niveles de aislamiento, Deadlocks, Locks, MVCC y manejo de transacciones distribuidas. 🔒',
+    opts: [{ label: '◀ Volver', next: 'worlds' }, { label: '🏠 Inicio', next: '__root__' }]
+  },
+  w4: {
+    msg: 'World 4 — SEGURIDAD Y ARQUITECTURAS (Semanas 13-16): Seguridad en SQL Server (autenticación, autorización, cifrado), Alta Disponibilidad, Always On, replicación y arquitecturas de BD distribuidas. 👑 ¡El nivel final!',
+    opts: [{ label: '◀ Volver', next: 'worlds' }, { label: '🏠 Inicio', next: '__root__' }]
+  },
+};
+
+/* ── ESTADO ── */
+let rbotOpen    = false;
+let rbotHistory = [];   // pila de nodos visitados
+let rbotCurrent = 'root';
+let rbotBadge   = 0;
+
+/* ── SPRITE SVG 8-bit (character pixel-art, pure SVG) ── */
+const SPRITE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 17" width="52" height="68">
+  <!-- head -->
+  <rect x="3" y="0" width="7" height="1" fill="#f5c842"/>
+  <rect x="2" y="1" width="9" height="1" fill="#f5c842"/>
+  <rect x="1" y="2" width="11" height="5" fill="#f5c842"/>
+  <!-- eyes -->
+  <rect x="3" y="3" width="2" height="2" fill="#1a1a2e"/>
+  <rect x="8" y="3" width="2" height="2" fill="#1a1a2e"/>
+  <!-- eye shine -->
+  <rect x="3" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="3" width="1" height="1" fill="#fff"/>
+  <!-- mouth -->
+  <rect x="4" y="6" width="1" height="1" fill="#c0392b"/>
+  <rect x="5" y="7" width="3" height="1" fill="#c0392b"/>
+  <rect x="8" y="6" width="1" height="1" fill="#c0392b"/>
+  <!-- neck -->
+  <rect x="5" y="8" width="3" height="1" fill="#f5c842"/>
+  <!-- body -->
+  <rect x="2" y="9" width="9" height="4" fill="#2471a3"/>
+  <!-- logo on shirt -->
+  <rect x="5" y="10" width="3" height="2" fill="#1a5276"/>
+  <rect x="6" y="10" width="1" height="2" fill="#f5c842"/>
+  <!-- arms -->
+  <rect x="0" y="9"  width="2" height="3" fill="#2471a3"/>
+  <rect x="11" y="9" width="2" height="3" fill="#2471a3"/>
+  <!-- hands -->
+  <rect x="0" y="12"  width="2" height="2" fill="#f5c842"/>
+  <rect x="11" y="12" width="2" height="2" fill="#f5c842"/>
+  <!-- legs -->
+  <rect x="2" y="13" width="4" height="3" fill="#1a252f"/>
+  <rect x="7" y="13" width="4" height="3" fill="#1a252f"/>
+  <!-- shoes -->
+  <rect x="1"  y="15" width="4" height="2" fill="#1a1a2e"/>
+  <rect x="8"  y="15" width="4" height="2" fill="#1a1a2e"/>
+</svg>`;
+
+/* ── INJECT HTML ── */
+function rbotInject() {
+    const wrap = document.createElement('div');
+    wrap.className = 'rbot-wrap';
+    wrap.id = 'rbot-wrap';
+    wrap.innerHTML = `
+      <!-- Chat window -->
+      <div class="rbot-window" id="rbot-window">
+        <div class="rbot-titlebar">
+          <div class="rbot-titlebar-left">
+            <div class="rbot-dot"></div>
+            <div class="rbot-dot"></div>
+            <span>BIT-BOT 8px — ASISTENTE</span>
+          </div>
+          <button class="rbot-close-btn" onclick="rbotToggle()" title="Cerrar">✕</button>
+        </div>
+        <div class="rbot-messages" id="rbot-messages"></div>
+        <div class="rbot-options" id="rbot-options"></div>
+      </div>
+
+      <!-- 8-bit character -->
+      <div class="rbot-char-wrap" id="rbot-char" onclick="rbotToggle()" title="Abrir asistente">
+        <div class="rbot-hint-bubble" id="rbot-hint">¡Hola! ¿Necesitas ayuda? 👾</div>
+        <div class="rbot-sprite" id="rbot-sprite">${SPRITE_SVG}</div>
+        <div class="rbot-nametag">BIT-BOT 8px</div>
+      </div>`;
+    document.body.appendChild(wrap);
+    rbotGoTo('root', false);
+}
+
+/* ── TOGGLE ── */
+function rbotToggle() {
+    rbotOpen = !rbotOpen;
+    document.getElementById('rbot-window').classList.toggle('open', rbotOpen);
+    if (rbotOpen) {
+        rbotClearBadge();
+        setTimeout(() => {
+            const msgs = document.getElementById('rbot-messages');
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }, 250);
+    }
+    if (typeof playJump === 'function') playJump();
+}
+
+/* ── NAVIGATE TO A NODE ── */
+function rbotGoTo(nodeId, pushHistory = true) {
+    if (nodeId === '__root__')  { rbotHistory = []; nodeId = 'root'; }
+    if (nodeId === '__back__')  { nodeId = rbotHistory.pop() || 'root'; pushHistory = false; }
+    if (nodeId === '__end__')   { return; }
+
+    const node = TREE[nodeId];
+    if (!node) return;
+
+    if (pushHistory && rbotCurrent !== nodeId) rbotHistory.push(rbotCurrent);
+    rbotCurrent = nodeId;
+
+    // Add bot message with typing delay
+    rbotAddMsg('bot', '...typing', true);
+    setTimeout(() => {
+        rbotRemoveTyping();
+        rbotAddMsg('bot', node.msg, false);
+        rbotRenderOptions(node.opts || []);
+        const msgs = document.getElementById('rbot-messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+        // Badge if closed
+        if (!rbotOpen) { rbotBadge++; rbotShowBadge(); }
+    }, 380);
+}
+
+/* ── USER PICKS AN OPTION ── */
+function rbotPick(label, next) {
+    rbotAddMsg('user', label, false);
+    setTimeout(() => rbotGoTo(next), 200);
+}
+
+/* ── ADD MESSAGE ── */
+function rbotAddMsg(who, text, isTyping) {
+    const msgs = document.getElementById('rbot-messages');
+    if (!msgs) return;
+    const div = document.createElement('div');
+    div.className = 'rbot-msg ' + who + (isTyping ? ' rbot-typing-wrap' : '');
+    if (isTyping) {
+        div.innerHTML = `<div class="rbot-msg-avatar">🤖</div>
+          <div class="rbot-msg-bubble"><div class="rbot-typing"><span></span><span></span><span></span></div></div>`;
+    } else {
+        const avatar = who === 'bot' ? '🤖' : '🧑‍💻';
+        div.innerHTML = `<div class="rbot-msg-avatar">${avatar}</div>
+          <div class="rbot-msg-bubble">${text}</div>`;
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+function rbotRemoveTyping() {
+    const t = document.querySelector('.rbot-typing-wrap');
+    if (t) t.remove();
+}
+
+/* ── RENDER OPTIONS ── */
+function rbotRenderOptions(opts) {
+    const container = document.getElementById('rbot-options');
+    if (!container) return;
+    container.innerHTML = '';
+    opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'rbot-opt-btn';
+        btn.textContent = opt.label;
+        btn.onclick = () => rbotPick(opt.label, opt.next);
+        container.appendChild(btn);
+    });
+}
+
+/* ── BADGE ── */
+function rbotShowBadge() {
+    let badge = document.getElementById('rbot-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'rbot-badge';
+        badge.id = 'rbot-badge';
+        document.getElementById('rbot-char').appendChild(badge);
+    }
+    badge.textContent = rbotBadge > 9 ? '9+' : rbotBadge;
+}
+function rbotClearBadge() {
+    rbotBadge = 0;
+    const b = document.getElementById('rbot-badge');
+    if (b) b.remove();
+}
+
+/* ── HACKER MODE HINT UPDATE ── */
+function rbotSyncHackerHint() {
+    const hint = document.getElementById('rbot-hint');
+    if (!hint) return;
+    hint.textContent = document.body.classList.contains('hacker-mode')
+        ? '> ASISTENCIA_LISTA 🟢'
+        : '¡Hola! ¿Necesitas ayuda? 👾';
+}
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', () => {
+    rbotInject();
+    // Expose to global scope for inline onclick handlers
+    window.rbotToggle = rbotToggle;
+    window.rbotPick   = rbotPick;
+    // Sync hacker hint when mode changes
+    const obs = new MutationObserver(rbotSyncHackerHint);
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    // Show badge after 3s to invite first interaction
+    setTimeout(() => { if (!rbotOpen) { rbotBadge = 1; rbotShowBadge(); } }, 3000);
+});
+
+})(); // end IIFE

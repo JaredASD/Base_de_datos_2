@@ -8,12 +8,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Retro/Arcade Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: VT323 for Pixel Art Headings, JetBrains Mono for Code -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=VT323&display=swap" rel="stylesheet">
-    
+    <!-- Google Fonts: VT323, Press Start 2P, JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <!-- Tone.js for Retro Sound Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
     <style>
         .font-arcade {
             font-family: 'VT323', monospace;
+        }
+        .font-retro-title {
+            font-family: 'Press Start 2P', monospace;
         }
         .font-code {
             font-family: 'JetBrains Mono', monospace;
@@ -25,7 +30,6 @@
             position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            aspect-ratio: auto;
             background-size: 100% 4px, 6px 100%;
             z-index: 9999;
             pointer-events: none;
@@ -55,7 +59,7 @@
         }
         .retro-border {
             border: 4px solid #1e1b4b;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
         }
         .neon-text-green {
             text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
@@ -63,22 +67,41 @@
         .neon-text-purple {
             text-shadow: 0 0 8px rgba(167, 139, 250, 0.6);
         }
-        /* Slide Transition Animations */
-        .slide-fade-enter {
-            opacity: 0;
-            transform: scale(0.98);
+        .star-bg {
+            background-image: radial-gradient(#ffffff 1px, transparent 1px), radial-gradient(#ffffff 0.5px, transparent 0.5px);
+            background-size: 40px 40px, 60px 60px;
+            background-position: 0 0, 20px 20px;
+            animation: moveStars 40s linear infinite;
         }
-        .slide-fade-enter-active {
-            transition: all 0.3s ease-out;
-            opacity: 1;
-            transform: scale(1);
+        @keyframes moveStars {
+            from { background-position: 0 0, 20px 20px; }
+            to { background-position: 1000px 500px, 1020px 520px; }
         }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 font-code selection:bg-purple-600 selection:text-white crt crt-flicker min-h-screen flex flex-col justify-between">
+<body class="bg-zinc-950 text-zinc-100 font-code selection:bg-purple-600 selection:text-white crt crt-flicker min-h-screen flex flex-col justify-between star-bg">
+
+    <!-- Splash Screen overlay (Required to initiate AudioContext) -->
+    <div id="splashScreen" class="fixed inset-0 bg-zinc-950 z-[200] flex flex-col justify-center items-center p-4 transition-all duration-700">
+        <div class="max-w-2xl text-center space-y-6 bg-zinc-900/90 retro-border rounded-2xl p-8 relative">
+            <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#8b5cf6 1px, transparent 1px); background-size: 16px 16px;"></div>
+            <h1 class="font-retro-title text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-yellow-300 animate-pulse tracking-wide leading-relaxed">
+                SQL QUEST<br><span class="text-sm">GRADOS & TITULOS EDITION</span>
+            </h1>
+            <p class="text-zinc-400 text-xs tracking-widest font-bold uppercase">Consola de Desarrollo de la Universidad Peruana Los Andes (UPLA)</p>
+            <div class="border-t border-purple-900/50 py-4 my-2 text-xs text-zinc-300 space-y-2">
+                <p class="text-yellow-400 font-bold"><i class="fa-solid fa-volume-high"></i> ESTA CONSOLA TIENE SONIDO SINTETIZADO RETRO (8-BIT)</p>
+                <p>Usa los archivos de referencia <strong class="text-purple-300">CreaBaseDatosGradosTitulos.sql.txt</strong> y <strong class="text-purple-300">CreaTablasGradosTitulos.sql.txt</strong> para interactuar.</p>
+            </div>
+            <button id="insertCoinBtn" class="px-6 py-4 bg-yellow-500 text-black hover:bg-yellow-400 border-4 border-yellow-300 rounded-xl font-retro-title text-sm tracking-wider shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all transform active:scale-95 duration-150">
+                INSERT COIN // START GAME
+            </button>
+            <p class="text-[10px] text-zinc-500 uppercase tracking-widest">© 2026 UPLA Arcade Laboratories</p>
+        </div>
+    </div>
 
     <!-- Top Navigation / Console Bar -->
-    <header class="bg-zinc-900 border-b-4 border-purple-950 p-4 sticky top-0 z-50 shadow-2xl">
+    <header class="bg-zinc-900/95 border-b-4 border-purple-950 p-4 sticky top-0 z-50 shadow-2xl backdrop-blur">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center animate-bounce shadow-[0_0_15px_rgba(147,51,234,0.7)]">
@@ -88,27 +111,39 @@
                     <h1 class="font-arcade text-4xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-300 tracking-wider">
                         SQL QUEST: GRADOS & TITULOS
                     </h1>
-                    <p class="text-xs text-purple-400 uppercase tracking-widest font-bold">UPLA Dev console v1.0.8 // 8-Bit Edition</p>
+                    <p class="text-xs text-purple-400 uppercase tracking-widest font-bold">UPLA Dev console v1.2.5 // 8-Bit Edition</p>
                 </div>
             </div>
 
             <!-- Global Controls -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap justify-center items-center gap-3">
                 <button id="toggleCrt" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
                     <i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON
                 </button>
                 <button id="exportDoc" class="px-3 py-1.5 bg-yellow-500 text-black hover:bg-yellow-400 border-2 border-yellow-300 rounded text-xs font-bold flex items-center gap-2 transition">
                     <i class="fa-solid fa-file-pdf"></i> Modo Lectura Continua
                 </button>
-                <a href="#worldMap" class="px-3 py-1.5 bg-purple-900 hover:bg-purple-800 border-2 border-purple-500 rounded text-xs font-bold flex items-center gap-2 transition">
-                    <i class="fa-solid fa-map"></i> Mapa de Niveles
-                </a>
+                <button id="muteBtn" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
+                    <i class="fa-solid fa-volume-high text-yellow-400"></i> Audio: ON
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main class="max-w-7xl w-full mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 my-4">
+    <!-- Navigation Tabs between Mission Room and Arcade Arena -->
+    <div class="max-w-7xl w-full mx-auto px-4 mt-4">
+        <div class="grid grid-cols-2 gap-4">
+            <button id="tabMissionRoom" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-purple-500 bg-purple-950 text-yellow-300 shadow-[0_0_15px_rgba(167,139,250,0.3)]">
+                <i class="fa-solid fa-terminal mr-2"></i> MISSION COMMAND
+            </button>
+            <button id="tabArcadeArena" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-pink-900/50">
+                <i class="fa-solid fa-dragon mr-2"></i> ARCADE ARENA (QUIZ)
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Container: Slide Player (Mission Room) -->
+    <main id="missionRoomSection" class="max-w-7xl w-full mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 my-4">
         
         <!-- Sidebar: Level Select (World Map) -->
         <aside id="worldMapSidebar" class="lg:col-span-1 bg-zinc-900/90 retro-border rounded-xl p-4 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
@@ -116,7 +151,7 @@
                 <h2 class="font-arcade text-3xl text-yellow-400 flex items-center gap-2">
                     <i class="fa-solid fa-folder-open text-xl"></i> SELEC. NIVEL
                 </h2>
-                <p class="text-xs text-zinc-400">Supera todos los mundos para completar la misión.</p>
+                <p class="text-xs text-zinc-400">Completa cada mundo de la base de datos.</p>
             </div>
 
             <!-- Search and stats -->
@@ -194,6 +229,81 @@
         </section>
     </main>
 
+    <!-- Arcade Arena Section (Playable Trivia Game) -->
+    <section id="arcadeArenaSection" class="max-w-7xl w-full mx-auto p-4 flex-grow hidden my-4">
+        <div class="bg-zinc-900/90 retro-border rounded-xl p-6 flex flex-col lg:flex-row gap-6 relative">
+            <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: radial-gradient(#ec4899 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+            <!-- Left Panel: Gameplay Canvas and Character Status -->
+            <div class="w-full lg:w-1/2 flex flex-col gap-4 relative z-10">
+                <div class="border-b-4 border-pink-900 pb-2">
+                    <h2 class="font-retro-title text-sm text-pink-500 flex items-center gap-2">
+                        <i class="fa-solid fa-dragon animate-pulse"></i> RETRO SQL QUIZ ARENA
+                    </h2>
+                    <p class="text-xs text-zinc-400 mt-1">¡Vence al dragón de la fragmentación lógicas con tus respuestas!</p>
+                </div>
+
+                <!-- Simulation Screen -->
+                <div class="bg-zinc-950 rounded-xl border-4 border-zinc-800 h-64 relative overflow-hidden flex flex-col justify-between p-4">
+                    <!-- Scanline Background for Retro Vibe -->
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-purple-950/20 pointer-events-none"></div>
+
+                    <!-- HUD Status Bars -->
+                    <div class="flex justify-between items-center text-[10px] uppercase font-retro-title z-10">
+                        <div class="space-y-1">
+                            <span class="text-purple-400 block font-bold">SQL Warrior:</span>
+                            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+                                <div id="heroHpBar" class="bg-emerald-500 h-full w-full transition-all duration-300"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <span class="text-pink-500 block font-bold">Laggard DB Boss:</span>
+                            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+                                <div id="bossHpBar" class="bg-red-500 h-full w-full transition-all duration-300"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Battle Arena Animation Space -->
+                    <div class="flex justify-between items-center h-full relative">
+                        <!-- Hero Avatar -->
+                        <div id="heroSprite" class="text-5xl transform transition-all duration-300">🧙‍♂️</div>
+                        <!-- Damage effect overlay -->
+                        <div id="battleImpact" class="absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300">CRIT!</div>
+                        <!-- Boss Avatar -->
+                        <div id="bossSprite" class="text-5xl transform transition-all duration-300">🐉</div>
+                    </div>
+
+                    <!-- Subtitle status -->
+                    <div id="battleLog" class="text-center font-arcade text-2xl text-yellow-400 bg-zinc-900 border border-zinc-800 rounded py-1 z-10 truncate px-2">
+                        ¡PREPÁRATE PARA LA BATALLA DE GRADOS Y TÍTULOS!
+                    </div>
+                </div>
+
+                <!-- Choose your Character -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setHero('🧙‍♂️', 'Trigger Mage')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+                        <span class="text-xl">🧙‍♂️</span>
+                        <span class="text-[9px] uppercase font-bold text-purple-400">Trigger Mage</span>
+                    </button>
+                    <button onclick="setHero('🛡️', 'DBA Knight')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+                        <span class="text-xl">🛡️</span>
+                        <span class="text-[9px] uppercase font-bold text-emerald-400">DBA Knight</span>
+                    </button>
+                    <button onclick="setHero('🥷', 'Schema Ninja')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+                        <span class="text-xl">🥷</span>
+                        <span class="text-[9px] uppercase font-bold text-yellow-400">Schema Ninja</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Trivia Questions/Controls -->
+            <div id="quizContainer" class="w-full lg:w-1/2 flex flex-col justify-between gap-4 relative z-10">
+                <!-- Dynamically populated with JS -->
+            </div>
+        </div>
+    </section>
+
     <!-- Reading/Print Full Document View Modal (Hidden by Default) -->
     <div id="fullDocModal" class="fixed inset-0 bg-zinc-950 z-[100] overflow-y-auto hidden p-4 md:p-8">
         <div class="max-w-5xl mx-auto bg-zinc-900/95 retro-border rounded-2xl p-6 md:p-10 shadow-2xl">
@@ -245,7 +355,68 @@
 
     <!-- JS Logic and Data Injection -->
     <script>
-        // Database Projects Data (All 10 projects and sub exercises)
+        // Sound configuration via Web Audio API using Tone.js
+        let synthEnabled = true;
+
+        function playSound(type) {
+            if (!synthEnabled) return;
+            try {
+                if (type === 'coin') {
+                    const synth = new Tone.Synth({
+                        oscillator: { type: "square" },
+                        envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.1 }
+                    }).toDestination();
+                    synth.triggerAttackRelease("B5", "16n");
+                    setTimeout(() => synth.triggerAttackRelease("E6", "8n"), 100);
+                } else if (type === 'blip') {
+                    const synth = new Tone.MonoSynth({
+                        oscillator: { type: "triangle" },
+                        envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.05 }
+                    }).toDestination();
+                    synth.triggerAttackRelease("A3", "16n");
+                } else if (type === 'lvlup') {
+                    const synth = new Tone.Synth({
+                        oscillator: { type: "sawtooth" }
+                    }).toDestination();
+                    synth.triggerAttackRelease("C4", "16n");
+                    setTimeout(() => synth.triggerAttackRelease("E4", "16n"), 80);
+                    setTimeout(() => synth.triggerAttackRelease("G4", "16n"), 160);
+                    setTimeout(() => synth.triggerAttackRelease("C5", "8n"), 240);
+                } else if (type === 'hit') {
+                    const noise = new Tone.NoiseSynth({
+                        noise: { type: "pink" },
+                        envelope: { attack: 0.005, decay: 0.2, sustain: 0 }
+                    }).toDestination();
+                    noise.triggerAttack();
+                } else if (type === 'laser') {
+                    const synth = new Tone.MonoSynth({
+                        oscillator: { type: "sawtooth" },
+                        filter: { Q: 2, type: "lowpass" }
+                    }).toDestination();
+                    synth.triggerAttackRelease("G5", "16n");
+                    synth.frequency.rampTo("C3", 0.15);
+                }
+            } catch (error) {
+                console.warn("Audio exception:", error);
+            }
+        }
+
+        // Initialize Audio Screen click
+        document.getElementById('insertCoinBtn').onclick = () => {
+            Tone.start();
+            document.getElementById('splashScreen').classList.add('opacity-0', 'pointer-events-none');
+            playSound('lvlup');
+        };
+
+        const muteBtn = document.getElementById('muteBtn');
+        muteBtn.onclick = () => {
+            synthEnabled = !synthEnabled;
+            muteBtn.innerHTML = synthEnabled 
+                ? '<i class="fa-solid fa-volume-high text-yellow-400"></i> Audio: ON'
+                : '<i class="fa-solid fa-volume-xmark text-red-500"></i> Audio: OFF';
+            playSound('blip');
+        };
+
         const databaseProjects = [
             {
                 id: 1,
@@ -254,24 +425,24 @@
                 title: "Creación y Distribución de Archivos Físicos",
                 main: {
                     title: "Creación de la Estructura Base de Datos",
-                    enunciado: "Crea la base de datos GradosTitulos con un archivo primario, un archivo secundario de datos para optimizar las consultas de documentos históricos, y el log de transacciones en rutas físicas dedicadas dentro del servidor. Posteriormente, realiza la consulta de los archivos físicos asociados para validar la distribución.",
-                    sql: `-- ===================================================================\n-- PROYECTO 1: CREACIÓN DE BASE DE DATOS MULTI-ARCHIVO\n-- OBJETIVO: Distribuir almacenamiento físico en discos específicos\n-- ===================================================================\nUSE master;\nGO\n\n-- Eliminar si ya existe\nIF EXISTS (SELECT name FROM sys.databases WHERE name = N'GradosTitulos')\nBEGIN\n    ALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\n    DROP DATABASE GradosTitulos;\nEND\nGO\n\n-- Crear base con distribución dedicada\nCREATE DATABASE GradosTitulos\nON PRIMARY (\n    NAME     = GradosTitulos_Data,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_data.mdf',\n    SIZE     = 20MB,\n    MAXSIZE  = 20GB,\n    FILEGROWTH = 5MB\n),\nFILEGROUP HistoricoGroup (\n    NAME     = GradosTitulos_Hist,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_hist.ndf',\n    SIZE     = 50MB,\n    MAXSIZE  = 100GB,\n    FILEGROWTH = 10MB\n)\nLOG ON (\n    NAME     = GradosTitulos_Log,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_log.ldf',\n    SIZE     = 10MB,\n    MAXSIZE  = 10GB,\n    FILEGROWTH = 2MB\n);\nGO\n\n-- Consulta de validación de archivos físicos\nSELECT \n    df.name AS LogicalName, \n    df.physical_name AS PhysicalPath, \n    fg.name AS FileGroupName, \n    df.size * 8 / 1024 AS SizeMB,\n    df.max_size AS MaxSize\nFROM sys.database_files df\nLEFT JOIN sys.filegroups fg ON df.data_space_id = fg.data_space_id;\nGO`,
-                    justification: "La segmentación física en múltiples archivos (.mdf, .ndf, .ldf) y filegroups dedicados permite la distribución de operaciones de Entrada/Salida (I/O) en diferentes unidades físicas de disco de alta velocidad (SSDs NVMe independientes). De esta manera, las consultas intensivas sobre documentos históricos almacenados en el filegroup 'HistoricoGroup' no afectan el rendimiento transaccional del archivo primario. El log de transacciones se ubica en su propio bus de escritura secuencial de alto rendimiento.",
-                    practices: "1. Colocar las rutas de archivos en discos físicos distintos en producción (Ej: C:\\ para Sistema, D:\\ para Datos Primarios, E:\\ para Históricos y F:\\ para el Log).\n2. Evitar el uso de porcentaje para el auto-crecimiento (FILEGROWTH); se recomiendan incrementos fijos medidos en megabytes para evitar la excesiva fragmentación física del disco duro."
+                    enunciado: "Crea la base de datos GradosTitulos con un archivo primario, un archivo secundario de datos para optimizar las consultas de documentos históricos, y el log de transacciones en rutas físicas dedicadas dentro del servidor (referenciando los esquemas base de CreaBaseDatosGradosTitulos.sql.txt). Posteriormente, realiza la consulta de los archivos físicos asociados para validar la distribución.",
+                    sql: `-- ===================================================================\n-- PROYECTO 1: CREACIÓN DE BASE DE DATOS MULTI-ARCHIVO\n-- ASOCIADO A: CreaBaseDatosGradosTitulos.sql.txt\n-- ===================================================================\nUSE master;\nGO\n\nIF EXISTS (SELECT name FROM sys.databases WHERE name = N'GradosTitulos')\nBEGIN\n    ALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\n    DROP DATABASE GradosTitulos;\nEND\nGO\n\n-- Creación del cartucho con segregación física\nCREATE DATABASE GradosTitulos\nON PRIMARY (\n    NAME     = GradosTitulos_Data,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_data.mdf',\n    SIZE     = 20MB,\n    MAXSIZE  = 20GB,\n    FILEGROWTH = 5MB\n),\nFILEGROUP HistoricoGroup (\n    NAME     = GradosTitulos_Hist,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_hist.ndf',\n    SIZE     = 50MB,\n    MAXSIZE  = 100GB,\n    FILEGROWTH = 10MB\n)\nLOG ON (\n    NAME     = GradosTitulos_Log,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_log.ldf',\n    SIZE     = 6MB,\n    MAXSIZE  = 2GB,\n    FILEGROWTH = 2MB\n);\nGO\n\n-- Verificación del mapa de almacenamiento\nUSE GradosTitulos;\nGO\nSELECT \n    df.name AS LogicalName, \n    df.physical_name AS PhysicalPath, \n    fg.name AS FileGroupName, \n    df.size * 8 / 1024 AS SizeMB,\n    df.max_size AS MaxSize\nFROM sys.database_files df\nLEFT JOIN sys.filegroups fg ON df.data_space_id = fg.data_space_id;\nGO`,
+                    justification: "La segmentación de archivos físicos permite la distribución I/O lógicas en múltiples discos físicos en el servidor. Al separar el filegroup HistoricoGroup para documentos pesados de resoluciones y diplomas históricos, liberamos de contención de lectura/escritura las consultas concurrentes sobre procesos cotidianos en el grupo PRIMARY.",
+                    practices: "Separar físicamente el diario de transacciones (.ldf) que escribe de manera secuencial de los archivos de datos (.mdf / .ndf) con lecturas aleatorias. Emplear FILEGROWTH controlado en megabytes para evitar la ralentización por cálculos porcentuales dinámicos."
                 },
                 prop1: {
                     title: "Incorporación de un Filegroup Exclusivo para Índices",
-                    enunciado: "Modifica la estructura de la base de datos GradosTitulos agregando un nuevo grupo de archivos llamado IdxGroup con un archivo físico secundario (.ndf). Esto servirá para almacenar de forma aislada todos los índices no agrupados de la base de datos (como IX_Persona_DNI o IX_Tramite_Matricula), optimizando la velocidad de las búsquedas.",
-                    sql: `-- ===================================================================\n-- MUNDO 1 - PROPUESTO 1: INTEGRAR FILEGROUP PARA ÍNDICES (IdxGroup)\n-- OBJETIVO: Reducir contención de cabezal aislando el árbol de índices\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Agregar el grupo de archivos\nALTER DATABASE GradosTitulos\nADD FILEGROUP IdxGroup;\nGO\n\n-- 2. Vincular un archivo físico secundario (.ndf) al grupo creado\nALTER DATABASE GradosTitulos\nADD FILE (\n    NAME = GradosTitulos_Idx,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_idx.ndf',\n    SIZE = 15MB,\n    MAXSIZE = 5GB,\n    FILEGROWTH = 5MB\n) TO FILEGROUP IdxGroup;\nGO\n\n-- Ejemplo práctico de uso: Crear un índice no agrupado direccionándolo al filegroup de índices\nUSE GradosTitulos;\nGO\n\n-- Suponiendo que la tabla Academico.Persona ya existe\nIF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Persona_DNI' AND object_id = OBJECT_ID('Academico.Persona'))\n    DROP INDEX IX_Persona_DNI ON Academico.Persona;\nGO\n\nCREATE NONCLUSTERED INDEX IX_Persona_DNI\nON Academico.Persona (NroDocumento)\nON IdxGroup; -- Direccionamiento explícito al Filegroup de Índices\nGO`,
-                    justification: "Los índices se consultan de manera paralela con las páginas de datos. Si se colocan índices y datos en filegroups separados sobre discos independientes, el motor de SQL Server lee en paralelo con múltiples hilos de ejecución reduciendo la latencia de disco y eliminando la contención física por lectura/escritura en el mismo archivo físico.",
-                    practices: "Indicar explícitamente la cláusula 'ON [NombreFilegroup]' al momento de crear índices no agrupados de manera sistemática en los scripts de despliegue para evitar que se alojen por defecto en el filegroup PRIMARY."
+                    enunciado: "Modifica la estructura de la base de datos GradosTitulos agregando un nuevo grupo de archivos llamado IdxGroup con un archivo físico secundario (.ndf). Esto servirá para almacenar de forma aislada todos los índices no agrupados de la base de datos (como IX_Persona_DNI definido en CreaTablasGradosTitulos.sql.txt), optimizando la velocidad de las búsquedas.",
+                    sql: `-- ===================================================================\n-- MUNDO 1 - PROPUESTO 1: GRUPO DE ARCHIVOS EXCLUSIVO PARA ÍNDICES\n-- ASOCIADO A: CreaTablasGradosTitulos.sql.txt\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Añadir el Filegroup para índices no agrupados\nALTER DATABASE GradosTitulos ADD FILEGROUP IdxGroup;\nGO\n\n-- 2. Asignar un archivo físico en una unidad dedicada\nALTER DATABASE GradosTitulos ADD FILE (\n    NAME     = GradosTitulos_Idx,\n    FILENAME = 'D:\\BaseDatos2026\\GradosTitulos_idx.ndf',\n    SIZE     = 15MB,\n    MAXSIZE  = 5GB,\n    FILEGROWTH = 5MB\n) TO FILEGROUP IdxGroup;\nGO\n\n-- 3. Crear el índice asociándolo al nuevo grupo físico\nUSE GradosTitulos;\nGO\nIF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Persona_DNI' AND object_id = OBJECT_ID('Academico.Persona'))\n    DROP INDEX IX_Persona_DNI ON Academico.Persona;\nGO\n\nCREATE NONCLUSTERED INDEX IX_Persona_DNI\nON Academico.Persona (DNI)\nON IdxGroup; -- Direccionamiento explícito para optimización de cabezal\nGO`,
+                    justification: "En búsquedas lógicas que recurren a Bookmark Lookups, SQL Server lee concurrentemente las páginas del árbol B-Tree del índice y de la tabla física. Si se distribuyen en filegroups montados sobre discos físicos separados, disminuimos la latencia por rotación o lectura de cabeza reduciendo significativamente la cola de espera de I/O.",
+                    practices: "Aplicar la cláusula 'ON [NombreGrupo]' de forma manual e instructiva en los scripts DDL de mantenimiento del sistema para evitar que los índices hereden la ubicación por defecto de la tabla base."
                 },
                 prop2: {
                     title: "Reubicación de un Filegroup y Consulta de Espacio Disponible",
                     enunciado: "Desarrolla una consulta transaccional avanzada que muestre el espacio total asignado, el espacio utilizado y el espacio libre (en megabytes) para cada uno de los grupos de archivos físicos que componen actualmente la base de datos GradosTitulos.",
-                    sql: `-- ===================================================================\n-- MUNDO 1 - PROPUESTO 2: CONTROL DE ESPACIO POR FILEGROUP EN MB\n-- OBJETIVO: Monitorear almacenamiento de archivos del cartucho de datos\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT\n    fg.name AS [Filegroup Name],\n    df.name AS [Logical File Name],\n    df.physical_name AS [Physical Path],\n    CAST(df.size * 8.0 / 1024 AS DECIMAL(10,2)) AS [Total Space Allocated (MB)],\n    CAST(FILEPROPERTY(df.name, 'SpaceUsed') * 8.0 / 1024 AS DECIMAL(10,2)) AS [Space Used (MB)],\n    CAST((df.size - FILEPROPERTY(df.name, 'SpaceUsed')) * 8.0 / 1024 AS DECIMAL(10,2)) AS [Free Space Available (MB)],\n    CAST(((df.size - FILEPROPERTY(df.name, 'SpaceUsed')) * 100.0) / df.size AS DECIMAL(5,2)) AS [% Free Space]\nFROM sys.database_files df\nLEFT JOIN sys.filegroups fg ON df.data_space_id = fg.data_space_id\nORDER BY fg.name, df.name;\nGO`,
-                    justification: "El uso de 'FILEPROPERTY(df.name, 'SpaceUsed')' proporciona una medición instantánea y real del espacio que ya contiene datos útiles versus el reservado por el sistema operativo, permitiendo tomar decisiones preventivas de escalado antes de que ocurran fallos por falta de almacenamiento físico.",
-                    practices: "Establecer umbrales de alerta a través del Administrador de Base de Datos para que envíe una notificación cuando el espacio libre de cualquier filegroup descienda por debajo del 15% del total asignado."
+                    sql: `-- ===================================================================\n-- MUNDO 1 - PROPUESTO 2: MONITOREO DE ALMACENAMIENTO POR FILEGROUP\n-- ASOCIADO A: Analítica del espacio físico del servidor\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT\n    fg.name AS [Filegroup Name],\n    df.name AS [Logical File Name],\n    df.physical_name AS [Physical Path],\n    CAST(df.size * 8.0 / 1024 AS DECIMAL(10,2)) AS [Total Space Allocated (MB)],\n    CAST(FILEPROPERTY(df.name, 'SpaceUsed') * 8.0 / 1024 AS DECIMAL(10,2)) AS [Space Used (MB)],\n    CAST((df.size - FILEPROPERTY(df.name, 'SpaceUsed')) * 8.0 / 1024 AS DECIMAL(10,2)) AS [Free Space Available (MB)],\n    CAST(((df.size - FILEPROPERTY(df.name, 'SpaceUsed')) * 100.0) / df.size AS DECIMAL(5,2)) AS [% Free Space]\nFROM sys.database_files df\nLEFT JOIN sys.filegroups fg ON df.data_space_id = fg.data_space_id\nORDER BY fg.name, df.name;\nGO`,
+                    justification: "La función del sistema FILEPROPERTY con el parámetro 'SpaceUsed' es el mecanismo fidedigno para medir la ocupación lógica dentro de los archivos asignados por el sistema operativo, permitiendo detectar un posible desbordamiento de disco antes de que impacte los servicios de registro.",
+                    practices: "Planificar alertas reactivas en el Administrador de Alertas cuando la tasa de espacio libre en discos de datos caiga por debajo de una cota de seguridad lógica del 15%."
                 }
             },
             {
@@ -282,23 +453,23 @@
                 main: {
                     title: "Colación de Idioma y Crecimiento Fijo",
                     enunciado: "Consulta las propiedades de colación actuales de la base de datos. Modifica la colación de GradosTitulos para asegurar el soporte nativo de caracteres en español (tildes y la letra 'Ñ'). Adicionalmente, ajusta el crecimiento automático del archivo primario de datos de manera fija a 20 MB.",
-                    sql: `-- ===================================================================\n-- PROYECTO 2: AJUSTE DE COLACIÓN Y CONFIGURACIÓN DE DISCO\n-- OBJETIVO: Configurar idioma nativo y crecimiento libre de saltos\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Consultar la colación actual de la Base de Datos\nSELECT name, collation_name \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Cambiar a colación nativa en español (Case Insensitive, Accent Sensitive)\nALTER DATABASE GradosTitulos \nSET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nGO\n\nALTER DATABASE GradosTitulos \nCOLLATE Modern_Spanish_CI_AS;\nGO\n\nALTER DATABASE GradosTitulos \nSET MULTI_USER;\nGO\n\n-- 3. Ajustar crecimiento automático fijo a 20 MB para el archivo primario\nALTER DATABASE GradosTitulos\nMODIFY FILE (\n    NAME = GradosTitulos_Data,\n    FILEGROWTH = 20MB\n);\nGO`,
-                    justification: "La colación 'Modern_Spanish_CI_AS' define las reglas de clasificación y comparación del motor para ignorar la diferencia entre mayúsculas y minúsculas (CI) pero respetando las tildes y caracteres hispanos como la 'Ñ' (AS). El establecimiento del incremento fijo a 20MB previene la excesiva fragmentación del disco y reduce la sobrecarga de CPU producida durante el cálculo matemático de crecimientos basados en porcentajes dinámicos.",
-                    practices: "Realizar el cambio de colación exclusivamente en horas de nulo tráfico transaccional, ya que requiere bloquear temporalmente la base de datos de manera exclusiva (`SINGLE_USER`)."
+                    sql: `-- ===================================================================\n-- PROYECTO 2: AJUSTE DE COLACIÓN Y PROPIEDADES EN COLA DE CONTROL\n-- ASOCIADO A: Soporte UTF-8 y caracteres hispanos en UPLA\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Diagnóstico de la propiedad actual\nSELECT name, collation_name \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Forzar el cambio de idioma con aislamiento preventivo\nALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nGO\nALTER DATABASE GradosTitulos COLLATE Modern_Spanish_CI_AS;\nGO\nALTER DATABASE GradosTitulos SET MULTI_USER;\nGO\n\n-- 3. Forzar crecimiento automático estable para el motor\nALTER DATABASE GradosTitulos\nMODIFY FILE (\n    NAME = GradosTitulos_Data,\n    FILEGROWTH = 20MB\n);\nGO`,
+                    justification: "Establecer la colación 'Modern_Spanish_CI_AS' (Case Insensitive, Accent Sensitive) garantiza que las consultas lógicas reconozcan correctamente palabras idénticas con tildes y el orden de la letra 'Ñ' en nombres de egresados. El auto-crecimiento en megabytes controlados (20MB) en lugar de porcentaje evita picos de uso del CPU y contención del sistema de archivos.",
+                    practices: "Hacer las alteraciones de colación únicamente en estados exclusivos de base de datos de baja demanda (SINGLE_USER) dado que este comando reescribe metadatos de sistema e índices lógicos existentes."
                 },
                 prop1: {
                     title: "Elevación del Nivel de Compatibilidad (Compatibility Level)",
                     enunciado: "Verifica el nivel de compatibilidad actual de GradosTitulos y elévalo a la última versión disponible del motor de base de datos para habilitar optimizaciones de consulta avanzadas, como el procesamiento de consultas inteligentes (Intelligent Query Processing).",
-                    sql: `-- ===================================================================\n-- MUNDO 2 - PROPUESTO 1: ACTUALIZACIÓN DE COMPATIBILIDAD\n-- OBJETIVO: Desbloquear los nuevos procesadores de consultas inteligentes\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Verificar el nivel de compatibilidad actual de la BD\nSELECT name, compatibility_level \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Elevar el nivel de compatibilidad a la versión de SQL Server actual (Ej. 160 para 2022)\n-- Si estás en SQL Server 2019 usa 150; para SQL Server 2022 usa 160.\nALTER DATABASE GradosTitulos \nSET COMPATIBILITY_LEVEL = 160;\nGO\n\n-- 3. Verificar el cambio realizado\nSELECT name, compatibility_level, collation_name \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO`,
-                    justification: "El nivel de compatibilidad determina las características sintácticas y de optimización de SQL Server que se aplican a la base de datos. Elevarlo a la última versión (ej. 160) permite al optimizador de consultas acceder a características como 'Intelligent Query Processing' (IQP), comentarios de planes de ejecución, ejecución en modo por lotes en almacenes de filas y compresión optimizada.",
-                    practices: "Antes de elevar el nivel de compatibilidad en bases de datos heredadas o productivas, se deben ejecutar pruebas exhaustivas con herramientas de testing de carga (`Database Experimentation Assistant`) para identificar regresiones del plan de consultas."
+                    sql: `-- ===================================================================\n-- MUNDO 2 - PROPUESTO 1: ACTUALIZACIÓN DE NIVEL DE COMPATIBILIDAD\n-- ASOCIADO A: Activación de Intelligent Query Processing (IQP)\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Inspeccionar compatibilidad histórica de la instancia\nSELECT name, compatibility_level \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Elevar el firmware lógico de procesamiento (ej. 150 = 2019, 160 = 2022)\nALTER DATABASE GradosTitulos \nSET COMPATIBILITY_LEVEL = 160;\nGO\n\n-- 3. Validar el nuevo estado de procesamiento\nSELECT name, compatibility_level \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO`,
+                    justification: "El nivel de compatibilidad habilita o deshabilita los optimizadores sintácticos lógicos de SQL Server para compatibilizar la ejecución con versiones históricas del código. Elevarlo permite desbloquear optimizaciones de compilación inteligentes sin alterar el código transaccional.",
+                    practices: "Realizar test de regresión de rendimiento con herramientas del tipo Database Experimentation Assistant antes de cambiar este nivel en sistemas productivos ya desplegados."
                 },
                 prop2: {
                     title: "Activación de PAGE_VERIFY CHECKSUM para Integridad Física",
                     enunciado: "Configura la propiedad de verificación de páginas de la base de datos GradosTitulos en modo CHECKSUM para asegurar que el motor detecte de inmediato cualquier corrupción de datos a nivel físico causada por fallas en el disco o en el sistema operativo de almacenamiento.",
-                    sql: `-- ===================================================================\n-- MUNDO 2 - PROPUESTO 2: ACTIVACIÓN DE PAGE_VERIFY CHECKSUM\n-- OBJETIVO: Blindar las páginas del cartucho de datos contra corrupción\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Consultar estado actual del método de verificación de páginas\nSELECT name, page_verify_option_desc \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Activar la verificación robusta de CHECKSUM\nALTER DATABASE GradosTitulos \nSET PAGE_VERIFY CHECKSUM \nWITH ROLLBACK IMMEDIATE;\nGO\n\n-- 3. Confirmar la activación\nSELECT name, page_verify_option_desc \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO`,
-                    justification: "El modo `CHECKSUM` calcula un valor criptográfico de verificación matemático para toda la página de datos de 8 KB al momento de guardarse en el disco físico. Cuando la página es leída de nuevo en la memoria RAM, el valor se vuelve a calcular; si no coincide, SQL Server reporta un error grave de integridad física (Error 824) indicando anomalías en los controladores o almacenamiento antes de propagar la corrupción lógica.",
-                    practices: "Es mandatorio que todas las bases de datos transaccionales de producción operen con PAGE_VERIFY en modo CHECKSUM. Las opciones legacy como 'TORN_PAGE_DETECTION' o 'NONE' están obsoletas y ofrecen nula protección lógica."
+                    sql: `-- ===================================================================\n-- MUNDO 2 - PROPUESTO 2: PARCHE DE SEGURIDAD FÍSICA DE PÁGINAS\n-- ASOCIADO A: Detección preventiva de sectores corruptos del disco\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Consultar protección de firmware actual\nSELECT name, page_verify_option_desc \nFROM sys.databases \nWHERE name = 'GradosTitulos';\nGO\n\n-- 2. Blindar el guardado de páginas en frío\nALTER DATABASE GradosTitulos \nSET PAGE_VERIFY CHECKSUM \nWITH ROLLBACK IMMEDIATE;\nGO`,
+                    justification: "El algoritmo CHECKSUM graba un número hash computado para cada página de datos de 8 KB al ser persistida. En la lectura a memoria RAM, recalcula el hash y, si no concuerda por degradación de sectores físicos del hardware, emite un error estructurado previniendo corrupciones lógicas.",
+                    practices: "En bases de datos de producción corporativas es obligatorio mantener PAGE_VERIFY en CHECKSUM. Los métodos antiguos como TORN_PAGE_DETECTION o NONE no garantizan la integridad de los datos lógicos."
                 }
             },
             {
@@ -309,23 +480,23 @@
                 main: {
                     title: "Ciclo de Modelos de Recuperación y Backup Completo",
                     enunciado: "Cambia de forma secuencial el modelo de recuperación de la base de datos GradosTitulos a SIMPLE y posteriormente a BULK_LOGGED. Explica el impacto de ambos entornos. Finalmente, cambia el modelo a FULL y ejecuta un respaldo completo (BACKUP DATABASE) hacia un directorio seguro de almacenamiento.",
-                    sql: `-- ===================================================================\n-- PROYECTO 3: CONFIGURACIÓN DE RESPALDO INTEGRAL Y SAVE STATES\n-- OBJETIVO: Dominar los puntos de restauración críticos de la consola\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Cambiar a modelo de recuperación SIMPLE\nALTER DATABASE GradosTitulos SET RECOVERY SIMPLE;\nGO\n-- [Impacto]: No permite respaldos de log de transacciones. El espacio de log se trunca \n-- automáticamente en cada checkpoint. Ideal para desarrollo pero riesgoso para producción.\n\n-- 2. Cambiar a modelo de recuperación BULK_LOGGED\nALTER DATABASE GradosTitulos SET RECOVERY BULK_LOGGED;\nGO\n-- [Impacto]: Registra mínimamente las operaciones masivas (como BULK INSERT, bcp o \n-- reconstrucciones de índices) optimizando el rendimiento, pero no permite recuperación \n-- hasta el segundo exacto si ocurre un fallo durante dichas transacciones masivas.\n\n-- 3. Cambiar a modelo FULL para máxima seguridad en producción\nALTER DATABASE GradosTitulos SET RECOVERY FULL;\nGO\n-- [Impacto]: Garantiza persistencia total de cada cambio. Permite backups del Log de Transacciones.\n\n-- 4. Ejecutar el respaldo completo (FULL BACKUP)\nBACKUP DATABASE GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    FORMAT, -- Sobrescribe y crea un nuevo juego de medios\n    MEDIANAME = 'GradosTitulos_Backups_Med',\n    NAME = 'Copia Completa de Seguridad GradosTitulos',\n    STATS = 10, -- Muestra progreso cada 10%\n    COMPRESSION; -- Comprime el tamaño final del archivo físico de respaldo\nGO`,
-                    justification: "El modelo FULL es la piedra angular de la resiliencia en base de datos financieras o gubernamentales. Al registrar de forma estricta todo flujo transaccional dentro del log de transacciones, posibilita la restauración del sistema a un estado preciso en el tiempo en caso de desastres lógicos.",
-                    practices: "Habilitar de manera obligatoria la opción 'COMPRESSION' en todos los servidores de base de datos SQL Server Enterprise/Standard para reducir hasta en un 80% el consumo de ancho de banda de red y de espacio físico en almacenamiento secundario."
+                    sql: `-- ===================================================================\n-- PROYECTO 3: CONFIGURACIÓN DE RESPALDO INTEGRAL Y SAVE STATES\n-- ASOCIADO A: Políticas de persistencia ante desastres institucionales\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Transición a Modelo de Recuperación SIMPLE\nALTER DATABASE GradosTitulos SET RECOVERY SIMPLE;\nGO\n-- [Impacto]: El log de transacciones se autolimpia en checkpoints. No permite copias log.\n\n-- 2. Transición a Modelo BULK_LOGGED\nALTER DATABASE GradosTitulos SET RECOVERY BULK_LOGGED;\nGO\n-- [Impacto]: Operaciones masivas (como bulk inserts o index rebuilds) no se loguean en detalle.\n\n-- 3. Retorno seguro al Modelo FULL\nALTER DATABASE GradosTitulos SET RECOVERY FULL;\nGO\n-- [Impacto]: Registro exhaustivo para respaldos transaccionales continuos.\n\n-- 4. Ejecución del Save State Completo con compresión activa\nBACKUP DATABASE GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    FORMAT, \n    MEDIANAME = 'UPLA_Grados_Medias',\n    NAME = 'Respaldo Completo de Base Grados y Titulos',\n    STATS = 10,\n    COMPRESSION;\nGO`,
+                    justification: "El modelo FULL y el comando BACKUP con formato garantizan la creación de un punto de retorno limpio. La compresión del archivo de backup acelera las operaciones de red de copias de seguridad de la UPLA en hasta un 70%.",
+                    practices: "Habilitar la opción COMPRESSION por defecto a nivel de instancia de servidor SQL Server para mitigar el consumo de espacio de disco en cabinas NAS de respaldo."
                 },
                 prop1: {
                     title: "Respaldo Diferencial de Seguridad para Optimización",
                     enunciado: "Con el objetivo de optimizar el espacio en el almacenamiento y acelerar la ventana de mantenimiento diario, ejecuta un respaldo de tipo diferencial (DIFFERENTIAL) de la base de datos GradosTitulos, guardándolo en un archivo específico.",
-                    sql: `-- ===================================================================\n-- MUNDO 3 - PROPUESTO 1: EJECUCIÓN DE RESPALDO DIFERENCIAL\n-- OBJETIVO: Guardar solo cambios desde el último Save State completo\n-- ===================================================================\nUSE master;\nGO\n\n-- Realizar respaldo diferencial de seguridad\nBACKUP DATABASE GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_Diff.bak'\nWITH \n    DIFFERENTIAL,\n    FORMAT, \n    MEDIANAME = 'GradosTitulos_Diff_Med',\n    NAME = 'Copia Diferencial Diaria GradosTitulos',\n    STATS = 10,\n    COMPRESSION;\nGO`,
-                    justification: "El respaldo diferencial captura únicamente los bloques de datos (extensiones de 64 KB) que han cambiado desde el último respaldo completo. Esto reduce drásticamente el volumen del archivo generado y disminuye el tiempo requerido en la ventana diaria de copias de seguridad de la institución.",
-                    practices: "Establecer una rutina semanal de Backups Completos (ej. domingos) y Backups Diferenciales diarios (de lunes a sábado) para optimizar el almacenamiento del servidor."
+                    sql: `-- ===================================================================\n-- MUNDO 3 - PROPUESTO 1: RESPALDO DIFERENCIAL LÓGICO\n-- ASOCIADO A: Optimización de tiempos en ventana de mantenimiento\n-- ===================================================================\nUSE master;\nGO\n\nBACKUP DATABASE GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_Diff.bak'\nWITH \n    DIFFERENTIAL,\n    FORMAT,\n    NAME = 'Copia Diferencial Diaria GradosTitulos',\n    STATS = 10,\n    COMPRESSION;\nGO`,
+                    justification: "Un backup diferencial copia únicamente los bloques lógicos del cartucho de datos que sufrieron modificaciones de INSERT/UPDATE desde el backup completo anterior. Su tamaño es notablemente menor y se compila de manera más veloz.",
+                    practices: "Establecer calendarios semanales donde se realice un backup completo dominical acompañado de copias diferenciales de mantenimiento diarias en horas nocturnas."
                 },
                 prop2: {
                     title: "Respaldo Periódico del Log de Transacciones",
                     enunciado: "Dado que la base de datos opera bajo el modelo de recuperación FULL, realiza un respaldo exclusivo del archivo de registro de transacciones (LOG) de GradosTitulos para liberar el espacio reutilizable dentro del archivo .ldf y asegurar la posibilidad de recuperar los datos hasta un minuto exacto antes de un fallo.",
-                    sql: `-- ===================================================================\n-- MUNDO 3 - PROPUESTO 2: RESPALDO Y LIBERACIÓN DEL LOG\n-- OBJETIVO: Evitar el desbordamiento de disco del registro histórico\n-- ===================================================================\nUSE master;\nGO\n\n-- Ejecutar respaldo de Log de Transacciones\nBACKUP LOG GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_LogBackup.trn'\nWITH \n    FORMAT,\n    NAME = 'Copia de Log GradosTitulos - Recuperacion Puntual',\n    STATS = 10,\n    COMPRESSION;\nGO\n\n-- Consulta rápida para validar la reducción de espacio activo en el log\nUSE GradosTitulos;\nGO\nSELECT name, size * 8 / 1024 AS SizeMB, max_size \nFROM sys.database_files \nWHERE type_desc = 'LOG';\nGO`,
-                    justification: "Bajo el modelo de recuperación FULL, el archivo del log de transacciones (`.ldf`) crece sin control lógico hasta llenarse a menos que se ejecute un respaldo específico de su log (`BACKUP LOG`). Este respaldo copia las transacciones confirmadas a un archivo de disco seguro externo y trunca la sección inactiva de las páginas lógicas para que el motor las pueda reutilizar en nuevas peticiones sin necesidad de expandir físicamente el archivo físico del sistema operativo.",
-                    practices: "En entornos de producción altamente transaccionales, se debe programar el respaldo del archivo de LOG con una frecuencia agresiva (ej. cada 15 minutos) para evitar bloqueos del sistema por disco saturado y asegurar pérdidas de información cercanas a cero en caso de desastres físicos."
+                    sql: `-- ===================================================================\n-- MUNDO 3 - PROPUESTO 2: COPIA Y TRUNCADO DEL LOG DE TRANSACCIONES\n-- ASOCIADO A: Recuperación Point-In-Time de la universidad\n-- ===================================================================\nUSE master;\nGO\n\nBACKUP LOG GradosTitulos\nTO DISK = 'D:\\BaseDatos2026\\GradosTitulos_LogBackup.trn'\nWITH \n    FORMAT,\n    NAME = 'Respaldo del Log de Grados y Titulos',\n    STATS = 10,\n    COMPRESSION;\nGO\n\n-- Inspeccionar tamaño lógico residual del log\nUSE GradosTitulos;\nGO\nSELECT name, size * 8 / 1024 AS SizeMB, max_size FROM sys.database_files WHERE type_desc = 'LOG';\nGO`,
+                    justification: "Bajo el modelo FULL, el archivo .ldf se expande exponencialmente dado que mantiene los rastros operativos inalterados hasta que el comando BACKUP LOG libera el espacio virtualizado, permitiendo la reutilización de las páginas del archivo físico sin incrementar el tamaño del disco.",
+                    practices: "Configurar la ejecución automatizada de backups del Log cada 15 o 30 minutos en servidores de alto volumen de transacciones para garantizar la resiliencia ante contingencias."
                 }
             },
             {
@@ -336,23 +507,23 @@
                 main: {
                     title: "Creación de Logins, Mapeos de Usuarios y Roles de Sistema",
                     enunciado: "Crea un esquema de seguridad basado en roles integrados del sistema. Configura el login de servidor y usuario de base de datos VendedorQhatu (renombrado bajo el ecosistema institucional como OperadorTramite), asignándolo al rol db_datawriter para la gestión diaria del flujo administrativo. Asimismo, configura el usuario ConsultaCliente (renombrado como AuditorSunedu) vinculándolo exclusivamente al rol db_datareader.",
-                    sql: `-- ===================================================================\n-- PROYECTO 4: CONFIGURACIÓN DE SEGURIDAD BASADA EN ROLES INTEGRADOS\n-- OBJETIVO: Impedir accesos no autorizados al código de la consola\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Crear inicios de sesión (Logins) en la instancia del Servidor\nCREATE LOGIN OperadorTramite WITH PASSWORD = 'Strong_Password123#', DEFAULT_DATABASE = GradosTitulos;\nGO\nCREATE LOGIN AuditorSunedu WITH PASSWORD = 'Secure_Password456$', DEFAULT_DATABASE = GradosTitulos;\nGO\n\nUSE GradosTitulos;\nGO\n\n-- 2. Crear usuarios en la base de datos GradosTitulos mapeados a los Logins de arriba\nCREATE USER OperadorTramite FOR LOGIN OperadorTramite;\nGO\nCREATE USER AuditorSunedu FOR LOGIN AuditorSunedu;\nGO\n\n-- 3. Asignación de Roles integrados del sistema\n-- OperadorTramite: Permiso de modificación y escritura de datos\nALTER ROLE db_datawriter ADD MEMBER OperadorTramite;\nGO\n\n-- AuditorSunedu: Permiso de lectura de datos únicamente\nALTER ROLE db_datareader ADD MEMBER AuditorSunedu;\nGO`,
-                    justification: "El uso de inicios de sesión mapeados a usuarios de bases de datos de forma desacoplada permite aislar la capa de autenticación a nivel físico de la capa de autorización a nivel lógico de datos. La utilización de los roles integrados `db_datawriter` y `db_datareader` simplifica la delegación de responsabilidades básicas sin sobrepasar permisos sensitivos como administración de esquemas o modificación de backups.",
-                    practices: "Siempre usar contraseñas robustas cumpliendo con políticas de complejidad del sistema operativo local y deshabilitar cuentas que no estén en uso directo. Nunca mapear cuentas de uso administrativo directo al rol 'sysadmin' de manera deliberada."
+                    sql: `-- ===================================================================\n-- PROYECTO 4: CONTROL DE ACCESO BASADO EN ROLES INTEGRADOS\n-- ASOCIADO A: Mapeo de seguridad para trámites académicos\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Credenciales de la Consola a nivel Instancia\nCREATE LOGIN OperadorTramite WITH PASSWORD = 'Strong_Password123#', DEFAULT_DATABASE = GradosTitulos;\nCREATE LOGIN AuditorSunedu WITH PASSWORD = 'Secure_Password456$', DEFAULT_DATABASE = GradosTitulos;\nGO\n\n-- 2. Asociar usuarios del cartucho a nivel de la Base de Datos\nUSE GradosTitulos;\nGO\nCREATE USER OperadorTramite FOR LOGIN OperadorTramite;\nCREATE USER AuditorSunedu FOR LOGIN AuditorSunedu;\nGO\n\n-- 3. Vincular permisos con el menor privilegio de roles fijos\nALTER ROLE db_datawriter ADD MEMBER OperadorTramite; -- Modificar datos\nALTER ROLE db_datareader ADD MEMBER AuditorSunedu;   -- Consultar datos\nGO`,
+                    justification: "La división jerárquica de roles fijos minimiza el riesgo informático en el servidor. Al aislar las cuentas académicas e impedir privilegios administrativos (sysadmin), nos aseguramos de que un potencial ataque cibernético quede restringido a permisos estrictamente lógicos y parametrizables.",
+                    practices: "Evitar delegar roles de administración genéricos. Forzar directivas de contraseñas de alta complejidad y cambiar accesos en periodos periódicos definidos por el área de ciberseguridad."
                 },
                 prop1: {
-                    title: "Creación de un Rol de Base de Datos Personalizado (Custom)",
+                    title: "Creación de un Rol de Base de Datos Personalizado",
                     enunciado: "El equipo de secretaría académica necesita un perfil de seguridad intermedio. Crea un rol personalizado dentro de la base de datos llamado RolSecretariaAcademica. Concédeles permisos de lectura (SELECT) en el esquema Academico y en el esquema Tramite, pero otórgales también permisos para insertar registros (INSERT) únicamente en la tabla Tramite.Tramite.",
-                    sql: `-- ===================================================================\n-- MUNDO 4 - PROPUESTO 1: ROL PERSONALIZADO ROL_SECRETARIA_ACADEMICA\n-- OBJETIVO: Administrar accesos con precisión quirúrgica\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear el Rol de Base de Datos personalizado\nCREATE ROLE RolSecretariaAcademica;\nGO\n\n-- 2. Otorgar permisos de lectura a nivel de esquemas completos\nGRANT SELECT ON SCHEMA::Academico TO RolSecretariaAcademica;\nGRANT SELECT ON SCHEMA::Tramite TO RolSecretariaAcademica;\nGO\n\n-- 3. Otorgar permisos específicos de inserción a nivel de una sola tabla\nGRANT INSERT ON OBJECT::Tramite.Tramite TO RolSecretariaAcademica;\nGO\n\n-- [Prueba de concepto: Cómo añadir un miembro real de la secretaría a este Rol]\n-- CREATE USER SecretariaVirtual FOR LOGIN SecretariaVirtual;\n-- ALTER ROLE RolSecretariaAcademica ADD MEMBER SecretariaVirtual;\nGO`,
-                    justification: "Los roles personalizados de base de datos facilitan el mantenimiento de la seguridad a largo plazo de la plataforma. En lugar de conceder permisos de acceso uno a uno para cada tabla e inicio de sesión de usuario, se delegan sobre un rol abstracto y luego se añaden los usuarios como miembros, reduciendo errores humanos de seguridad.",
-                    practices: "Utilizar el prefijo 'Rol' o 'R_' para distinguir visualmente los roles personalizados creados por el administrador frente a los del sistema preinstalados por Microsoft."
+                    sql: `-- ===================================================================\n-- MUNDO 4 - PROPUESTO 1: ROLES PERSONALIZADOS GRANULARES (CUSTOM)\n-- ASOCIADO A: Perfil de accesos para Secretaría Académica UPLA\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear el Rol de Base de Datos personalizado\nCREATE ROLE RolSecretariaAcademica;\nGO\n\n-- 2. Conceder lectura completa en los esquemas lógicos académicos\nGRANT SELECT ON SCHEMA::Academico TO RolSecretariaAcademica;\nGRANT SELECT ON SCHEMA::Tramite TO RolSecretariaAcademica;\nGO\n\n-- 3. Conceder permisos de inserción explícita en tabla transaccional\nGRANT INSERT ON OBJECT::Tramite.Tramite TO RolSecretariaAcademica;\nGO`,
+                    justification: "El uso de roles personalizados encapsula permisos lógicos sobre esquemas definidos por negocio, eliminando la sobrecarga que representa configurar la autorización elemento por elemento para cada usuario del sistema de la secretaría.",
+                    practices: "Emplear la nomenclatura jerárquica de esquemas físicos en SQL para agrupar tablas y simplificar las políticas de concesión de permisos relacionales."
                 },
                 prop2: {
                     title: "Denegación Explícita de Acceso Mediante DENY",
                     enunciado: "Para proteger la información financiera de la universidad, aplica una restricción estricta de seguridad bloqueando explícitamente al usuario OperadorTramite cualquier lectura o visualización de datos de la tabla Tramite.Pago, prevaleciendo sobre cualquier otro rol que tenga asignado.",
-                    sql: `-- ===================================================================\n-- MUNDO 4 - PROPUESTO 2: REGLA DE SEGURIDAD MÁXIMA CON DENY\n-- OBJETIVO: Bloquear datos financieros sensibles para operadores\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Bloquear explícitamente la lectura de la tabla de pagos para el Operador\nDENY SELECT ON OBJECT::Tramite.Pago TO OperadorTramite;\nGO\n\n-- Consulta de prueba para validar que el permiso está restringido\n-- Al iniciar sesión como OperadorTramite, una consulta a esta tabla retornará un error 229.\nSELECT \n    pr.name AS PrincipalName,\n    pe.permission_name AS Permission,\n    pe.state_desc AS PermissionState,\n    OBJECT_NAME(pe.major_id) AS ObjectName\nFROM sys.database_permissions pe\nJOIN sys.database_principals pr ON pe.grantee_principal_id = pr.principal_id\nWHERE pr.name = 'OperadorTramite';\nGO`,
-                    justification: "En la arquitectura de permisos jerárquicos de SQL Server, la instrucción `DENY` tiene prioridad absoluta sobre cualquier permiso de otorgación `GRANT` explícito u obtenido de forma secundaria a través de roles del sistema. Aunque el usuario pertenezca al rol `db_datawriter` o `db_datareader`, la presencia del comando `DENY` bloqueará su acceso de manera irrefutable.",
-                    practices: "Utilizar con precaución `DENY` para implementar de forma segura escenarios de control de accesos basados en perfiles conflictivos o segregación rigurosa de datos financieros y personales."
+                    sql: `-- ===================================================================\n-- MUNDO 4 - PROPUESTO 2: ACCIÓN RESTRICTIVA DE SEGURIDAD (DENY)\n-- ASOCIADO A: Restricción del módulo de pagos\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Bloqueo absoluto de datos bancarios/pagos de egresados\nDENY SELECT ON OBJECT::Tramite.Pago TO OperadorTramite;\nGO\n\n-- Validación analítica del bloqueo en el diccionario del motor\nSELECT \n    pr.name AS PrincipalName,\n    pe.permission_name AS Permission,\n    pe.state_desc AS PermissionState,\n    OBJECT_NAME(pe.major_id) AS ObjectName\nFROM sys.database_permissions pe\nJOIN sys.database_principals pr ON pe.grantee_principal_id = pr.principal_id\nWHERE pr.name = 'OperadorTramite';\nGO`,
+                    justification: "La directiva DENY sobrepasa lógicamente cualquier combinación de otorgación de accesos directos o heredados de roles fijos del sistema (como db_datareader), garantizando de forma absoluta que el usuario no pueda consultar datos financieros confidenciales.",
+                    practices: "Utilizar DENY como elemento definitivo para controles de separación de funciones (SoD - Segregation of Duties) en arquitecturas financieras o de datos sensibles de la universidad."
                 }
             },
             {
@@ -363,23 +534,23 @@
                 main: {
                     title: "Permisos Granulares a Nivel de Vistas y Revocación Estratégica",
                     enunciado: "Aplica el principio de mínimo privilegio de forma granular. Concede al usuario GerenteQhatu (actualizado a CoordinadorFacultad) acceso exclusivo de solo lectura (SELECT) a la vista analítica Evaluacion.V_NotaFinalSustentacion. En paralelo, revoca explícitamente al rol o usuario CajeroQhatu (actualizado a AsistenteTramite) el permiso de modificación (UPDATE) sobre la tabla crítica Tramite.Pago.",
-                    sql: `-- ===================================================================\n-- PROYECTO 5: PRINCIPIO DE MÍNIMO PRIVILEGIO Y GRANULARIDAD\n-- OBJETIVO: Entregar las llaves correctas a los jugadores correctos\n-- ===================================================================\nUSE master;\nGO\n\n-- Crear los logins y usuarios actualizados\nCREATE LOGIN CoordinadorFacultad WITH PASSWORD = 'CoordPassword_789!';\nCREATE LOGIN AsistenteTramite WITH PASSWORD = 'AsistPassword_101112#';\nGO\n\nUSE GradosTitulos;\nGO\nCREATE USER CoordinadorFacultad FOR LOGIN CoordinadorFacultad;\nCREATE USER AsistenteTramite FOR LOGIN AsistenteTramite;\nGO\n\n-- 1. Acceso de solo lectura EXCLUSIVO a la vista analítica\nGRANT SELECT ON OBJECT::Evaluacion.V_NotaFinalSustentacion TO CoordinadorFacultad;\nGO\n\n-- 2. Revocar explícitamente el permiso de actualización (UPDATE) sobre Tramite.Pago\nREVOKE UPDATE ON OBJECT::Tramite.Pago FROM AsistenteTramite;\nGO`,
-                    justification: "El acceso directo a las tablas fuente es un riesgo crítico. Conceder permisos sobre vistas analíticas encapsuladas (`V_NotaFinalSustentacion`) permite ocultar filas o columnas confidenciales en bases de datos académicas. Por otro lado, `REVOKE` deshace un permiso previamente asignado mediante un `GRANT` de manera directa, sin obligar al uso extremo de un `DENY` que pudiese condicionar otros accesos futuros del usuario.",
-                    practices: "Diseñar vistas de consumo de reportaría orientadas a departamentos específicos antes de otorgar acceso directo a bases de datos relacionales crudas."
+                    sql: `-- ===================================================================\n-- PROYECTO 5: GESTIÓN DE PRIVILEGIOS MINIMOS A NIVEL DE OBJETOS\n-- ASOCIADO A: Vistas analíticas y tablas de cobros en UPLA\n-- ===================================================================\nUSE master;\nGO\nCREATE LOGIN CoordinadorFacultad WITH PASSWORD = 'Coord_Pass_999#';\nCREATE LOGIN AsistenteTramite WITH PASSWORD = 'Asist_Pass_888$';\nGO\n\nUSE GradosTitulos;\nGO\nCREATE USER CoordinadorFacultad FOR LOGIN CoordinadorFacultad;\nCREATE USER AsistenteTramite FOR LOGIN AsistenteTramite;\nGO\n\n-- 1. Otorgar acceso de lectura exclusivo a la vista analítica de notas de jurados\nGRANT SELECT ON OBJECT::Evaluacion.V_NotaFinalSustentacion TO CoordinadorFacultad;\nGO\n\n-- 2. Retirar permiso de modificación sobre tabla crítica de pagos\nREVOKE UPDATE ON OBJECT::Tramite.Pago FROM AsistenteTramite;\nGO`,
+                    justification: "El aislamiento de acceso a tablas base mediante vistas impide alteraciones no deseadas de los registros de notas. El comando REVOKE anula una atribución de permisos otorgada de forma directa de manera limpia, sin forzar una restricción permanente que se mantenga de por vida como el comando DENY.",
+                    practices: "Limitar de forma mandatoria los accesos por defecto de las cuentas de usuarios externos a esquemas de vistas o ejecuciones de procedimientos almacenados estructurados."
                 },
                 prop1: {
-                    title: "Permisos Granulares a Nivel de Columnas (Column-Level)",
+                    title: "Permisos Granulares a Nivel de Columnas",
                     enunciado: "El equipo de desarrollo técnico necesita realizar estadísticas de contacto con los docentes, pero por normativas de privacidad no deben ver información sensible. Concede al usuario PracticanteSistemas acceso de lectura (SELECT) únicamente a las columnas IdPersona, Nombres, ApellidoPaterno, y Correo de la tabla Academico.Persona.",
-                    sql: `-- ===================================================================\n-- MUNDO 5 - PROPUESTO 1: PERMISOS GRANULARES DE COLUMNA\n-- OBJETIVO: Proteger el padrón de datos personales de egresados\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear el usuario para el desarrollador junior\nIF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'PracticanteSistemas')\nBEGIN\n    CREATE USER PracticanteSistemas WITHOUT LOGIN; -- Creado sin credencial física para testing\nEND\nGO\n\n-- 2. Conceder select explícitamente a columnas específicas de la tabla\nGRANT SELECT (IdPersona, Nombres, ApellidoPaterno, Correo) \nON OBJECT::Academico.Persona \nTO PracticanteSistemas;\nGO\n\n-- [Prueba de Concepto lúdica de validación de error]\n-- Impersonar usuario para probar su comportamiento de seguridad\nEXECUTE AS USER = 'PracticanteSistemas';\n-- Esta consulta debe ejecutarse exitosamente:\nSELECT IdPersona, Nombres, ApellidoPaterno, Correo FROM Academico.Persona;\n-- Esta consulta debe lanzar error catastrófico (Falta de permisos):\n-- SELECT NroDocumento, Telefono, Direccion FROM Academico.Persona;\nREVERT;\nGO`,
-                    justification: "Los permisos de nivel de columna (`Column-Level Permissions`) aseguran un control granular avanzado que garantiza que el personal externo de sistemas únicamente pueda consultar datos elementales de análisis de datos, mientras que la información más delicada (tales como números de identidad de los egresados) queda blindada lógicamente.",
-                    practices: "A pesar de que SQL Server soporta permisos a nivel de columna, es una recomendación general y de alta escala utilizar Vistas segregadas como alternativa técnica, pues facilita el mantenimiento de los scripts para los administradores de sistemas."
+                    sql: `-- ===================================================================\n-- MUNDO 5 - PROPUESTO 1: AUTORIZACIONES DE NIVEL DE COLUMNA\n-- ASOCIADO A: Protección de datos personales (Ley N° 29733 Perú)\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nCREATE USER PracticanteSistemas WITHOUT LOGIN;\nGO\n\n-- Conceder lectura única sobre buffers de contacto seguros\nGRANT SELECT (IdPersona, Nombres, ApellidoPaterno, Correo) \nON OBJECT::Academico.Persona \nTO PracticanteSistemas;\nGO\n\n-- Prueba de validación de impersonación\nEXECUTE AS USER = 'PracticanteSistemas';\n-- Ejecución exitosa:\nSELECT IdPersona, Nombres, ApellidoPaterno, Correo FROM Academico.Persona;\n-- Lanzará error de permisos inmediato:\n-- SELECT DNI, Telefono FROM Academico.Persona;\nREVERT;\nGO`,
+                    justification: "La autorización granular por columna impide de forma física que la cuenta de desarrollo lea información sensible como los números de documento (DNI) o teléfonos, mitigando fugas accidentales o intencionadas de información corporativa.",
+                    practices: "Para sistemas complejos se recomienda implementar Vistas de Datos en lugar de permisos a nivel de columnas, ya que simplifica la visualización de los esquemas en el código de aplicación."
                 },
                 prop2: {
                     title: "Concesión del Permiso EXECUTE sobre Procedimientos Almacenados",
                     enunciado: "Concede al usuario OperadorTramite permisos exclusivos para ejecutar el procedimiento almacenado Tramite.SP_RegistrarTramite, garantizando que pueda procesar nuevas solicitudes sin necesidad de darle accesos directos de escritura sobre las tablas involucradas.",
-                    sql: `-- ===================================================================\n-- MUNDO 5 - PROPUESTO 2: CONCESIÓN DE PERMISO EXECUTE EN SP\n-- OBJETIVO: Ejecutar procesos sin requerir manipulación directa de tablas\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear un procedimiento dummy simulado si no existiese para evitar errores sintácticos\nIF OBJECT_ID('Tramite.SP_RegistrarTramite', 'P') IS NULL\nBEGIN\n    EXEC('CREATE PROCEDURE Tramite.SP_RegistrarTramite AS PRINT ''Misión Completada!'';');\nEND\nGO\n\n-- 2. Conceder el permiso de ejecución granular\nGRANT EXECUTE ON OBJECT::Tramite.SP_RegistrarTramite TO OperadorTramite;\nGO`,
-                    justification: "La concesión del permiso `EXECUTE` sin conceder accesos directos de escritura sobre las tablas de datos de fondo se conoce técnicamente como un mecanismo seguro de Enlace de Propiedad (`Ownership Chaining`). Mientras el procedimiento almacenado y las tablas compartan el mismo esquema o propietario, SQL Server validará únicamente el permiso de ejecución, evitando la alteración no auditada de datos.",
-                    practices: "Abstenerse siempre de otorgar permisos de `INSERT` o `UPDATE` de forma abierta a las aplicaciones cliente si existe la opción de canalizar los flujos de negocio a través de procedimientos de base de datos."
+                    sql: `-- ===================================================================\n-- MUNDO 5 - PROPUESTO 2: EJECUCIÓN POR PROXY (EXECUTE EN SP)\n-- ASOCIADO A: Stored Procedures del proceso de trámites de egreso\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Habilitar permisos de ejecución sobre lógica encapsulada\nGRANT EXECUTE ON OBJECT::Tramite.SP_RegistrarTramite TO OperadorTramite;\nGO`,
+                    justification: "El encadenamiento de propiedad (Ownership Chaining) en SQL Server permite que un usuario ejecute acciones transaccionales (INSERT/UPDATE) indirectas a través de procedimientos almacenados sin poseer permisos sobre las tablas que modifican los mismos de fondo.",
+                    practices: "Utilizar sistemáticamente procedimientos almacenados parametrizados para blindar los accesos y evitar inyecciones SQL (SQL Injection) en el portal transaccional de egresados."
                 }
             },
             {
@@ -390,23 +561,23 @@
                 main: {
                     title: "Rastreo de Locks y Consultas de Bloqueo en Tiempo Real",
                     enunciado: "Durante periodos masivos de carga académica del flujo de egresados, el servidor experimenta lentitud. Describe los indicadores clave de rendimiento a monitorizar mediante la interfaz gráfica del Activity Monitor. Simultáneamente, desarrolla una consulta avanzada en T-SQL utilizando vistas de administración dinámica (DMVs) para rastrear bloqueos de recursos en tiempo real en la base de datos.",
-                    sql: `-- ===================================================================\n-- PROYECTO 6: DIAGNÓSTICO EN TIEMPO REAL UTILIZANDO DMVS\n-- OBJETIVO: Monitorizar las colas de peticiones lentas en la consola\n-- ===================================================================\nUSE master;\nGO\n\n-- Consulta analítica avanzada en T-SQL para detectar bloqueos y la query causante\nSELECT\n    blocked_locks.request_session_id AS SessionBloqueada,\n    blocked_exec_requests.blocking_session_id AS SessionBloqueadora,\n    blocked_exec_requests.wait_time AS TiempoEsperaMS,\n    blocked_exec_requests.wait_type AS TipoDeEspera,\n    blocked_sql.text AS CodigoBloqueado,\n    blocking_sql.text AS CodigoCausanteBloqueo\nFROM sys.dm_tran_locks AS blocked_locks\nINNER JOIN sys.dm_exec_requests AS blocked_exec_requests \n    ON blocked_locks.request_session_id = blocked_exec_requests.session_id\nCROSS APPLY sys.dm_exec_sql_text(blocked_exec_requests.sql_handle) AS blocked_sql\nINNER JOIN sys.dm_exec_requests AS blocking_exec_requests \n    ON blocked_exec_requests.blocking_session_id = blocking_exec_requests.session_id\nCROSS APPLY sys.dm_exec_sql_text(blocking_exec_requests.sql_handle) AS blocking_sql\nWHERE blocked_locks.request_status = 'WAIT';\nGO`,
-                    justification: "Los indicadores gráficos críticos en el Activity Monitor son: % Tiempo de CPU, Tiempos de espera de tareas (Task Waits - medido en ms/seg), E/S de archivos de Base de Datos y la lista de procesos activos en ejecución. Cuando ocurren bloqueos transaccionales severos debido a cargas concurrentes, el código T-SQL con DMVs provisto arriba permite interceptar qué ID de sesión bloquea y el comando que detiene la cola de procesamiento inmediatamente.",
-                    practices: "Revisar los índices no agrupados existentes y ajustar el nivel de aislamiento (`Isolation Level`) a 'READ COMMITTED SNAPSHOT' si la plataforma transaccional de los egresados es intensiva en reportes concurrentes de lectura."
+                    sql: `-- ===================================================================\n-- PROYECTO 6: DIAGNÓSTICO EN TIEMPO REAL CON VISTAS DINÁMICAS (DMVS)\n-- ASOCIADO A: Monitoreo preventivo del servidor UPLA\n-- ===================================================================\nUSE master;\nGO\n\nSELECT\n    blocked_locks.request_session_id AS SessionBloqueada,\n    blocked_exec_requests.blocking_session_id AS SessionBloqueadora,\n    blocked_exec_requests.wait_time AS TiempoEsperaMS,\n    blocked_exec_requests.wait_type AS TipoDeEspera,\n    blocked_sql.text AS CodigoBloqueado,\n    blocking_sql.text AS CodigoCausanteBloqueo\nFROM sys.dm_tran_locks AS blocked_locks\nINNER JOIN sys.dm_exec_requests AS blocked_exec_requests \n    ON blocked_locks.request_session_id = blocked_exec_requests.session_id\nCROSS APPLY sys.dm_exec_sql_text(blocked_exec_requests.sql_handle) AS blocked_sql\nINNER JOIN sys.dm_exec_requests AS blocking_exec_requests \n    ON blocked_exec_requests.blocking_session_id = blocking_exec_requests.session_id\nCROSS APPLY sys.dm_exec_sql_text(blocking_exec_requests.sql_handle) AS blocking_sql\nWHERE blocked_locks.request_status = 'WAIT';\nGO`,
+                    justification: "El Activity Monitor ayuda a diagnosticar de forma visual indicadores clave como: Procesadores activos (% CPU), Tiempos de espera lógicos (Task Waits en ms), Actividades I/O de archivos de datos e identificador de sesiones bloqueadoras. El script DMVs complementa esto al rastrear el código T-SQL preciso que mantiene tomado el recurso físico del disco.",
+                    practices: "Utilizar el nivel de aislamiento READ COMMITTED SNAPSHOT para eliminar contención de cerraduras de lectura concurrentes en plataformas educativas de alto tráfico escolar."
                 },
                 prop1: {
                     title: "Identificación de Consultas de Alto Consumo de CPU",
                     enunciado: "Escribe una consulta en T-SQL que analice los planes de ejecución que se encuentran almacenados en la memoria caché del servidor. El script debe listar las 5 consultas que han consumido la mayor cantidad de tiempo de procesador (CPU) en la base de datos GradosTitulos.",
-                    sql: `-- ===================================================================\n-- MUNDO 6 - PROPUESTO 1: TOP 5 CONSULTAS CON MÁXIMO USO DE CPU\n-- OBJETIVO: Detectar las 'queries basura' que sobrecalientan el chip\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT TOP 5\n    qs.execution_count AS [Veces Ejecutado],\n    qs.total_worker_time / 1000 AS [Total CPU Time (ms)],\n    qs.total_worker_time / qs.execution_count / 1000 AS [Promedio CPU (ms)],\n    qs.total_elapsed_time / qs.execution_count / 1000 AS [Tiempo Total Promedio (ms)],\n    SUBSTRING(st.text, (qs.statement_start_offset/2) + 1,\n        ((CASE qs.statement_end_offset\n            WHEN -1 THEN DATALENGTH(st.text)\n            ELSE qs.statement_end_offset\n        END - qs.statement_start_offset)/2) + 1) AS [Sentencia SQL Solicitada]\nFROM sys.dm_exec_query_stats qs\nCROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st\nCROSS APPLY sys.dm_exec_query_plan(qs.plan_handle) qp\nORDER BY qs.total_worker_time DESC;\nGO`,
-                    justification: "El uso de la vista dinámica `sys.dm_exec_query_stats` permite inspeccionar la memoria caché activa de SQL Server sin añadir latencia de diagnóstico directa al motor. Analizar la relación `total_worker_time` versus `execution_count` ayuda a priorizar la optimización del código que más castiga al procesador físico de la máquina.",
-                    practices: "Limpiar la memoria caché (`DBCC FREEPROCCACHE`) únicamente en servidores de desarrollo para reiniciar las estadísticas durante pruebas de código y optimización de rendimiento."
+                    sql: `-- ===================================================================\n-- MUNDO 6 - PROPUESTO 1: AUDITORÍA DE PLANES DE EJECUCIÓN (TOP CPU)\n-- ASOCIADO A: Identificación de consultas redundantes o ineficientes\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT TOP 5\n    qs.execution_count AS [Veces Ejecutado],\n    qs.total_worker_time / 1000 AS [Total CPU Time (ms)],\n    qs.total_worker_time / qs.execution_count / 1000 AS [Promedio CPU (ms)],\n    qs.total_elapsed_time / qs.execution_count / 1000 AS [Tiempo Total Promedio (ms)],\n    SUBSTRING(st.text, (qs.statement_start_offset/2) + 1,\n        ((CASE qs.statement_end_offset\n            WHEN -1 THEN DATALENGTH(st.text)\n            ELSE qs.statement_end_offset\n        END - qs.statement_start_offset)/2) + 1) AS [Sentencia SQL Solicitada]\nFROM sys.dm_exec_query_stats qs\nCROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st\nORDER BY qs.total_worker_time DESC;\nGO`,
+                    justification: "El análisis retrospectivo de la caché con sys.dm_exec_query_stats identifica las sentencias que consumen CPU de forma desmedida, permitiendo guiar los esfuerzos de afinamiento (tuning) hacia los elementos que más saturan el procesador físico.",
+                    practices: "Evitar el uso indiscriminado de comandos de re-compilación que depuren de golpe la caché del sistema de forma manual en producción, puesto que degrada la latencia de consultas cotidianas."
                 },
                 prop2: {
-                    title: "Rastreo del Uso de Índices en las Consultas (Index Stats)",
+                    title: "Rastreo del Uso de Índices en las Consultas",
                     enunciado: "Implementa una consulta analítica en T-SQL para verificar el uso real de los índices no agrupados creados en los esquemas de GradosTitulos, identificando si hay índices que no están siendo utilizados en las búsquedas pero que siguen consumiendo espacio en disco.",
-                    sql: `-- ===================================================================\n-- MUNDO 6 - PROPUESTO 2: IDENTIFICACIÓN DE ÍNDICES INACTIVOS EN DISCO\n-- OBJETIVO: Recuperar espacio eliminando índices que nadie consulta\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT\n    OBJECT_NAME(s.[object_id]) AS [Table Name],\n    i.name AS [Index Name],\n    i.index_id AS [Index ID],\n    s.user_seeks AS [User Seeks (Consultas Directas)],\n    s.user_scans AS [User Scans (Búsquedas en Tabla Completa)],\n    s.user_lookups AS [User Lookups (Saltos de Referencia)],\n    s.user_updates AS [User Updates (Carga de Mantenimiento)],\n    CAST((SUM(a.total_pages) * 8.0 / 1024) AS DECIMAL(10,2)) AS [Size (MB)]\nFROM sys.dm_db_index_usage_stats s\nINNER JOIN sys.indexes i ON i.[object_id] = s.[object_id] AND i.index_id = s.index_id\nINNER JOIN sys.partitions p ON p.[object_id] = s.[object_id] AND p.index_id = s.index_id\nINNER JOIN sys.allocation_units a ON a.container_id = p.partition_id\nWHERE s.database_id = DB_ID('GradosTitulos') \n  AND i.index_id > 1 -- Filtrar índices Clustered (Primary Keys) para no eliminarlos por error\nGROUP BY s.[object_id], i.name, i.index_id, s.user_seeks, s.user_scans, s.user_lookups, s.user_updates\nHAVING s.user_seeks = 0 AND s.user_scans = 0 AND s.user_lookups = 0 -- Nunca utilizados en lecturas\nORDER BY [User Updates (Carga de Mantenimiento)] DESC; -- Pero que sí generan costo de escritura\nGO`,
-                    justification: "Cada índice no agrupado requiere almacenamiento físico adicional y obliga al motor a actualizar su estructura lógica interna ante operaciones de INSERT, UPDATE y DELETE. Si un índice registra `0` búsquedas (`user_seeks`), se cataloga como 'índice inactivo'. Al identificarlo y eliminarlo se optimiza inmediatamente la velocidad de escritura sobre la base de datos de grados.",
-                    practices: "Monitorear el uso de índices de manera acumulada durante un trimestre completo antes de tomar la decisión definitiva de retirar un índice, previniendo la degradación de procesos analíticos trimestrales o de auditoría anual."
+                    sql: `-- ===================================================================\n-- MUNDO 6 - PROPUESTO 2: DETECTOR DE ÍNDICES HUÉRFANOS O INACTIVOS\n-- ASOCIADO A: Depuración del costo físico de escrituras de datos\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nSELECT\n    OBJECT_NAME(s.[object_id]) AS [Table Name],\n    i.name AS [Index Name],\n    s.user_seeks AS [User Seeks (Consultas Directas)],\n    s.user_scans AS [User Scans (Barridos de Registros)],\n    s.user_updates AS [User Updates (Cargas de Mantenimiento)]\nFROM sys.dm_db_index_usage_stats s\nINNER JOIN sys.indexes i ON i.[object_id] = s.[object_id] AND i.index_id = s.index_id\nWHERE s.database_id = DB_ID('GradosTitulos') \n  AND i.index_id > 1 -- Ignorar índices agrupados primarios\n  AND s.user_seeks = 0 AND s.user_scans = 0;\nGO`,
+                    justification: "Cada índice no agrupado genera una sobrecarga física de almacenamiento y actualización en transacciones INSERT/UPDATE/DELETE. Los índices que registran cero lecturas pero alto volumen de mantenimiento se catalogan como inactivos y deben eliminarse.",
+                    practices: "Analizar el uso de índices de forma trimestral antes de proceder a quitarlos para asegurar que no formen parte de cierres o reportes analíticos periódicos fuera del tráfico regular."
                 }
             },
             {
@@ -416,24 +587,24 @@
                 title: "Automatización de Respaldos y Limpieza Periódica",
                 main: {
                     title: "Definición de Jobs en SQL Agent y Scripts de Limpieza de Auditoría",
-                    enunciado: "Diseña los scripts transaccionales necesarios para automatizar tareas rutinarias a través de SQL Server Agent. El primer proceso ejecutará un respaldo completo programado diariamente de la base de datos. El segundo proceso se encargará de purgar semanalmente todos aquellos registros de auditoría almacenados en la tabla de observaciones que superen los 15 días de antigüedad y cuyo estado ya se encuentre resuelto.",
-                    sql: `-- ===================================================================\n-- PROYECTO 7: AUTOMATIZACIÓN DE PROCESOS MEDIANTE SQL AGENT JOBS\n-- OBJETIVO: Configurar las tareas robóticas automáticas del sistema\n-- ===================================================================\nUSE msdb;\nGO\n\n-- Nota: Para que estos scripts se ejecuten correctamente el servicio 'SQL Server Agent' debe estar en ejecución.\n\n-- 1. Crear el Job de Respaldo Diario Automático de Grados\nDECLARE @JobId UNIQUEIDENTIFIER;\nEXEC dbo.sp_add_job \n    @job_name = N'UPLA_Respaldo_Diario_GradosTitulos',\n    @enabled = 1,\n    @description = N'Ejecuta la copia de seguridad física completa de la BD todos los días.',\n    @job_id = @JobId OUTPUT;\n\n-- Agregar paso de ejecución de Backup T-SQL\nEXEC dbo.sp_add_jobstep \n    @job_id = @JobId,\n    @step_name = N'Ejecutar Backup Completo',\n    @subsystem = N'TSQL',\n    @command = N'BACKUP DATABASE GradosTitulos TO DISK = ''D:\\BaseDatos2026\\Backup_Autodiario.bak'' WITH FORMAT, COMPRESSION, STATS = 10;',\n    @database_name = N'master';\n\n-- Programación horaria diaria (Ej: 11:00 PM)\nEXEC dbo.sp_add_jobschedule \n    @job_id = @JobId,\n    @name = N'Horario_Noche_Backup',\n    @freq_type = 4, -- Tipo Diario\n    @freq_interval = 1,\n    @active_start_time = 230000; -- Formato HHMMSS\n\nEXEC dbo.sp_add_jobserver @job_id = @JobId, @server_name = N'(local)';\nGO\n\n-- 2. Proceso de Purga de Auditoría de Observaciones > 15 días\n-- (Adaptado conceptualmente con script transaccional robusto)\nUSE msdb;\nGO\nDECLARE @JobId2 UNIQUEIDENTIFIER;\nEXEC dbo.sp_add_job \n    @job_name = N'UPLA_Purga_Auditoria_Semanal',\n    @enabled = 1,\n    @description = N'Limpia registros viejos resueltos de auditoría.',\n    @job_id = @JobId2 OUTPUT;\n\n-- Paso de purga de tabla física\nEXEC dbo.sp_add_jobstep \n    @job_id = @JobId2,\n    @step_name = N'Eliminar Historicos Mayores 15 Dias Resueltos',\n    @subsystem = N'TSQL',\n    @command = N'-- Asumimos la tabla ficticia de auditoría del sistema de observaciones\nDELETE FROM Tramite.Tramite\nWHERE EstadoId = ''Resuelto'' -- O su equivalente numérico de catálogo\n  AND FechaRegistro < DATEADD(DAY, -15, GETDATE());',\n    @database_name = N'GradosTitulos';\n\nEXEC dbo.sp_add_jobserver @job_id = @JobId2, @server_name = N'(local)';\nGO`,
-                    justification: "La automatización con SQL Server Agent evita depender de operaciones manuales para tareas críticas de resiliencia de datos. El uso del método `DATEADD(DAY, -15, GETDATE())` en el proceso de purga asegura que el crecimiento del archivo de datos permanezca acotado y predecible a nivel lógico.",
-                    practices: "Toda consulta de eliminación masiva ejecutada de manera recurrente en Jobs debe limitarse en lotes (`DELETE TOP (1000)`) si se procesan millones de filas, previniendo el crecimiento excesivo del log de transacciones y el bloqueo físico de tablas."
+                    enunciado: "Diseña los scripts transaccionales necesarios para automatizar tareas rutinarias a través de SQL Server Agent (como se plantea en CreaTablasGradosTitulos.sql.txt). El primer proceso ejecutará un respaldo completo programado diariamente de la base de datos. El segundo proceso se encargará de purgar semanalmente todos aquellos registros de auditoría almacenados en la tabla de observaciones que superen los 15 días de antigüedad y cuyo estado ya se encuentre resuelto.",
+                    sql: `-- ===================================================================\n-- PROYECTO 7: AUTOMATIZACIÓN DE ACTIVIDADES DE CONSOLA (JOBS)\n-- ASOCIADO A: Mantenimiento automatizado y limpieza de logs\n-- ===================================================================\nUSE msdb;\nGO\n\n-- 1. Definición del Job de Respaldo Diario\nDECLARE @JobId UNIQUEIDENTIFIER;\nEXEC dbo.sp_add_job \n    @job_name = N'UPLA_Respaldo_Completo_Grados',\n    @enabled = 1,\n    @job_id = @JobId OUTPUT;\n\nEXEC dbo.sp_add_jobstep \n    @job_id = @JobId,\n    @step_name = N'Backup Completo Diaria',\n    @subsystem = N'TSQL',\n    @command = N'BACKUP DATABASE GradosTitulos TO DISK = ''D:\\BaseDatos2026\\UPLA_AutoBackup.bak'' WITH FORMAT, COMPRESSION;';\n\nEXEC dbo.sp_add_jobschedule \n    @job_id = @JobId,\n    @name = N'Horario_Medianoche',\n    @freq_type = 4, -- Diario\n    @active_start_time = 000000;\n\nEXEC dbo.sp_add_jobserver @job_id = @JobId, @server_name = N'(local)';\nGO\n\n-- 2. Purga Semanal de Observaciones antiguas resueltas de la tabla física\nUSE msdb;\nGO\nDECLARE @JobIdPurge UNIQUEIDENTIFIER;\nEXEC dbo.sp_add_job \n    @job_name = N'UPLA_Purga_Observaciones_Semanales',\n    @enabled = 1,\n    @job_id = @JobIdPurge OUTPUT;\n\nEXEC dbo.sp_add_jobstep \n    @job_id = @JobIdPurge,\n    @step_name = N'Purga en Lote de Observaciones con Estado SUBSANADO',\n    @subsystem = N'TSQL',\n    @command = N'DELETE FROM GradosTitulos.Tramite.ObservacionTramite WHERE Estado = ''SUBSANADO'' AND FechaObservacion < DATEADD(DAY, -15, GETDATE());';\n\nEXEC dbo.sp_add_jobserver @job_id = @JobIdPurge, @server_name = N'(local)';\nGO`,
+                    justification: "El Agente de SQL Server gestiona de forma desatendida las operaciones del sistema, evitando dependencias de procesos humanos. El script de purga acota el volumen de la tabla física Tramite.ObservacionTramite eliminando datos residuales que ya cumplieron su ciclo de vida lógico.",
+                    practices: "Implementar DELETE estructurado en lotes con la cláusula TOP si la tabla maneja volúmenes masivos de millones de registros, a fin de no saturar de golpe el log de transacciones."
                 },
                 prop1: {
                     title: "Configuración de Alertas por Fallos en el SQL Agent",
                     enunciado: "Escribe el script transaccional para configurar un operador del sistema llamado DBA_Alertas en el Agente de SQL Server, de tal manera que el servidor envíe correos electrónicos automáticos si el Job de respaldo diario de la universidad falla.",
-                    sql: `-- ===================================================================\n-- MUNDO 7 - PROPUESTO 1: CONFIGURACIÓN DE OPERADOR DE ALERTAS\n-- OBJETIVO: Avisar vía e-mail al administrador si falla la copia de seguridad\n-- ===================================================================\nUSE msdb;\nGO\n\n-- 1. Registrar operador en el Agente de SQL Server\nIF NOT EXISTS (SELECT * FROM dbo.sysoperators WHERE name = N'DBA_Alertas')\nBEGIN\n    EXEC dbo.sp_add_operator \n        @name = N'DBA_Alertas',\n        @enabled = 1,\n        @email_address = N'dba_grados@upla.edu.pe';\nEND\nGO\n\n-- 2. Vincular el Operador al Job de Backup creado previamente para notificar fallas\nDECLARE @JobId UNIQUEIDENTIFIER;\nSELECT @JobId = job_id FROM dbo.sysjobs WHERE name = N'UPLA_Respaldo_Diario_GradosTitulos';\n\nIF @JobId IS NOT NULL\nBEGIN\n    EXEC dbo.sp_update_job \n        @job_id = @JobId,\n        @on_run_status = 1, -- Falló la ejecución\n        @on_delete_action = 3, \n        @notify_level_email = 2, -- Notificar en caso de fallo del Job\n        @notify_email_operator_name = N'DBA_Alertas';\nEND\nGO`,
-                    justification: "La monitorización reactiva a través del correo electrónico (`Database Mail`) del Agente de SQL Server es crucial para la supervivencia de la infraestructura informática universitaria, reduciendo los tiempos de respuesta ante fallos críticos de hardware.",
-                    practices: "Configurar una cuenta de correo SMTP independiente del servidor de producción y verificar el flujo de correos periódicamente simulando fallos controlados de tareas lógicas."
+                    sql: `-- ===================================================================\n-- MUNDO 7 - PROPUESTO 1: CONTROL DE OPERADORES Y CORREO REACTIVO\n-- ASOCIADO A: Alertas tempranas ante fallos en Backups UPLA\n-- ===================================================================\nUSE msdb;\nGO\n\n-- 1. Crear el Operador encargado de la supervisión\nIF NOT EXISTS (SELECT * FROM dbo.sysoperators WHERE name = N'DBA_Alertas')\nBEGIN\n    EXEC dbo.sp_add_operator \n        @name = N'DBA_Alertas',\n        @enabled = 1,\n        @email_address = N'dba_soporte@upla.edu.pe';\nEND\nGO\n\n-- 2. Asociar el aviso en caso de falla de ejecución al Job de Backup\nDECLARE @JobId UNIQUEIDENTIFIER;\nSELECT @JobId = job_id FROM dbo.sysjobs WHERE name = N'UPLA_Respaldo_Completo_Grados';\n\nIF @JobId IS NOT NULL\nBEGIN\n    EXEC dbo.sp_update_job \n        @job_id = @JobId,\n        @notify_level_email = 2, -- Enviar correo en caso de falla del proceso\n        @notify_email_operator_name = N'DBA_Alertas';\nEND\nGO`,
+                    justification: "La monitorización mediante Database Mail automatiza el envío de notificaciones proactivas que reducen drásticamente los tiempos de resolución técnica frente a incidentes lógicos o físicos en discos de almacenamiento.",
+                    practices: "Asociar los correos a listas de distribución en lugar de casillas de personales individuales para asegurar la recepción del aviso ante periodos de ausencia de personal dba de turno."
                 },
                 prop2: {
                     title: "Automatización de Reconstrucción de Índices Fragmentados",
                     enunciado: "Desarrolla un script de mantenimiento automatizado para evaluar los índices de la base de datos GradosTitulos y ejecutar una reconstrucción completa (ALTER INDEX REBUILD) en aquellos índices que superen un 30% de fragmentación física, garantizando la velocidad de las consultas.",
-                    sql: `-- ===================================================================\n-- MUNDO 7 - PROPUESTO 2: PLAN REBUILD AUTOMÁTICO DE ÍNDICES\n-- OBJETIVO: Eliminar la fragmentación física para acelerar el sistema\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Cursor avanzado para reconstruir índices fragmentados en la base de datos\nDECLARE @TableName VARCHAR(255);\nDECLARE @IndexName VARCHAR(255);\nDECLARE @SQL NVARCHAR(500);\n\nDECLARE IndexCursor CURSOR FOR\nSELECT \n    OBJECT_NAME(ips.object_id) AS TableName,\n    i.name AS IndexName\nFROM sys.dm_db_index_physical_stats(DB_ID('GradosTitulos'), NULL, NULL, NULL, 'DETAILED') ips\nINNER JOIN sys.indexes i ON i.object_id = ips.object_id AND i.index_id = ips.index_id\nWHERE ips.avg_fragmentation_in_percent > 30.0 -- Umbral estándar para Rebuild\n  AND i.index_id > 0; -- Ignorar Heaps\n\nOPEN IndexCursor;\nFETCH NEXT FROM IndexCursor INTO @TableName, @IndexName;\n\nWHILE @@FETCH_STATUS = 0\nBEGIN\n    SET @SQL = N'ALTER INDEX ' + QUOTENAME(@IndexName) + N' ON ' + QUOTENAME(@TableName) + N' REBUILD WITH (ONLINE = ON);';\n    \n    BEGIN TRY\n        EXEC sp_executesql @SQL;\n        PRINT 'Mantenimiento Exitoso: Índice RECONSTRUIDO -> ' + @IndexName + ' en tabla ' + @TableName;\n    END TRY\n    BEGIN CATCH\n        -- Si la edición SQL Server no soporta ONLINE = ON por ser Standard\n        SET @SQL = N'ALTER INDEX ' + QUOTENAME(@IndexName) + N' ON ' + QUOTENAME(@TableName) + N' REBUILD;';\n        EXEC sp_executesql @SQL;\n        PRINT 'Mantenimiento Estándar (Offline): ' + @IndexName;\n    END CATCH\n\n    FETCH NEXT FROM IndexCursor INTO @TableName, @IndexName;\nEND\n\nCLOSE IndexCursor;\nDEALLOCATE IndexCursor;\nGO`,
-                    justification: "La fragmentación de índices ocurre cuando las páginas lógicas de datos están desordenadas físicamente respecto al orden secuencial lógico del índice. Al superar el 30% de fragmentación, el cabezal del disco realiza costosos saltos físicos adicionales. Un `REBUILD` reorganiza la estructura lógica de manera contigua y compacta las páginas optimizando drásticamente la lectura de datos.",
-                    practices: "Ejecutar reconstrucciones en horas de nula concurrencia escolar e intentar priorizar la cláusula `ONLINE = ON` si se dispone de licenciamiento Enterprise, permitiendo que los usuarios sigan consultando la tabla en vivo."
+                    sql: `-- ===================================================================\n-- MUNDO 7 - PROPUESTO 2: PLAN DE RECONSTRUCCIÓN AUTOMÁTICA DE ÍNDICES\n-- ASOCIADO A: Eliminación física de fragmentación lógicas en disco\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nDECLARE @TableName VARCHAR(255);\nDECLARE @IndexName VARCHAR(255);\nDECLARE @SQL NVARCHAR(500);\n\nDECLARE IndexCursor CURSOR FOR\nSELECT \n    OBJECT_NAME(ips.object_id) AS TableName,\n    i.name AS IndexName\nFROM sys.dm_db_index_physical_stats(DB_ID('GradosTitulos'), NULL, NULL, NULL, 'DETAILED') ips\nINNER JOIN sys.indexes i ON i.object_id = ips.object_id AND i.index_id = ips.index_id\nWHERE ips.avg_fragmentation_in_percent > 30.0 \n  AND i.index_id > 0; \n\nOPEN IndexCursor;\nFETCH NEXT FROM IndexCursor INTO @TableName, @IndexName;\n\nWHILE @@FETCH_STATUS = 0\nBEGIN\n    SET @SQL = N'ALTER INDEX ' + QUOTENAME(@IndexName) + N' ON ' + QUOTENAME(@TableName) + N' REBUILD WITH (ONLINE = ON);';\n    BEGIN TRY\n        EXEC sp_executesql @SQL;\n        PRINT 'Índice Reconstruido: ' + @IndexName;\n    END TRY\n    BEGIN CATCH\n        -- Modo offline alternativo si no se cuenta con licencia Enterprise\n        SET @SQL = N'ALTER INDEX ' + QUOTENAME(@IndexName) + N' ON ' + QUOTENAME(@TableName) + N' REBUILD;';\n        EXEC sp_executesql @SQL;\n    END CATCH\n    FETCH NEXT FROM IndexCursor INTO @TableName, @IndexName;\nEND\nCLOSE IndexCursor;\nDEALLOCATE IndexCursor;\nGO`,
+                    justification: "La fragmentación estructural de los índices altera el orden físico en el disco obligando al cabezal a dar saltos adicionales no óptimos. Un ALTER INDEX REBUILD reordena y compacta las páginas lógicas de datos al 100% de optimización.",
+                    practices: "Priorizar la cláusula ONLINE = ON en la medida que la edición del motor lo permita para evitar bloqueos prolongados sobre las tablas operativas académicas de los egresados."
                 }
             },
             {
@@ -444,23 +615,23 @@
                 main: {
                     title: "Alteración de Columnas y Limpieza de Atributos",
                     enunciado: "Con el fin de expandir el control analítico del proceso de sustentaciones y registros, adapta el ejercicio agregando de manera segura una columna denominada PrioridadAtencion de tipo entero (INT) a la estructura de la tabla Tramite.Tramite. Posteriormente, y emulando la corrección de requerimientos del sistema, elimina por completo la columna redundante Observaciones de dicha tabla.",
-                    sql: `-- ===================================================================\n-- PROYECTO 8: MANTENIMIENTO DE ESQUEMAS DDL (ALTER TABLE)\n-- OBJETIVO: Modificar la estructura de datos en vivo sin dañar el cartucho\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Agregar la columna de forma segura permitiendo inicialmente valores Nulos (NULL)\nALTER TABLE Tramite.Tramite\nADD PrioridadAtencion INT NULL;\nGO\n\n-- 2. Eliminar la columna física considerada redundante del sistema\n-- Validar si la columna existe antes de intentar la alteración para prevenir crash del compilador\nIF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Tramite.Tramite') AND name = 'Observaciones')\nBEGIN\n    ALTER TABLE Tramite.Tramite\n    DROP COLUMN Observaciones;\n    PRINT 'Columna Observaciones eliminada con éxito del esquema académico.';\nEND\nELSE\nBEGIN\n    PRINT 'Aviso: La columna Observaciones ya no existía en el esquema.';\nEND\nGO`,
-                    justification: "El uso del comando `ALTER TABLE` garantiza la modificación en vivo del esquema de tablas en el diccionario de datos de SQL Server sin reconstruir la tabla desde cero, preservando la consistencia física de las filas ya guardadas.",
-                    practices: "Al agregar nuevas columnas obligatorias (NOT NULL) en bases de datos maduras, primero se deben agregar como opcionales (NULL), actualizar los datos históricos con valores predeterminados y, finalmente, cambiar su restricción física a NOT NULL."
+                    sql: `-- ===================================================================\n-- PROYECTO 8: MANTENIMIENTO ESTRUCTURAL DDL (ALTER TABLE)\n-- ASOCIADO A: Estructura física de la tabla de trámites en UPLA\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Incorporación segura del nuevo atributo permitiendo inicialmente nulos\nALTER TABLE Tramite.Tramite ADD PrioridadAtencion INT NULL;\nGO\n\n-- 2. Depuración de la columna considerada obsoleta por el sistema\nIF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Tramite.Tramite') AND name = 'Observaciones')\nBEGIN\n    ALTER TABLE Tramite.Tramite DROP COLUMN Observaciones;\n    PRINT 'Columna Observaciones eliminada con éxito del cartucho.';\nEND\nGO`,
+                    justification: "El comando ALTER TABLE realiza modificaciones dinámicas en los catálogos lógicos de metadatos de SQL Server, garantizando la persistencia e integridad de las filas ya guardadas de forma segura y minimizando la latencia transaccional.",
+                    practices: "Al integrar nuevos campos lógicos obligatorios (NOT NULL) en bases maduras, primero créalos como nulables (NULL), actualiza los históricos y luego altera la columna a NOT NULL."
                 },
                 prop1: {
                     title: "Incorporación de Restricciones CHECK Complejas",
                     enunciado: "Modifica la tabla Tramite.Pago agregando una nueva restricción de comprobación (CHECK CONSTRAINT) para asegurar que ningún registro acepte combinaciones donde el campo Monto sea menor o igual a cero, obligando a que todo pago ingresado al sistema sea siempre una cantidad positiva.",
-                    sql: `-- ===================================================================\n-- MUNDO 8 - PROPUESTO 1: RESTRICCIÓN CHECK DE MONTO EN PAGOS\n-- OBJETIVO: Blindar el sistema contra cobros fantasma o negativos\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Agregar la restricción de validación de negocio en caliente\nALTER TABLE Tramite.Pago\nADD CONSTRAINT CK_Pago_Monto_Positivo\nCHECK (Monto > 0.00);\nGO\n\n-- [Prueba de concepto de validación de bloqueo lúdica]\n-- La siguiente inserción de prueba debe fallar por violación física de CHECK:\n-- INSERT INTO Tramite.Pago (IdPago, IdTramite, Monto, FechaPago) VALUES (999, 1, -15.50, GETDATE());\nGO`,
-                    justification: "Las restricciones tipo `CHECK` operan a nivel físico del motor del servidor impidiendo la alteración ilícita o errónea de datos por parte de errores en las aplicaciones de software o consultas directas no autorizadas.",
-                    practices: "Asignar un nombre estructurado y descriptivo a los CHECK constraints (Ej. `CK_Tabla_Columna_Regla`) para identificar de inmediato la regla quebrantada en las capas de error de desarrollo."
+                    sql: `-- ===================================================================\n-- MUNDO 8 - PROPUESTO 1: CONTROL DE INTEGRIDAD FINANCIERA (CHECK)\n-- ASOCIADO A: Validaciones físicas en cobros de diplomas\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Integración de regla física a nivel de motor relacional\nALTER TABLE Tramite.Pago\nADD CONSTRAINT CK_Pago_Monto_Positivo\nCHECK (Monto > 0.00);\nGO`,
+                    justification: "Las restricciones tipo CHECK actúan directamente a nivel de base de datos impidiendo que transacciones financieras nulas, inconsistentes o negativas sean registradas debido a fallas de codificación en las capas de software frontend.",
+                    practices: "Definir nombres explícitos estructurados (como CK_Tabla_Campo_Regla) para identificar las validaciones rotas con mayor fluidez en la depuración de errores del backend."
                 },
                 prop2: {
                     title: "Modificación de Tipos de Datos con Validación de Nulidad",
                     enunciado: "Por requerimientos de ampliación de cobertura de texto, modifica la columna NroRecibo de la tabla Tramite.Pago, elevando su tipo de datos de VARCHAR(30) a VARCHAR(60) y asegurando que mantenga su propiedad de permitir valores nulos (NULL).",
-                    sql: `-- ===================================================================\n-- MUNDO 8 - PROPUESTO 2: AMPLIACIÓN DE CAPACIDAD DE COLUMNAS\n-- OBJETIVO: Expandir el ancho del buffer de almacenamiento de recibos\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- Modificar el tipo de datos físico del campo de pagos\nALTER TABLE Tramite.Pago\nALTER COLUMN NroRecibo VARCHAR(60) NULL;\nGO`,
-                    justification: "La alteración física de un tipo de datos para ampliar su capacidad no requiere reubicar físicamente los datos existentes en el disco duro, ya que el motor ajusta únicamente los metadatos de longitud máxima de la columna en el sistema, lo que resulta en una operación instantánea y segura.",
-                    practices: "Nunca reducir la longitud física de una columna (`VARCHAR` o `INT`) a un tamaño menor sin antes haber corrido una auditoría que descarte la pérdida o truncamiento accidental de texto existente de los egresados."
+                    sql: `-- ===================================================================\n-- MUNDO 8 - PROPUESTO 2: ADAPTACIÓN DE LONGITUD DE CAMPOS (DRAFT DDL)\n-- ASOCIADO A: Formato de comprobantes de pago de egresados\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nALTER TABLE Tramite.Pago\nALTER COLUMN NroRecibo VARCHAR(60) NULL;\nGO`,
+                    justification: "Ampliar el ancho de un campo de caracteres (VARCHAR) es un proceso inmediato de catalogación lógicas en SQL Server, evitando costosas re-estructuraciones físicas o la duplicación de páginas de la tabla.",
+                    practices: "Evitar de forma estricta la reducción en la longitud de campos en caliente si no se cuenta con la certeza analítica de que no se producirá un error fatal por truncamiento de texto."
                 }
             },
             {
@@ -471,23 +642,23 @@
                 main: {
                     title: "Diseño de Tabla de Auditoría y Triggers para Borrado Físico",
                     enunciado: "Es necesario auditar por políticas de protección de datos personales toda eliminación física sobre el padrón de personas. Diseña e implementa una tabla de historial denominada Academico.AuditoriaPersona. Acto seguido, desarrolla un desencadenador (Trigger) de nivel de fila para el evento DELETE en la tabla Academico.Persona, el cual capturará los datos eliminados, el usuario del sistema que ejecutó la acción y el momento exacto del incidente.",
-                    sql: `-- ===================================================================\n-- PROYECTO 9: AUDITORÍA FORENSE MEDIANTE DISPARADORES EN SERVIDOR\n-- OBJETIVO: Capturar las acciones ilegales o accidentales de borrado\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear tabla dedicada para registro de auditoría en frío\nIF OBJECT_ID('Academico.AuditoriaPersona', 'U') IS NULL\nBEGIN\n    CREATE TABLE Academico.AuditoriaPersona (\n        IdAuditoria         INT IDENTITY(1,1) PRIMARY KEY,\n        IdPersona           INT NOT NULL,\n        NombresBorrados     VARCHAR(100) NOT NULL,\n        ApellidosBorrados   VARCHAR(100) NOT NULL,\n        NroDocumentoBorrado VARCHAR(20) NOT NULL,\n        UsuarioResponsable  NVARCHAR(100) NOT NULL DEFAULT SUSER_SNAME(),\n        FechaEliminacion    DATETIME NOT NULL DEFAULT GETDATE(),\n        NombreHost          NVARCHAR(100) NOT NULL DEFAULT HOST_NAME()\n    );\nEND\nGO\n\n-- 2. Crear Trigger de captura de borrado\nCREATE TRIGGER TR_AuditoriaPersona_Delete\nON Academico.Persona\nAFTER DELETE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    \n    INSERT INTO Academico.AuditoriaPersona (\n        IdPersona, \n        NombresBorrados, \n        ApellidosBorrados, \n        NroDocumentoBorrado\n    )\n    SELECT \n        d.IdPersona, \n        d.Nombres, \n        d.ApellidoPaterno + ' ' + d.ApellidoMaterno,\n        d.NroDocumento\n    FROM deleted d; -- Acceso a la tabla lógica temporal 'deleted'\nEND\nGO`,
-                    justification: "Los triggers del motor de SQL Server garantizan la inmutabilidad de la auditoría frente a peticiones externas de bases de datos. Al operar mediante las tablas en memoria del sistema `deleted` o `inserted`, aseguran el almacenamiento exacto de datos previos antes de la persistencia de cambios físicos.",
-                    practices: "Colocar la instrucción `SET NOCOUNT ON` dentro de cada trigger diseñado para evitar enviar mensajes adicionales de filas afectadas hacia las aplicaciones cliente que consumen los servicios de base de datos."
+                    sql: `-- ===================================================================\n-- PROYECTO 9: CREACIÓN DE DISPARADORES DE AUDITORÍA FORENSE (TRIGGER)\n-- ASOCIADO A: Trazabilidad del padrón de personas de egreso UPLA\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Estructura para almacenamiento de registros de borrados (logs)\nIF OBJECT_ID('Academico.AuditoriaPersona', 'U') IS NULL\nBEGIN\n    CREATE TABLE Academico.AuditoriaPersona (\n        IdAuditoria         INT IDENTITY(1,1) PRIMARY KEY,\n        IdPersona           INT NOT NULL,\n        NombresBorrados     VARCHAR(100) NOT NULL,\n        ApellidosBorrados   VARCHAR(100) NOT NULL,\n        UsuarioResponsable  NVARCHAR(100) NOT NULL DEFAULT SUSER_SNAME(),\n        FechaEliminacion    DATETIME NOT NULL DEFAULT GETDATE(),\n        NombreHost          NVARCHAR(100) NOT NULL DEFAULT HOST_NAME()\n    );\nEND\nGO\n\n-- 2. Desencadenador de captura post-eliminación\nCREATE TRIGGER TR_AuditoriaPersona_Delete\nON Academico.Persona\nAFTER DELETE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    INSERT INTO Academico.AuditoriaPersona (IdPersona, NombresBorrados, ApellidosBorrados)\n    SELECT \n        d.IdPersona,\n        d.Nombres,\n        d.ApellidoPaterno + ' ' + ISNULL(d.ApellidoMaterno, '')\n    FROM deleted d;\nEND\nGO`,
+                    justification: "Los triggers operan directamente bajo el flujo transaccional atómico del servidor relacional. Recurrir a la tabla lógica temporal 'deleted' asegura capturar fielmente el estado histórico previo al borrado de forma inmutable frente a accesos externos.",
+                    practices: "Declarar de manera obligatoria la directiva SET NOCOUNT ON en la cabecera interna de los triggers para anular el envío de mensajes de conteo que afecten la respuesta de conectores en el frontend."
                 },
                 prop1: {
-                    title: "Trigger de Auditoría para Modificaciones de Pago (AFTER UPDATE)",
+                    title: "Trigger de Auditoría para Modificaciones de Pago",
                     enunciado: "Desarrolla un trigger llamado TR_AuditoriaModificarPago en la tabla Tramite.Pago. Este trigger debe activarse tras cualquier modificación de registros (AFTER UPDATE), guardando en una tabla de auditoría el valor anterior del monto cobrado, el nuevo valor ingresado y el usuario responsable del cambio.",
-                    sql: `-- ===================================================================\n-- MUNDO 9 - PROPUESTO 1: DETECTOR DE ALTERACIÓN DE PAGOS\n-- OBJETIVO: Registrar fraudes financieros o cobros modificados\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\n-- 1. Crear la tabla de auditoría para flujo de cobros si no existe\nIF OBJECT_ID('Tramite.AuditoriaPagos', 'U') IS NULL\nBEGIN\n    CREATE TABLE Tramite.AuditoriaPagos (\n        IdAuditoria         INT IDENTITY(1,1) PRIMARY KEY,\n        IdPago              INT NOT NULL,\n        MontoAnterior       DECIMAL(10,2) NOT NULL,\n        MontoNuevo          DECIMAL(10,2) NOT NULL,\n        UsuarioResponsable  NVARCHAR(100) NOT NULL DEFAULT SUSER_SNAME(),\n        FechaModificacion   DATETIME NOT NULL DEFAULT GETDATE()\n    );\nEND\nGO\n\n-- 2. Crear trigger AFTER UPDATE\nCREATE TRIGGER TR_AuditoriaModificarPago\nON Tramite.Pago\nAFTER UPDATE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    \n    -- El trigger solo se acciona si el campo Monto sufrió alteraciones\n    IF UPDATE(Monto)\n    BEGIN\n        INSERT INTO Tramite.AuditoriaPagos (IdPago, MontoAnterior, MontoNuevo)\n        SELECT \n            i.IdPago,\n            d.Monto AS MontoAnterior,\n            i.Monto AS MontoNuevo\n        FROM inserted i\n        INNER JOIN deleted d ON i.IdPago = d.IdPago\n        WHERE i.Monto <> d.Monto; -- Solo auditar si los montos son físicamente distintos\n    END\nEND\nGO`,
-                    justification: "La cláusula condicional `IF UPDATE(Monto)` optimiza el rendimiento del trigger de base de datos al validar que el bloque interno únicamente se ejecute si la columna de pagos fue parte del flujo lógico de modificación, ignorando alteraciones en otros atributos de la tabla.",
-                    practices: "Auditar los campos de forma selectiva para no degradar el rendimiento general del motor relacional de la universidad ante peticiones concurrentes de pago."
+                    sql: `-- ===================================================================\n-- MUNDO 9 - PROPUESTO 1: AUDITORÍA DE MODIFICACIONES DE PAGO\n-- ASOCIADO A: Integridad del módulo contable y prevención de fraudes\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nIF OBJECT_ID('Tramite.AuditoriaPagos', 'U') IS NULL\nBEGIN\n    CREATE TABLE Tramite.AuditoriaPagos (\n        IdAuditoria         INT IDENTITY(1,1) PRIMARY KEY,\n        IdPago              INT NOT NULL,\n        MontoAnterior       DECIMAL(10,2) NOT NULL,\n        MontoNuevo          DECIMAL(10,2) NOT NULL,\n        UsuarioResponsable  NVARCHAR(100) NOT NULL DEFAULT SUSER_SNAME(),\n        FechaModificacion   DATETIME NOT NULL DEFAULT GETDATE()\n    );\nEND\nGO\n\nCREATE TRIGGER TR_AuditoriaModificarPago\nON Tramite.Pago\nAFTER UPDATE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    IF UPDATE(Monto)\n    BEGIN\n        INSERT INTO Tramite.AuditoriaPagos (IdPago, MontoAnterior, MontoNuevo)\n        SELECT \n            i.IdPago,\n            d.Monto AS MontoAnterior,\n            i.Monto AS MontoNuevo\n        FROM inserted i\n        INNER JOIN deleted d ON i.IdPago = d.IdPago\n        WHERE i.Monto <> d.Monto; -- Capturar cambios de valor real\n    END\nEND\nGO`,
+                    justification: "La condicional UPDATE(Monto) optimiza el uso de CPU al evitar que el trigger inserte en la tabla de auditoría si el flujo de modificación no alteró la columna de cobros.",
+                    practices: "Construir índices no agrupados sobre campos de auditoría para permitir análisis rápidos por parte de auditores forenses de TI."
                 },
                 prop2: {
                     title: "Trigger de Control de Seguridad (Restricción Horaria)",
                     enunciado: "Implementa un trigger de seguridad de tipo INSTEAD OF en la tabla Academico.Docente para bloquear cualquier intento de eliminación o modificación de registros los fines de semana (sábados y domingos), cancelando la transacción automáticamente por motivos de seguridad informática.",
-                    sql: `-- ===================================================================\n-- MUNDO 9 - PROPUESTO 2: PROTOCOLO DE RESTRICCIÓN DE FIN DE SEMANA\n-- OBJETIVO: Impedir hacks u operaciones dudosas fuera de oficina\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nCREATE TRIGGER TR_Docente_SeguridadHorario\nON Academico.Docente\nINSTEAD OF UPDATE, DELETE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    \n    -- Obtener el día de la semana según el idioma del servidor (1=Lunes, 7=Domingo o similar)\n    -- Usamos DATEPART de forma segura ante cualquier lenguaje de configuración\n    DECLARE @DiaDeSemana INT = DATEPART(WEEKDAY, GETDATE());\n    \n    -- En configuración española estándar: 6 es sábado, 7 es domingo.\n    -- Para mayor universalidad y evitar errores lúdicos de lenguaje, establecemos validación por texto del día actual\n    DECLARE @NombreDia VARCHAR(20) = DATENAME(WEEKDAY, GETDATE());\n\n    IF @NombreDia IN ('Saturday', 'Sunday', 'Sábado', 'Domingo')\n    BEGIN\n        -- Cancelar la transacción emitiendo error estructurado\n        RAISERROR('ACCESO DENEGADO: Las modificaciones de personal académico están prohibidas los fines de semana por políticas del sistema.', 16, 1);\n        ROLLBACK TRANSACTION;\n    END\n    ELSE\n    BEGIN\n        -- Si es un día laboral regular de oficina, permitir que continúe la modificación de forma limpia\n        -- Nota: Al ser trigger INSTEAD OF debemos ejecutar de manera explícita la acción permitida en el else\n        \n        -- Ejemplo de manejo para UPDATE lúdico\n        IF EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)\n        BEGIN\n            UPDATE Academico.Docente\n            SET CodDocente = i.CodDocente, Activo = i.Activo\n            FROM Academico.Docente d\n            INNER JOIN inserted i ON d.IdDocente = i.IdDocente;\n        END\n        \n        -- Manejo para DELETE lúdico\n        IF NOT EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)\n        BEGIN\n            DELETE FROM Academico.Docente\n            WHERE IdDocente IN (SELECT IdDocente FROM deleted);\n        END\n    END\nEND\nGO`,
-                    justification: "Los disparadores `INSTEAD OF` interceptan la petición antes de que sea procesada en las tablas lógicas de datos. Al interceptar solicitudes no permitidas y ejecutar un `ROLLBACK TRANSACTION`, cancelan todo el lote operativo manteniendo el estado previo inmutable.",
-                    practices: "Asignar un nivel de severidad `16` al comando `RAISERROR` para notificar un error ejecutable y visible por parte de los conectores de desarrollo de la universidad."
+                    sql: `-- ===================================================================\n-- MUNDO 9 - PROPUESTO 2: TRIGGER INSTEAD OF DE SEGURIDAD OPERATIVA\n-- ASOCIADO A: Restricciones de seguridad por horarios de oficina\n-- ===================================================================\nUSE GradosTitulos;\nGO\n\nCREATE TRIGGER TR_Docente_SeguridadHorario\nON Academico.Docente\nINSTEAD OF UPDATE, DELETE\nAS\nBEGIN\n    SET NOCOUNT ON;\n    DECLARE @NombreDia VARCHAR(20) = DATENAME(WEEKDAY, GETDATE());\n    \n    IF @NombreDia IN ('Saturday', 'Sunday', 'Sábado', 'Domingo')\n    BEGIN\n        RAISERROR('ACCESO RESTRINGIDO: Alteraciones fuera de horario comercial prohibidas por políticas UPLA.', 16, 1);\n        ROLLBACK TRANSACTION;\n    END\n    ELSE\n    BEGIN\n        -- Si es día laboral regular, procesamos la modificación lógicamente\n        IF EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)\n        BEGIN\n            UPDATE Academico.Docente\n            SET GradoAcademico = i.GradoAcademico, TipoContrato = i.TipoContrato\n            FROM Academico.Docente d\n            INNER JOIN inserted i ON d.IdDocente = i.IdDocente;\n        END\n        IF NOT EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)\n        BEGIN\n            DELETE FROM Academico.Docente WHERE IdDocente IN (SELECT IdDocente FROM deleted);\n        END\n    END\nEND\nGO`,
+                    justification: "Un trigger INSTEAD OF intercepta y anula la orden antes de que sea procesada físicamente por las páginas del disco. El uso de ROLLBACK deshace de golpe la transacción temporal impidiendo manipulaciones maliciosas fuera de horario laboral.",
+                    practices: "Asociar niveles de severidad 16 en el comando RAISERROR para notificar un error controlable por la capa de desarrollo."
                 }
             },
             {
@@ -498,33 +669,84 @@
                 main: {
                     title: "Escenario de Desastre Humano y Restauración Integral",
                     enunciado: "Simula un escenario catastrófico provocado por error humano mediante el borrado accidental de datos críticos en el catálogo institucional. Posteriormente, ejecuta la restauración completa de la base de datos GradosTitulos utilizando el respaldo de seguridad (.bak) generado previamente en el Proyecto 3. Finaliza validando la correcta restitución y consistencia de los datos mediante una consulta de verificación.",
-                    sql: `-- ===================================================================\n-- PROYECTO 10: PROTOCOLO DE DESASTRE Y RESTAURACIÓN INTEGRAL\n-- OBJETIVO: Reclamar un 'Continue' ante el desastre de pérdida de datos\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Simulamos un desastre lúdico (Para simular la pérdida absoluta cerramos accesos)\nALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nGO\nDROP DATABASE GradosTitulos;\nGO\n\n-- 2. Restaurar de emergencia de forma limpia usando el respaldo backup\nRESTORE DATABASE GradosTitulos\nFROM DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    REPLACE, -- Reemplaza archivos físicos existentes si hubiese conflictos lógicos\n    RECOVERY, -- Habilita la base de datos para aceptar nuevas consultas transaccionales\n    STATS = 10;\nGO\n\n-- 3. Consulta de Verificación final de consistencia e integridad de datos\nUSE GradosTitulos;\nGO\nSELECT \n    OBJECT_SCHEMA_NAME(object_id) AS [Esquema],\n    name AS [Tabla],\n    type_desc AS [TipoObjeto]\nFROM sys.tables\nORDER BY [Esquema], name;\nGO`,
-                    justification: "El uso de la instrucción `RESTORE DATABASE ... WITH RECOVERY` permite reconstruir los esquemas del sistema de archivos lógicos en caliente y le informa al motor de SQL Server que la base de datos ya no recibirá archivos de bitácora adicionales, habilitando su consumo en producción de inmediato.",
-                    practices: "Validar siempre que ningún usuario se encuentre conectado a la base de datos previo a una restauración física mediante la desconexión rápida de la misma (`SET SINGLE_USER WITH ROLLBACK IMMEDIATE`)."
+                    sql: `-- ===================================================================\n-- PROYECTO 10: PROCEDIMIENTO DE DESASTRE Y RESTAURACIÓN INTEGRAL\n-- ASOCIADO A: Recuperación del cartucho de datos tras fallas lógicas\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Simulación lúdica de falla catastrófica (borrado accidental)\nALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nGO\nDROP DATABASE GradosTitulos;\nGO\n\n-- 2. Protocolo de contingencia de restauración en caliente\nRESTORE DATABASE GradosTitulos\nFROM DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    REPLACE,\n    RECOVERY,\n    STATS = 10;\nGO\n\n-- 3. Verificación de consistencia final de esquemas e índices\nUSE GradosTitulos;\nGO\nSELECT \n    OBJECT_SCHEMA_NAME(object_id) AS [Esquema],\n    name AS [Tabla],\n    type_desc AS [TipoObjeto]\nFROM sys.tables\nORDER BY [Esquema], name;\nGO`,
+                    justification: "El uso del comando RESTORE con la cláusula RECOVERY reescribe la estructura en disco y abre de manera formal el acceso del motor relacional de la UPLA al público transaccional, garantizando el retorno seguro al Save State sin pérdida de integridad física.",
+                    practices: "Validar sistemáticamente que no existan hilos de conexión activos antes del despliegue del respaldo, utilizando un bloqueo exclusivo temporal (SINGLE_USER)."
                 },
                 prop1: {
                     title: "Restauración Parcial de Tablas Mediante Consultas Cross-Database",
                     enunciado: "Ante un error operativo, se borraron accidentalmente los datos de la tabla de parámetros Catalogo.EstadoTramite. En lugar de restaurar toda la base de datos y perder las transacciones del día, utiliza comandos avanzados de consulta entre bases de datos (Cross-Database Queries) para recuperar la información desde una copia de respaldo montada en el mismo servidor bajo el nombre GradosTitulos_Auxiliar.",
-                    sql: `-- ===================================================================\n-- MUNDO 10 - PROPUESTO 1: CONSULTAS CROSS-DATABASE DE EMERGENCIA\n-- OBJETIVO: Recuperar una sola tabla sin reiniciar el servidor completo\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Simular la restauración del backup del Mundo 3 bajo un nombre temporal auxiliar\nRESTORE DATABASE GradosTitulos_Auxiliar\nFROM DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    MOVE 'GradosTitulos_Data' TO 'D:\\BaseDatos2026\\GradosTitulos_Aux_data.mdf',\n    MOVE 'GradosTitulos_Log' TO 'D:\\BaseDatos2026\\GradosTitulos_Aux_log.ldf',\n    REPLACE,\n    RECOVERY;\nGO\n\n-- 2. Ejecutar inserción directa de rescate entre bases de datos del servidor (CROSS-DATABASE)\nUSE GradosTitulos;\nGO\n\n-- Habilitamos temporalmente la inserción de llaves primarias de identidad física si es requerido\nSET IDENTITY_INSERT Catalogo.EstadoTramite ON;\n\nINSERT INTO Catalogo.EstadoTramite (IdEstadoTramite, Descripcion, Activo) \nSELECT IdEstadoTramite, Descripcion, Activo \nFROM GradosTitulos_Auxiliar.Catalogo.EstadoTramite AS AuxSource\nWHERE NOT EXISTS (\n    SELECT 1 FROM Catalogo.EstadoTramite AS LocalDest \n    WHERE LocalDest.IdEstadoTramite = AuxSource.IdEstadoTramite\n);\n\nSET IDENTITY_INSERT Catalogo.EstadoTramite OFF;\nGO\n\n-- 3. Desmontar base de datos auxiliar para liberar recursos físicos de memoria\nUSE master;\nGO\nALTER DATABASE GradosTitulos_Auxiliar SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nDROP DATABASE GradosTitulos_Auxiliar;\nGO`,
-                    justification: "Las consultas cruzadas de bases de datos (`Cross-Database Queries`) en SQL Server son una solución eficiente para contingencias lógicas, permitiendo realizar comparativas de datos directas utilizando la notación `[BaseDatos].[Esquema].[Tabla]` sin requerir utilidades pesadas de exportación (como BCP o SSIS).",
-                    practices: "Al simular bases de datos auxiliares con restauraciones temporales, siempre mover los archivos lógicos físicos (`MOVE ... TO`) para evitar sobrescribir los archivos en producción del servidor."
+                    sql: `-- ===================================================================\n-- MUNDO 10 - PROPUESTO 1: RECUPERACIÓN CROSS-DATABASE SELECTIVA\n-- ASOCIADO A: Recuperación selectiva sin detención del servidor\n-- ===================================================================\nUSE master;\nGO\n\n-- 1. Restaurar respaldo de seguridad como instancia temporal auxiliar\nRESTORE DATABASE GradosTitulos_Auxiliar\nFROM DISK = 'D:\\BaseDatos2026\\GradosTitulos_Full.bak'\nWITH \n    MOVE 'GradosTitulos_Data' TO 'D:\\BaseDatos2026\\Grados_Aux_data.mdf',\n    MOVE 'GradosTitulos_Log' TO 'D:\\BaseDatos2026\\Grados_Aux_log.ldf',\n    REPLACE,\n    RECOVERY;\nGO\n\n-- 2. Inyección cruzada de datos para restablecimiento express\nUSE GradosTitulos;\nGO\n\nINSERT INTO Catalogo.EstadoTramite (IdEstadoTramite, Descripcion, EsTerminal)\nSELECT IdEstadoTramite, Descripcion, EsTerminal\nFROM GradosTitulos_Auxiliar.Catalogo.EstadoTramite AS Aux\nWHERE NOT EXISTS (\n    SELECT 1 FROM Catalogo.EstadoTramite AS Dest\n    WHERE Dest.IdEstadoTramite = Aux.IdEstadoTramite\n);\nGO\n\n-- 3. Desmontar base auxiliar temporal para liberar memoria física\nUSE master;\nGO\nALTER DATABASE GradosTitulos_Auxiliar SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nDROP DATABASE GradosTitulos_Auxiliar;\nGO`,
+                    justification: "La consulta Cross-Database recurre al direccionamiento completo [Base].[Esquema].[Tabla] en el motor relacional de SQL, permitiendo comparar de forma instantánea el estado de emergencia contra el de respaldo sin incurrir en ventanas prolongadas de desconexión.",
+                    practices: "Indicar obligatoriamente parámetros de re-direccionamiento físico de archivos (MOVE... TO) para evitar colisiones lógicas con los archivos productivos del servidor."
                 },
                 prop2: {
                     title: "Verificación de la Consistencia Física con DBCC CHECKDB",
                     enunciado: "Tras completar una restauración de emergencia en el servidor, ejecuta el comando de diagnóstico avanzado DBCC CHECKDB para realizar una auditoría completa de la integridad estructural y lógica de las páginas de datos e índices de GradosTitulos, asegurando que no existan errores ocultos en el almacenamiento.",
-                    sql: `-- ===================================================================\n-- MUNDO 10 - PROPUESTO 2: INTEGRIDAD Y DIAGNÓSTICO PROFUNDO\n-- OBJETIVO: Validar que el cartucho restaurado no tenga sectores defectuosos\n-- ===================================================================\nUSE master;\nGO\n\n-- Ejecutar chequeo de integridad profunda en la Base de Datos GradosTitulos\nDBCC CHECKDB ('GradosTitulos') \nWITH \n    NO_INFOMSGS, -- Suprime mensajes de información irrelevantes para enfocarse en fallos\n    ALL_ERRORMSGS; -- Retorna todos los errores lógicos encontrados\nGO`,
-                    justification: "El comando `DBCC CHECKDB` realiza un análisis estructural profundo en todas las páginas de datos asignadas a tablas e índices del sistema, verificando el correcto ordenamiento de las páginas lógicas, la correlación de llaves, la alineación física de los bytes de asignación de datos y la integridad referencial de todo el cartucho de almacenamiento.",
-                    practices: "Ejecutar DBCC CHECKDB de forma automatizada (por ejemplo, mediante una rutina programada en SQL Agent) por lo menos una vez a la semana en servidores de producción para detectar corrupciones silenciosas del disco antes del ciclo de backups semanales."
+                    sql: `-- ===================================================================\n-- MUNDO 10 - PROPUESTO 2: CONTROL DE SALUD ESTRUCTURAL DE PÁGINAS\n-- ASOCIADO A: Auditoría forense post-contingencias lógicas\n-- ===================================================================\nUSE master;\nGO\n\nDBCC CHECKDB ('GradosTitulos') \nWITH \n    NO_INFOMSGS,\n    ALL_ERRORMSGS;\nGO`,
+                    justification: "El utilitario DBCC CHECKDB valida de forma exhaustiva la integridad lógica y física de las asignaciones de páginas, punteros, llaves primarias, estructuras B-Tree e índices no agrupados en el almacenamiento de la base de datos.",
+                    practices: "Programar chequeos preventivos DBCC automáticos en periodos semanales de bajo tráfico para detectar fallas latentes antes de iniciar el ciclo semanal de respaldos."
                 }
             }
         ];
 
-        // System State
-        let currentLevelIndex = 0; // 0 to 9 representing levels 1 to 10
-        let currentSubMission = 'main'; // 'main', 'prop1', 'prop2'
-        const solvedStates = new Set(); // Saves level indexes solved
+        const quizQuestions = [
+            {
+                q: "¿Qué modelo de recuperación debes aplicar si requieres restaurar la base de datos GradosTitulos a un punto exacto en el tiempo (Point-in-Time)?",
+                options: [
+                    "SIMPLE - Porque es más ligero para el disco.",
+                    "FULL - Permite copias del log de transacciones detalladas.",
+                    "BULK_LOGGED - Reduce el peso logueando únicamente inserciones masivas."
+                ],
+                correct: 1,
+                exp: "Bajo el modelo de recuperación FULL, el log almacena todo rastro transaccional permitiendo reconstruir la secuencia de datos hasta la milésima de segundo."
+            },
+            {
+                q: "¿Por qué se recomienda almacenar los índices en un Filegroup separado como IdxGroup?",
+                options: [
+                    "Para que los índices pesen menos que las tablas físicas.",
+                    "Permite realizar búsquedas lógicas concurrentes en paralelos en discos distintos.",
+                    "Es obligatorio por sintaxis lógicas de SQL Server."
+                ],
+                correct: 1,
+                exp: "Colocar los datos lógicos e índices en discos independientes ayuda a que los cabezales lean ambos buffers en paralelo, mitigando el cuello de botella de I/O."
+            },
+            {
+                q: "Si aplicas un GRANT y un DENY concurrentemente a un operador en una tabla física, ¿cuál prevalece por jerarquía?",
+                options: [
+                    "DENY - El bloqueo estricto tiene prioridad máxima.",
+                    "GRANT - Permite el acceso de escritura e ignora restricciones secundarias.",
+                    "Se produce un bloqueo mutuo (Deadlock) que tumba el servidor."
+                ],
+                correct: 0,
+                exp: "En la arquitectura jerárquica de permisos de SQL Server, un DENY explícito anula cualquier otro permiso directo o heredado."
+            },
+            {
+                q: "¿Qué comando DDL se debe usar para añadir la columna PrioridadAtencion de forma segura en Tramite.Tramite?",
+                options: [
+                    "ALTER TABLE Tramite.Tramite ADD PrioridadAtencion INT NULL;",
+                    "ALTER TABLE Tramite.Tramite MODIFY COLUMN PrioridadAtencion INT NOT NULL;",
+                    "DROP TABLE Tramite.Tramite; CREATE TABLE..."
+                ],
+                correct: 0,
+                exp: "El comando ALTER TABLE con ADD e indicación de nulabilidad (NULL) altera los metadatos sin riesgo de degradar los registros de transacciones existentes."
+            },
+            {
+                q: "¿Qué trigger se ejecuta antes de registrar los cambios lógicos en las páginas de datos físicos, permitiendo rechazar modificaciones?",
+                options: [
+                    "AFTER UPDATE",
+                    "INSTEAD OF",
+                    "FOR DELETE"
+                ],
+                correct: 1,
+                exp: "Los disparadores INSTEAD OF interceptan y anulan la orden transaccional realizando un rollback antes de impactar los datos físicos."
+            }
+        ];
 
-        // DOM elements
+        let currentLevelIndex = 0;
+        let currentSubMission = 'main';
+        const solvedStates = new Set();
+
         const hudLevelTag = document.getElementById('hudLevelTag');
         const hudProjectCat = document.getElementById('hudProjectCat');
         const hudLevelTitle = document.getElementById('hudLevelTitle');
@@ -545,7 +767,29 @@
         const docSearchBox = document.getElementById('docSearchBox');
         const toast = document.getElementById('toast');
 
-        // Initialize Level list on Sidebar
+        // Tab selection logic
+        const tabMissionRoom = document.getElementById('tabMissionRoom');
+        const tabArcadeArena = document.getElementById('tabArcadeArena');
+        const missionRoomSection = document.getElementById('missionRoomSection');
+        const arcadeArenaSection = document.getElementById('arcadeArenaSection');
+
+        tabMissionRoom.onclick = () => {
+            tabMissionRoom.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-purple-500 bg-purple-950 text-yellow-300 shadow-[0_0_15px_rgba(167,139,250,0.3)]";
+            tabArcadeArena.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-pink-900/50";
+            missionRoomSection.classList.remove('hidden');
+            arcadeArenaSection.classList.add('hidden');
+            playSound('blip');
+        };
+
+        tabArcadeArena.onclick = () => {
+            tabArcadeArena.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-pink-500 bg-pink-950 text-yellow-300 shadow-[0_0_15px_rgba(236,72,153,0.3)]";
+            tabMissionRoom.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-purple-900/50";
+            missionRoomSection.classList.add('hidden');
+            arcadeArenaSection.classList.remove('hidden');
+            playSound('lvlup');
+            initBattleArena();
+        };
+
         function initLevelsSidebar() {
             levelNavList.innerHTML = '';
             databaseProjects.forEach((proj, idx) => {
@@ -557,7 +801,10 @@
                     ? 'bg-purple-950/80 border-purple-500 text-yellow-300 shadow-[0_0_8px_rgba(167,139,250,0.4)]' 
                     : 'bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:border-purple-900/60'
                 }`;
-                button.onclick = () => selectLevel(idx);
+                button.onclick = () => {
+                    selectLevel(idx);
+                    playSound('blip');
+                };
                 
                 const statusIcon = isSolved 
                     ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' 
@@ -575,7 +822,6 @@
             updateProgression();
         }
 
-        // Search logic in sidebar
         searchBox.oninput = (e) => {
             const query = e.target.value.toLowerCase();
             const buttons = levelNavList.querySelectorAll('button');
@@ -592,7 +838,6 @@
             });
         };
 
-        // Selection of a Level
         function selectLevel(idx) {
             currentLevelIndex = idx;
             currentSubMission = 'main';
@@ -601,18 +846,14 @@
             initLevelsSidebar();
         }
 
-        // Update completion metrics
         function updateProgression() {
             const percent = Math.round((solvedStates.size / databaseProjects.length) * 100);
             completionPercentage.innerText = `${percent}%`;
             completionBar.style.width = `${percent}%`;
         }
 
-        // Custom Trigger Copying to Clipboard
         function copyCode(elementId) {
             const codeText = document.getElementById(elementId).innerText;
-            
-            // Clipboard Fallback compatible with browser sandboxing
             const tempTextArea = document.createElement("textarea");
             tempTextArea.value = codeText;
             document.body.appendChild(tempTextArea);
@@ -620,11 +861,10 @@
             document.execCommand("copy");
             document.body.removeChild(tempTextArea);
             
-            // Mark level as solved
             solvedStates.add(currentLevelIndex);
             initLevelsSidebar();
+            playSound('coin');
 
-            // Display floating game-like notification (Toast)
             toast.classList.remove('translate-y-20', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
             setTimeout(() => {
@@ -633,20 +873,16 @@
             }, 3000);
         }
 
-        // Render current slide
         function renderSlide() {
             const proj = databaseProjects[currentLevelIndex];
             const activeData = proj[currentSubMission];
 
-            // Update HUD elements
             hudLevelTag.innerText = proj.world;
             hudProjectCat.innerText = `[${proj.category}]`;
             hudLevelTitle.innerText = proj.title;
             
-            // Update page indices
             pageIndicator.innerText = `WORLD ${currentLevelIndex + 1} / 10`;
 
-            // Prepare slide structures
             let subTitlePrefix = "01. ENUNCIADO PRINCIPAL: ";
             let colorTheme = "border-emerald-500/30 bg-emerald-950/20";
             let fontColor = "text-emerald-400";
@@ -664,13 +900,11 @@
 
             slideContent.innerHTML = `
                 <div class="space-y-4">
-                    <!-- Section Title and Mission Statement -->
                     <div class="border-l-4 border-purple-500 pl-4">
                         <h3 class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-1">Estatus Actual</h3>
                         <h4 class="text-xl font-bold font-arcade text-yellow-300 text-2xl tracking-wide uppercase">${subTitlePrefix}${activeData.title}</h4>
                     </div>
 
-                    <!-- Enunciado Block -->
                     <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 relative group">
                         <div class="absolute -top-2.5 left-4 px-2 py-0.5 bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-400 font-bold uppercase rounded">
                             <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i> Enunciado de la Quest
@@ -680,7 +914,6 @@
                         </p>
                     </div>
 
-                    <!-- SQL Code Block -->
                     <div class="relative bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
                         <div class="flex justify-between items-center bg-zinc-900 px-4 py-2 text-xs border-b border-zinc-800">
                             <span class="text-purple-400 font-bold uppercase flex items-center gap-1.5 font-arcade text-lg tracking-wider">
@@ -693,7 +926,6 @@
                         <pre class="p-4 overflow-x-auto text-xs text-zinc-300 font-code max-h-72 select-all" id="${codeId}"><code>${activeData.sql}</code></pre>
                     </div>
 
-                    <!-- Technical Justification & Best Practices Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-zinc-950/60 p-4 rounded-xl border ${colorTheme} flex flex-col gap-2">
                             <h5 class="text-xs font-bold uppercase ${fontColor} tracking-wider flex items-center gap-1.5 font-arcade text-lg">
@@ -715,17 +947,15 @@
                 </div>
             `;
 
-            // Adjust navigation button disable rules
             prevBtn.disabled = currentLevelIndex === 0 && currentSubMission === 'main';
         }
 
-        // Submission dropdown change handler
         subMissionSelector.onchange = (e) => {
             currentSubMission = e.target.value;
             renderSlide();
+            playSound('blip');
         };
 
-        // Navigation logic (Previous & Next slide triggers)
         prevBtn.onclick = () => {
             if (currentSubMission === 'prop2') {
                 currentSubMission = 'prop1';
@@ -740,6 +970,7 @@
             }
             renderSlide();
             initLevelsSidebar();
+            playSound('blip');
         };
 
         nextBtn.onclick = () => {
@@ -754,16 +985,125 @@
                 currentSubMission = 'main';
                 subMissionSelector.value = 'main';
             } else {
-                // Return to level 0
                 currentLevelIndex = 0;
                 currentSubMission = 'main';
                 subMissionSelector.value = 'main';
             }
             renderSlide();
             initLevelsSidebar();
+            playSound('blip');
         };
 
-        // CRT Screen Toggle Switch
+        let currentQuizIndex = 0;
+        let heroHp = 100;
+        let bossHp = 100;
+
+        function setHero(sprite, name) {
+            document.getElementById('heroSprite').innerText = sprite;
+            document.getElementById('battleLog').innerText = `¡HAS SELECCIONADO AL HÉROE ${name.toUpperCase()}!`;
+            playSound('lvlup');
+        }
+
+        function initBattleArena() {
+            currentQuizIndex = 0;
+            heroHp = 100;
+            bossHp = 100;
+            updateBattleStats();
+            renderQuestion();
+            document.getElementById('battleLog').innerText = "¡RESPONDE CORRECTAMENTE PARA INICIAR EL COMBATE!";
+        }
+
+        function updateBattleStats() {
+            document.getElementById('heroHpBar').style.width = `${heroHp}%`;
+            document.getElementById('bossHpBar').style.width = `${bossHp}%`;
+        }
+
+        function renderQuestion() {
+            const quizContainer = document.getElementById('quizContainer');
+            if (heroHp <= 0) {
+                quizContainer.innerHTML = `
+                    <div class="text-center p-6 space-y-4">
+                        <h3 class="font-retro-title text-red-500 text-lg animate-bounce">GAME OVER</h3>
+                        <p class="text-xs text-zinc-300">El servidor se ha bloqueado debido a transacciones corruptas.</p>
+                        <button onclick="initBattleArena()" class="px-4 py-2 bg-pink-600 text-white rounded text-xs font-bold border-2 border-pink-400">VOLVER A INTENTAR</button>
+                    </div>
+                `;
+                playSound('hit');
+                return;
+            }
+            if (bossHp <= 0) {
+                quizContainer.innerHTML = `
+                    <div class="text-center p-6 space-y-4">
+                        <h3 class="font-retro-title text-emerald-400 text-lg animate-bounce">VICTORIA TOTAL</h3>
+                        <p class="text-xs text-zinc-300">¡Has saneado la base de datos de la UPLA y derrotado al lag!</p>
+                        <button onclick="initBattleArena()" class="px-4 py-2 bg-emerald-600 text-white rounded text-xs font-bold border-2 border-emerald-400">JUGAR DE NUEVO</button>
+                    </div>
+                `;
+                playSound('lvlup');
+                return;
+            }
+
+            if (currentQuizIndex >= quizQuestions.length) {
+                currentQuizIndex = 0; // restart list if completed
+            }
+
+            const qData = quizQuestions[currentQuizIndex];
+            quizContainer.innerHTML = `
+                <div class="space-y-4">
+                    <span class="text-xs uppercase tracking-widest text-pink-500 font-bold font-retro-title block">Pregunta de Misión ${currentQuizIndex + 1}</span>
+                    <h3 class="text-sm font-bold text-zinc-200 leading-relaxed bg-zinc-950 p-3 rounded-lg border border-zinc-800">${qData.q}</h3>
+                    <div class="flex flex-col gap-2">
+                        ${qData.options.map((opt, i) => `
+                            <button onclick="handleAnswer(${i})" class="w-full text-left p-3 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 flex gap-2 items-center transition active:scale-95 duration-100">
+                                <span class="bg-purple-900 text-purple-200 w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">${String.fromCharCode(65 + i)}</span>
+                                <span>${opt}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAnswer(index) {
+            const qData = quizQuestions[currentQuizIndex];
+            const logBox = document.getElementById('battleLog');
+            const impact = document.getElementById('battleImpact');
+            const boss = document.getElementById('bossSprite');
+            const hero = document.getElementById('heroSprite');
+
+            if (index === qData.correct) {
+                // Attack Anim
+                bossHp = Math.max(0, bossHp - 20);
+                playSound('laser');
+                boss.classList.add('translate-x-12', 'opacity-50');
+                impact.innerText = "¡CRIT!";
+                impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-emerald-400 opacity-100 transform scale-100 transition-all duration-300";
+                logBox.innerText = `CORRECTO: ${qData.exp}`;
+                
+                setTimeout(() => {
+                    boss.classList.remove('translate-x-12', 'opacity-50');
+                    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300";
+                }, 4000);
+            } else {
+                // Hurt Anim
+                heroHp = Math.max(0, heroHp - 25);
+                playSound('hit');
+                hero.classList.add('-translate-x-12', 'opacity-50');
+                impact.innerText = "HURT!";
+                impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-100 transform scale-100 transition-all duration-300";
+                logBox.innerText = `INCORRECTO. El jefe daña la CPU con consultas sin indexes.`;
+
+                setTimeout(() => {
+                    hero.classList.remove('-translate-x-12', 'opacity-50');
+                    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300";
+                }, 4000);
+            }
+
+            currentQuizIndex++;
+            updateBattleStats();
+            setTimeout(renderQuestion, 4200);
+        }
+
         toggleCrtBtn.onclick = () => {
             const body = document.body;
             if (body.classList.contains('crt')) {
@@ -773,9 +1113,9 @@
                 body.classList.add('crt', 'crt-flicker');
                 toggleCrtBtn.innerHTML = '<i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON';
             }
+            playSound('blip');
         };
 
-        // Render full document inside continuous modal
         function renderFullContinuousDocument() {
             continuousDocumentSpace.innerHTML = '';
             databaseProjects.forEach((proj, idx) => {
@@ -791,9 +1131,7 @@
                         <span class="text-xs text-zinc-500 font-bold font-arcade text-xl">${proj.category}</span>
                     </div>
 
-                    <!-- Sub Level Content Generator -->
                     <div class="space-y-12">
-                        <!-- Main Exercise -->
                         <div class="space-y-4 document-element-wrapper">
                             <h3 class="text-lg font-bold text-emerald-400 font-arcade text-2xl uppercase tracking-wide">01. Enunciado de Solución Base</h3>
                             <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-sm text-zinc-300 leading-relaxed">
@@ -818,7 +1156,6 @@
                             </div>
                         </div>
 
-                        <!-- Proposed Exercise 1 -->
                         <div class="space-y-4 document-element-wrapper border-t border-zinc-800/60 pt-6">
                             <h3 class="text-lg font-bold text-cyan-400 font-arcade text-2xl uppercase tracking-wide">02. Ejercicio Propuesto 1: ${proj.prop1.title}</h3>
                             <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-sm text-zinc-300 leading-relaxed">
@@ -843,7 +1180,6 @@
                             </div>
                         </div>
 
-                        <!-- Proposed Exercise 2 -->
                         <div class="space-y-4 document-element-wrapper border-t border-zinc-800/60 pt-6">
                             <h3 class="text-lg font-bold text-yellow-400 font-arcade text-2xl uppercase tracking-wide">03. Ejercicio Propuesto 2: ${proj.prop2.title}</h3>
                             <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-sm text-zinc-300 leading-relaxed">
@@ -873,7 +1209,6 @@
             });
         }
 
-        // Search within continuous mode modal
         docSearchBox.oninput = (e) => {
             const query = e.target.value.toLowerCase();
             const elements = continuousDocumentSpace.querySelectorAll('.document-element-wrapper');
@@ -887,16 +1222,16 @@
             });
         };
 
-        // Open/Close continuous modal
         exportDocBtn.onclick = () => {
             renderFullContinuousDocument();
             fullDocModal.classList.remove('hidden');
+            playSound('lvlup');
         };
         closeFullDocBtn.onclick = () => {
             fullDocModal.classList.add('hidden');
+            playSound('blip');
         };
 
-        // Keyboard slide controls (Arrow keys)
         document.onkeydown = (e) => {
             if (e.key === "ArrowLeft") {
                 prevBtn.click();
@@ -905,7 +1240,6 @@
             }
         };
 
-        // Onload Initialize Core
         window.onload = function () {
             initLevelsSidebar();
             renderSlide();

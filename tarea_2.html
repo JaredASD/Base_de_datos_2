@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL SECURITY QUEST: Seguridad Avanzada en SQL Server</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    .font-arcade { font-family: 'VT323', monospace; }
+    .font-retro-title { font-family: 'Press Start 2P', monospace; }
+    .font-code { font-family: 'JetBrains Mono', monospace; }
+
+    .crt::after {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+                  linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
+      background-size: 100% 4px, 6px 100%;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .crt-flicker { animation: flicker 0.15s infinite; }
+    @keyframes flicker {
+      0% { opacity: 0.98; } 50% { opacity: 1; } 100% { opacity: 0.99; }
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
+
+    .retro-border {
+      border: 4px solid #1e1b4b;
+      box-shadow: 0 0 15px rgba(139,92,246,0.35);
+    }
+    .neon-text-green { text-shadow: 0 0 8px rgba(16,185,129,0.6); }
+    .neon-text-purple { text-shadow: 0 0 8px rgba(167,139,250,0.6); }
+
+    .star-bg {
+      background-image: radial-gradient(#ffffff 1px, transparent 1px),
+                        radial-gradient(#ffffff 0.5px, transparent 0.5px);
+      background-size: 40px 40px, 60px 60px;
+      background-position: 0 0, 20px 20px;
+      animation: moveStars 40s linear infinite;
+    }
+    @keyframes moveStars {
+      from { background-position: 0 0, 20px 20px; }
+      to   { background-position: 1000px 500px, 1020px 520px; }
+    }
+
+    /* Script image viewer */
+    .script-img-container {
+      position: relative;
+      cursor: pointer;
+      border: 2px solid #7c3aed;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 18px rgba(139,92,246,0.45);
+      transition: box-shadow 0.2s;
+    }
+    .script-img-container:hover {
+      box-shadow: 0 0 28px rgba(167,139,250,0.75);
+    }
+    .script-img-container img {
+      width: 100%;
+      display: block;
+    }
+    .script-img-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.65);
+      text-align: center;
+      padding: 6px 0;
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      color: #a78bfa;
+      letter-spacing: 2px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .script-img-container:hover .script-img-overlay { opacity: 1; }
+
+    /* Lightbox */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 82vh;
+      border: 3px solid #8b5cf6;
+      border-radius: 10px;
+      box-shadow: 0 0 40px rgba(139,92,246,0.6);
+    }
+    #lightboxClose {
+      margin-top: 14px;
+      padding: 8px 22px;
+      background: #7c3aed;
+      color: #fff;
+      border: 2px solid #a78bfa;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #lightboxClose:hover { background: #9333ea; }
+  </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 font-code selection:bg-purple-600 selection:text-white crt crt-flicker min-h-screen flex flex-col justify-between star-bg">
+
+<!-- Lightbox Viewer -->
+<div id="lightbox">
+  <img id="lightboxImg" src="" alt="Script ampliado">
+  <button id="lightboxClose"><i class="fa-solid fa-xmark mr-2"></i>CERRAR</button>
+</div>
+
+<!-- Splash Screen -->
+<div id="splashScreen" class="fixed inset-0 bg-zinc-950 z-[200] flex flex-col justify-center items-center p-4 transition-all duration-700">
+  <div class="max-w-2xl text-center space-y-6 bg-zinc-900/90 retro-border rounded-2xl p-8 relative">
+    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image:radial-gradient(#8b5cf6 1px, transparent 1px);background-size:16px 16px;"></div>
+    <h1 class="font-retro-title text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-yellow-300 animate-pulse tracking-wide leading-relaxed">
+      SQL SECURITY QUEST<br><span class="text-sm">SEGURIDAD AVANZADA EDITION</span>
+    </h1>
+    <p class="text-zinc-400 text-xs tracking-widest font-bold uppercase">Manual de Seguridad en SQL Server — Universidad Peruana Los Andes (UPLA)</p>
+    <div class="border-t border-purple-900/50 py-4 my-2 text-xs text-zinc-300 space-y-2">
+      <p class="text-yellow-400 font-bold"><i class="fa-solid fa-shield-halved"></i> SEGURIDAD AVANZADA: AUTENTICACIÓN · ROLES · CIFRADO · AUDITORÍA</p>
+      <p>Explora los 5 temas y 15 proyectos del manual de seguridad. Derrota al jefe con el quiz de cada tema.</p>
+    </div>
+    <button id="insertCoinBtn" class="px-6 py-4 bg-yellow-500 text-black hover:bg-yellow-400 border-4 border-yellow-300 rounded-xl font-retro-title text-sm tracking-wider shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all transform active:scale-95 duration-150">
+      INSERT COIN // START GAME
+    </button>
+    <p class="text-[10px] text-zinc-500 uppercase tracking-widest">© 2026 UPLA Arcade Laboratories — Seguridad Edición</p>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-zinc-900/95 border-b-4 border-purple-950 p-4 sticky top-0 z-50 shadow-2xl backdrop-blur">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center animate-bounce shadow-[0_0_15px_rgba(147,51,234,0.7)]">
+        <i class="fa-solid fa-shield-halved text-2xl text-yellow-300"></i>
+      </div>
+      <div>
+        <h1 class="font-arcade text-4xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-300 tracking-wider">
+          SQL SECURITY QUEST
+        </h1>
+        <p class="text-xs text-purple-400 uppercase tracking-widest font-bold">UPLA — Manual de Seguridad Avanzada en SQL Server // V3</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap justify-center items-center gap-3">
+      <button id="toggleCrt" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
+        <i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON
+      </button>
+      <button id="exportDoc" class="px-3 py-1.5 bg-yellow-500 text-black hover:bg-yellow-400 border-2 border-yellow-300 rounded text-xs font-bold flex items-center gap-2 transition">
+        <i class="fa-solid fa-book-open"></i> Modo Lectura Continua
+      </button>
+      <button id="muteBtn" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
+        <i class="fa-solid fa-volume-high text-yellow-400"></i> Audio: ON
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="max-w-7xl w-full mx-auto px-4 mt-4">
+  <div class="grid grid-cols-2 gap-4">
+    <button id="tabMissionRoom" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-purple-500 bg-purple-950 text-yellow-300 shadow-[0_0_15px_rgba(167,139,250,0.3)]">
+      <i class="fa-solid fa-terminal mr-2"></i> MISSION COMMAND
+    </button>
+    <button id="tabArcadeArena" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-pink-900/50">
+      <i class="fa-solid fa-dragon mr-2"></i> ARCADE ARENA (QUIZ)
+    </button>
+  </div>
+</div>
+
+<!-- Mission Room -->
+<main id="missionRoomSection" class="max-w-7xl w-full mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 my-4">
+
+  <!-- Sidebar -->
+  <aside id="worldMapSidebar" class="lg:col-span-1 bg-zinc-900/90 retro-border rounded-xl p-4 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+    <div class="border-b-2 border-purple-950 pb-2">
+      <h2 class="font-arcade text-3xl text-yellow-400 flex items-center gap-2">
+        <i class="fa-solid fa-folder-open text-xl"></i> SELEC. NIVEL
+      </h2>
+      <p class="text-xs text-zinc-400">5 Temas · 15 Proyectos de Seguridad.</p>
+    </div>
+    <div class="relative">
+      <input type="text" id="searchBox" placeholder="Buscar tema / proyecto..." class="w-full bg-zinc-950 border-2 border-zinc-800 rounded p-2 text-xs focus:border-purple-500 focus:outline-none text-zinc-300 pl-8">
+      <i class="fa-solid fa-search absolute left-2.5 top-3 text-zinc-600 text-xs"></i>
+    </div>
+    <div class="bg-zinc-950 p-2.5 rounded border border-purple-900/40">
+      <div class="flex justify-between text-xs mb-1">
+        <span class="text-zinc-400 font-bold">Progreso de la Quest:</span>
+        <span id="completionPercentage" class="text-yellow-400 font-bold">0%</span>
+      </div>
+      <div class="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+        <div id="completionBar" class="bg-gradient-to-r from-purple-500 to-emerald-500 h-full w-0 transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+      </div>
+    </div>
+    <nav class="flex flex-col gap-2 overflow-y-auto flex-grow pr-1" id="levelNavList"></nav>
+  </aside>
+
+  <!-- Slide Player -->
+  <section class="lg:col-span-3 flex flex-col gap-4">
+    <div class="bg-zinc-900/90 retro-border rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span id="hudLevelTag" class="px-2 py-0.5 bg-purple-900 text-purple-200 border border-purple-500 rounded text-xs font-bold uppercase tracking-widest">Tema 01</span>
+          <span id="hudProjectCat" class="text-xs text-emerald-400 uppercase font-bold tracking-wider neon-text-green">[Autenticación]</span>
+        </div>
+        <h2 id="hudLevelTitle" class="font-arcade text-4xl text-white mt-1 leading-none tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400">
+          Cargando Consola...
+        </h2>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 self-end md:self-auto">
+        <span class="text-xs text-zinc-400 uppercase">Sub-Misión:</span>
+        <select id="subMissionSelector" class="bg-zinc-950 border-2 border-purple-900 rounded p-1.5 text-xs font-bold text-yellow-300 focus:outline-none focus:border-yellow-400 cursor-pointer">
+          <option value="main">01. Enunciado Principal</option>
+          <option value="prop1">02. Ejercicio Propuesto 1</option>
+          <option value="prop2">03. Ejercicio Propuesto 2</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-zinc-900/90 retro-border rounded-xl p-6 min-h-[500px] flex flex-col justify-between shadow-2xl relative overflow-hidden">
+      <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image:radial-gradient(#8b5cf6 1px, transparent 1px);background-size:24px 24px;"></div>
+      <div id="slideContent" class="space-y-6 relative z-10 transition-all duration-300"></div>
+      <div class="border-t-2 border-zinc-800 pt-4 mt-6 flex justify-between items-center relative z-10">
+        <button id="prevBtn" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs font-bold flex items-center gap-2 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+          <i class="fa-solid fa-arrow-left"></i> ANTERIOR
+        </button>
+        <span id="pageIndicator" class="text-xs bg-zinc-950 px-3 py-1 rounded border border-zinc-800 font-bold text-zinc-400">TEMA 1 / 5</span>
+        <button id="nextBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded text-xs font-bold flex items-center gap-2 transition active:scale-95">
+          SIGUIENTE <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Arcade Arena -->
+<section id="arcadeArenaSection" class="max-w-7xl w-full mx-auto p-4 flex-grow hidden my-4">
+  <div class="bg-zinc-900/90 retro-border rounded-xl p-6 flex flex-col lg:flex-row gap-6 relative">
+    <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image:radial-gradient(#ec4899 1px, transparent 1px);background-size:20px 20px;"></div>
+
+    <!-- Left: Battle Canvas -->
+    <div class="w-full lg:w-1/2 flex flex-col gap-4 relative z-10">
+      <div class="border-b-4 border-pink-900 pb-2">
+        <h2 class="font-retro-title text-sm text-pink-500 flex items-center gap-2">
+          <i class="fa-solid fa-dragon animate-pulse"></i> RETRO SQL SECURITY QUIZ ARENA
+        </h2>
+        <p class="text-xs text-zinc-400 mt-1">¡Derrota al Black Hat Hacker con tus conocimientos de seguridad SQL!</p>
+      </div>
+
+      <!-- Select tema para quiz -->
+      <div class="bg-zinc-950 p-3 rounded-xl border border-purple-900/50">
+        <label class="text-xs text-purple-400 font-bold uppercase block mb-2"><i class="fa-solid fa-filter mr-1"></i> Filtrar quiz por tema:</label>
+        <select id="quizThemeFilter" class="w-full bg-zinc-900 border-2 border-purple-900 rounded p-2 text-xs font-bold text-yellow-300 focus:outline-none focus:border-yellow-400 cursor-pointer">
+          <option value="all">🔀 Todas las preguntas (aleatorio)</option>
+          <option value="0">🔐 Tema 1 — Autenticación SQL y Windows</option>
+          <option value="1">⚙️ Tema 2 — Cuentas de Servicio y Servidor</option>
+          <option value="2">👥 Tema 3 — Roles Fijos y Personalizados</option>
+          <option value="3">🛡️ Tema 4 — GRANT, DENY y REVOKE</option>
+          <option value="4">🔒 Tema 5 — Cifrado TDE y Always Encrypted</option>
+          <option value="5">📋 Tema 6 — Auditoría y Monitoreo</option>
+        </select>
+      </div>
+
+      <div class="bg-zinc-950 rounded-xl border-4 border-zinc-800 h-64 relative overflow-hidden flex flex-col justify-between p-4">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-purple-950/20 pointer-events-none"></div>
+        <div class="flex justify-between items-center text-[10px] uppercase font-retro-title z-10">
+          <div class="space-y-1">
+            <span class="text-purple-400 block font-bold">SQL Defender:</span>
+            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+              <div id="heroHpBar" class="bg-emerald-500 h-full w-full transition-all duration-300"></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-right">
+            <span class="text-pink-500 block font-bold">Black Hat Hacker:</span>
+            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+              <div id="bossHpBar" class="bg-red-500 h-full w-full transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center h-full relative">
+          <div id="heroSprite" class="text-5xl transform transition-all duration-300">🛡️</div>
+          <div id="battleImpact" class="absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300">CRIT!</div>
+          <div id="bossSprite" class="text-5xl transform transition-all duration-300">🦹</div>
+        </div>
+        <div id="battleLog" class="text-center font-arcade text-2xl text-yellow-400 bg-zinc-900 border border-zinc-800 rounded py-1 z-10 truncate px-2">
+          ¡PROTEGE LA BASE DE DATOS DE GRADOS Y TÍTULOS!
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="setHero('🛡️','DBA Knight')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">🛡️</span><span class="text-[9px] uppercase font-bold text-purple-400">DBA Knight</span>
+        </button>
+        <button onclick="setHero('🧙‍♂️','Security Mage')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">🧙‍♂️</span><span class="text-[9px] uppercase font-bold text-emerald-400">Security Mage</span>
+        </button>
+        <button onclick="setHero('🥷','Cipher Ninja')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">🥷</span><span class="text-[9px] uppercase font-bold text-yellow-400">Cipher Ninja</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Quiz -->
+    <div id="quizContainer" class="w-full lg:w-1/2 flex flex-col justify-between gap-4 relative z-10"></div>
+  </div>
+</section>
+
+<!-- Full Doc Modal -->
+<div id="fullDocModal" class="fixed inset-0 bg-zinc-950 z-[100] overflow-y-auto hidden p-4 md:p-8">
+  <div class="max-w-5xl mx-auto bg-zinc-900/95 retro-border rounded-2xl p-6 md:p-10 shadow-2xl">
+    <div class="border-b-4 border-yellow-500 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <span class="px-3 py-1 bg-yellow-500 text-black font-bold rounded text-xs uppercase tracking-widest font-arcade">Vista Completa del Manual</span>
+        <h1 class="font-arcade text-5xl text-white mt-2">SEGURIDAD AVANZADA EN SQL SERVER</h1>
+        <p class="text-sm text-purple-400 mt-1 font-semibold">Manual completo con todos los temas y proyectos del curso.</p>
+      </div>
+      <div class="flex gap-3 shrink-0">
+        <button id="closeFullDoc" class="px-4 py-2 bg-red-600 hover:bg-red-500 border-2 border-red-400 rounded text-xs font-bold transition">
+          <i class="fa-solid fa-circle-xmark"></i> CERRAR VISTA
+        </button>
+      </div>
+    </div>
+    <div class="mb-8 max-w-md">
+      <label class="block text-xs font-bold text-zinc-400 uppercase mb-2">Buscador en el manual:</label>
+      <input type="text" id="docSearchBox" placeholder="Buscar (ej. TDE, GRANT, auditoría)..." class="w-full bg-zinc-950 border-2 border-purple-900 rounded p-2 text-sm focus:outline-none focus:border-yellow-400">
+    </div>
+    <div id="continuousDocumentSpace" class="space-y-12"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 bg-emerald-950 border-2 border-emerald-500 text-emerald-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-[9999]">
+  <i class="fa-solid fa-circle-check text-xl text-emerald-400 animate-pulse"></i>
+  <div>
+    <p class="text-xs font-bold uppercase tracking-wider">¡Captura Registrada!</p>
+    <p class="text-[10px] text-emerald-300">Proyecto marcado como completado.</p>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-zinc-950 border-t-4 border-zinc-900 p-4 text-center text-xs text-zinc-500">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+    <p>© 2026 Universidad Peruana Los Andes (UPLA) • Manual de Seguridad Avanzada en SQL Server.</p>
+    <p class="flex items-center gap-1.5 font-arcade text-lg text-zinc-400">
+      <i class="fa-solid fa-heart text-red-500 animate-pulse"></i> SEGURIDAD · CIFRADO · AUDITORÍA
+    </p>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════════
+let synthEnabled = true;
+function playSound(type) {
+  if (!synthEnabled) return;
+  try {
+    if (type === 'coin') {
+      const s = new Tone.Synth({ oscillator:{type:"square"}, envelope:{attack:0.01,decay:0.1,sustain:0.2,release:0.1} }).toDestination();
+      s.triggerAttackRelease("B5","16n"); setTimeout(()=>s.triggerAttackRelease("E6","8n"),100);
+    } else if (type === 'blip') {
+      const s = new Tone.MonoSynth({ oscillator:{type:"triangle"}, envelope:{attack:0.01,decay:0.05,sustain:0,release:0.05} }).toDestination();
+      s.triggerAttackRelease("A3","16n");
+    } else if (type === 'lvlup') {
+      const s = new Tone.Synth({ oscillator:{type:"sawtooth"} }).toDestination();
+      s.triggerAttackRelease("C4","16n"); setTimeout(()=>s.triggerAttackRelease("E4","16n"),80);
+      setTimeout(()=>s.triggerAttackRelease("G4","16n"),160); setTimeout(()=>s.triggerAttackRelease("C5","8n"),240);
+    } else if (type === 'hit') {
+      const n = new Tone.NoiseSynth({ noise:{type:"pink"}, envelope:{attack:0.005,decay:0.2,sustain:0} }).toDestination();
+      n.triggerAttack();
+    } else if (type === 'laser') {
+      const s = new Tone.MonoSynth({ oscillator:{type:"sawtooth"}, filter:{Q:2,type:"lowpass"} }).toDestination();
+      s.triggerAttackRelease("G5","16n"); s.frequency.rampTo("C3",0.15);
+    }
+  } catch(e) { console.warn("Audio:",e); }
+}
+
+document.getElementById('insertCoinBtn').onclick = () => {
+  Tone.start();
+  document.getElementById('splashScreen').classList.add('opacity-0','pointer-events-none');
+  playSound('lvlup');
+};
+
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.onclick = () => {
+  synthEnabled = !synthEnabled;
+  muteBtn.innerHTML = synthEnabled
+    ? '<i class="fa-solid fa-volume-high text-yellow-400"></i> Audio: ON'
+    : '<i class="fa-solid fa-volume-xmark text-red-500"></i> Audio: OFF';
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  DATOS DE PROYECTOS  (5 temas × 3 proyectos = 15)
+//  scriptImage: "img/scriptN.png"
+// ═══════════════════════════════════════════
+const databaseProjects = [
+  // ── TEMA 1 ──────────────────────────────
+  {
+    id: 1, world: "TEMA 1", scriptIndex: 1,
+    category: "Autenticación SQL y Windows",
+    title: "Autenticación SQL y Windows: Diferencias y Prácticas Seguras",
+    main: {
+      title: "Acceso mixto para personal académico y administrativo",
+      enunciado: "La Universidad requiere que los trabajadores internos accedan mediante autenticación Windows, mientras que los consultores externos utilicen autenticación SQL Server. Diseñe e implemente una estrategia de autenticación para la base de datos GradosTitulos que permita administrar ambos tipos de acceso.",
+      scriptImage: "img/script1.png",
+      justification: "El Modo Mixto (valor 2 en el registro) es indispensable cuando coexisten usuarios integrados en el dominio de Directorio Activo de la institución y agentes externos sin cuentas corporativas. Al mapear cuentas de Windows se delega la validación de credenciales al sistema operativo, reduciendo la exposición de contraseñas sobre la red. Para los consultores, el uso de CHECK_POLICY obliga a SQL Server a aplicar las reglas de complejidad del sistema operativo local.",
+      practices: "Se implementó la separación de responsabilidades a nivel de logins del servidor y usuarios de base de datos. Se definieron contraseñas robustas alfanuméricas con caracteres especiales y se forzó la expiración periódica de credenciales para mitigar ataques de fuerza bruta."
+    },
+    prop1: {
+      title: "Gestión de accesos para miembros del Jurado de Tesis",
+      enunciado: "Los miembros del jurado necesitan acceder únicamente a información de tesis y sustentaciones. Configure accesos diferenciados utilizando autenticación Windows y SQL.",
+      scriptImage: "img/script2.png",
+      justification: "Centralizar los privilegios en un Rol de Base de Datos previene la dispersión de permisos individuales. Independientemente del origen de la autenticación (Windows o SQL), los tokens de seguridad de ambos usuarios heredan exactamente los mismos límites operacionales dentro del motor relacional.",
+      practices: "Principio de menor privilegio. El jurado no posee visibilidad ni facultades de modificación sobre el esquema administrativo o de catálogo general, encapsulando su acción exclusivamente en el área de evaluación y tesis."
+    },
+    prop2: {
+      title: "Políticas estrictas para cuentas SQL Server",
+      enunciado: "La Oficina de Tecnologías de Información requiere aplicar políticas estrictas para las cuentas SQL Server que administran los trámites de grados y títulos.",
+      scriptImage: "img/script3.png",
+      justification: "Al activar CHECK_POLICY = ON, SQL Server aprovecha las API de NetValidatePasswordPolicy de Windows para exigir longitud mínima, complejidad e historial de contraseñas, asegurando que las cuentas SQL cumplan las mismas normativas que las cuentas de dominio.",
+      practices: "Evitar el uso de cuentas genéricas de administración como 'sa'. Cada módulo crítico institucional debe contar con su propio login nominado sujeto a auditoría de bloqueos automáticos."
+    }
+  },
+  // ── TEMA 2 ──────────────────────────────
+  {
+    id: 2, world: "TEMA 2", scriptIndex: 4,
+    category: "Cuentas de Servicio y Servidor",
+    title: "Cuentas de Servicio y Configuración del Servidor",
+    main: {
+      title: "Configuración segura de servicios SQL Server",
+      enunciado: "La base de datos GradosTitulos será utilizada en producción. Configure cuentas de servicio específicas para SQL Server y SQL Server Agent.",
+      scriptImage: "img/script4.png",
+      justification: "Ejecutar el motor y el agente bajo cuentas de servicio virtuales independientes (como NT SERVICE\\MSSQLSERVER) o Cuentas de Servicio Administradas de un solo Dominio (gMSA) garantiza el aislamiento de procesos de Windows. Si un atacante compromete el agente de SQL mediante un trabajo malicioso, no obtendrá privilegios directos sobre el sistema operativo ni sobre el núcleo del motor relacional.",
+      practices: "Nunca utilizar cuentas de alta jerarquía como 'Administrator', 'LocalSystem' o 'NetworkService' para levantar servicios de bases de datos expuestas a producción."
+    },
+    prop1: {
+      title: "Monitoreo de servicios críticos del servidor",
+      enunciado: "Implemente consultas administrativas que permitan verificar el estado de las instancias SQL Server relacionadas con GradosTitulos.",
+      scriptImage: "img/script5.png",
+      justification: "El uso de Vistas de Administración Dinámica (DMVs) permite diagnosticar cuellos de botella de hardware y bloqueos en caliente antes de que afecten la disponibilidad del servicio académico.",
+      practices: "Establecer baselines o líneas base de rendimiento mediante consultas estructuradas de telemetría de E/S de discos, previniendo la degradación del servicio en épocas de alta concurrencia de sustentaciones."
+    },
+    prop2: {
+      title: "Configuración de protocolos de red seguros",
+      enunciado: "Configure la instancia SQL Server para permitir únicamente conexiones seguras a la base de datos GradosTitulos.",
+      scriptImage: "img/script6.png",
+      justification: "La configuración de red forzada requiere la activación de ForceEncryption = Yes en los protocolos de red corporativos (vía Configuration Manager) y la instalación de un certificado digital TLS válido. Esto garantiza la protección de los datos en tránsito frente a ataques de intercepción (Man-in-the-Middle).",
+      practices: "Deshabilitar protocolos obsoletos e inseguros como Named Pipes y Shared Memory para conexiones remotas, restringiendo el tráfico exclusivamente a TCP/IP con cifrado estricto de paquetes."
+    }
+  },
+  // ── TEMA 3 ──────────────────────────────
+  {
+    id: 3, world: "TEMA 3", scriptIndex: 7,
+    category: "Roles Fijos y Personalizados",
+    title: "Creación de Roles Fijos y Personalizados",
+    main: {
+      title: "Roles para el proceso de grados y títulos",
+      enunciado: "Diseñe roles personalizados para gestionar el acceso a los esquemas: Catalogo, Academico, Tramite, Evaluacion y Documento.",
+      scriptImage: "img/script7.png",
+      justification: "La segmentación por esquemas permite aislar la estructura lógica de la base de datos de manera radical. El uso de roles específicos evita otorgar el rol de propiedad general de tablas (db_owner), limitando el control estrictamente al dominio de datos que le compete a cada división administrativa.",
+      practices: "Agrupación lógica de permisos. No se asignan permisos directos a tablas o vistas individuales; el esquema actúa como frontera natural de seguridad, simplificando futuros despliegues y auditorías de seguridad."
+    },
+    prop1: {
+      title: "Implementación de roles para evaluadores de tesis",
+      enunciado: "Los evaluadores deben consultar tesis y registrar observaciones sin modificar información académica.",
+      scriptImage: "img/script8.png",
+      justification: "La instrucción DENY tiene precedencia absoluta dentro del motor relacional de SQL Server. Aunque el usuario pertenezca a otros roles con permisos extendidos de edición, la presencia de un DENY explícito bloquea de inmediato cualquier operación destructiva sobre los datos de los tesistas.",
+      practices: "Defensa en profundidad. Se garantiza la consulta transparente para el cumplimiento de las labores de revisión científica, protegiendo bajo candado técnico los registros oficiales de matrícula e historial de notas."
+    },
+    prop2: {
+      title: "Administración de roles jerárquicos",
+      enunciado: "Configure roles que representen los niveles: Operador, Supervisor, Administrador para el sistema de grados y títulos.",
+      scriptImage: "img/script9.png",
+      justification: "SQL Server permite anidar roles de base de datos. Al añadir un rol como miembro de otro, se crea una estructura de herencia acumulativa, optimizando significativamente la administración de privilegios y reduciendo la redundancia de código.",
+      practices: "Mantenibilidad escalable. Al actualizar un permiso en el rol raíz (Nivel_Operador), las capas jerárquicas superiores asimilan la mejora automáticamente sin requerir intervención manual en múltiples perfiles."
+    }
+  },
+  // ── TEMA 4 ──────────────────────────────
+  {
+    id: 4, world: "TEMA 4", scriptIndex: 10,
+    category: "Control de Acceso GRANT, DENY, REVOKE",
+    title: "Control de Acceso mediante GRANT, DENY y REVOKE",
+    main: {
+      title: "Permisos para operadores del sistema",
+      enunciado: "Los operadores pueden consultar datos de estudiantes, pero no modificarlos.",
+      scriptImage: "img/script10.png",
+      justification: "El establecimiento de políticas restrictivas explícitas (DENY) neutraliza riesgos de inyección SQL o elevación accidental de accesos si un operador es incorporado a un grupo de Windows temporal de mayor rango.",
+      practices: "Inmutabilidad de datos base. Se restringe la edición de información académica exclusiva a procesos validados por el sistema central de registros de la Universidad."
+    },
+    prop1: {
+      title: "Restricción de acceso a resoluciones y diplomas",
+      enunciado: "Solo la Oficina de Grados y Títulos puede modificar documentos oficiales.",
+      scriptImage: "img/script11.png",
+      justification: "Aplicar un DENY al rol del sistema public asegura un blindaje hermético. Todo usuario o proceso que intente alterar diplomas o resoluciones será rebotado de forma nativa por el subsistema de seguridad del motor, a menos que cuente con privilegios de SysAdmin.",
+      practices: "Aislamiento institucional de documentos con valor legal, impidiendo fraudes de falsificación de certificados de egreso académicos."
+    },
+    prop2: {
+      title: "Revocación de permisos temporales",
+      enunciado: "Un auditor externo requiere acceso temporal durante una semana. Al finalizar, se debe revocar completamente.",
+      scriptImage: "img/script12.png",
+      justification: "REVOKE elimina el permiso otorgado previamente, limpiando las listas de control de acceso (ACLs) internas de SQL Server. Deshabilitar el Login con DISABLE invalida los tokens de conexión futuros sin necesidad de borrar los objetos físicos asociados históricamente a dicho usuario.",
+      practices: "Eliminación oportuna de accesos residuales, uno de los vectores preferidos por los atacantes informáticos (cuentas durmientes o huérfanas)."
+    }
+  },
+  // ── TEMA 5 ──────────────────────────────
+  {
+    id: 5, world: "TEMA 5", scriptIndex: 13,
+    category: "Cifrado TDE y Always Encrypted",
+    title: "Cifrado y Protección de Datos (TDE y Always Encrypted)",
+    main: {
+      title: "Implementación de TDE para GradosTitulos",
+      enunciado: "Proteja los archivos físicos de la base de datos GradosTitulos mediante Transparent Data Encryption.",
+      scriptImage: "img/script13.png",
+      justification: "Transparent Data Encryption (TDE) cifra las páginas de datos en el nivel físico de almacenamiento (archivos MDF, LDF) y sus respectivos respaldos (Backups) utilizando el algoritmo criptográfico AES-256. El proceso de descifrado es invisible para las aplicaciones autorizadas que realizan consultas sobre el motor de BD.",
+      practices: "Es mandatorio realizar un backup de la llave maestra (Master Key) y del certificado del servidor externo en un almacenamiento físico desconectado de la red para garantizar la restauración ante desastres catastróficos de hardware."
+    },
+    prop1: {
+      title: "Protección de datos personales del tesista con Always Encrypted",
+      enunciado: "Implemente Always Encrypted para proteger: DNI, Correo electrónico y Teléfono de los estudiantes.",
+      scriptImage: "img/script14.png",
+      justification: "Always Encrypted garantiza que los datos altamente sensibles se mantengan cifrados en tránsito y en reposo directamente desde el cliente. El Administrador de Sistemas (SysAdmin) de la base de datos no tiene la clave maestra del certificado de Windows del cliente, lo que le impide visualizar en texto plano el contenido confidencial de los alumnos.",
+      practices: "Se aplicó cifrado determinista para el DNI para permitir búsquedas exactas e índices indexados, y cifrado aleatorio (Randomized) para correos y teléfonos para impedir patrones predecibles de datos mediante criptoanálisis básico."
+    },
+    prop2: {
+      title: "Cifrado y enmascaramiento de información de asesores y jurados",
+      enunciado: "Proteja la información personal de asesores y jurados de tesis mediante Dynamic Data Masking.",
+      scriptImage: "img/script15.png",
+      justification: "El enmascaramiento dinámico (DDM) actúa sobre el flujo de salida stream de resultados SQL. El dato sigue legible para transacciones internas y backups cifrados por TDE, pero se oculta automáticamente con máscaras definidas para prevenir la ingeniería social en pantallas operacionales de bajo rango.",
+      practices: "Minimización del alcance de la información sensible corporativa cumpliendo con las legislaciones locales de protección de datos personales (Ley N° 29733)."
+    }
+  }
+];
+
+// ═══════════════════════════════════════════
+//  PREGUNTAS DEL QUIZ — por tema
+// ═══════════════════════════════════════════
+const quizByTheme = [
+  // Tema 1 — Autenticación
+  [
+    { q:"¿Qué valor del registro de Windows activa el Modo Mixto en SQL Server?", options:["Valor 1 (Windows Only)","Valor 2 (Mixed Mode)","Valor 3 (SQL Only)","Valor 0 (Disabled)"], correct:1, exp:"El valor 2 en LoginMode activa el Modo Mixto que permite autenticación Windows y SQL Server simultáneamente." },
+    { q:"¿Qué opción de CREATE LOGIN obliga a SQL Server a aplicar las políticas de complejidad de contraseñas del SO?", options:["CHECK_EXPIRATION = ON","CHECK_POLICY = ON","MUST_CHANGE = ON","PASSWORD_LOCK = ON"], correct:1, exp:"CHECK_POLICY = ON hace que SQL Server use las APIs de NetValidatePasswordPolicy de Windows para exigir complejidad." },
+    { q:"¿Cuál es la ventaja principal de usar autenticación Windows frente a autenticación SQL Server?", options:["Las contraseñas se transmiten en texto plano","La validación es delegada al SO reduciendo exposición de credenciales","Permite crear más usuarios","No requiere licencia de SQL Server"], correct:1, exp:"La autenticación Windows delega la validación al sistema operativo, evitando que las contraseñas viajen por la red." },
+    { q:"¿Qué instrucción crea un login SQL Server con expiración activa?", options:["CREATE USER ... WITH PASSWORD","CREATE LOGIN ... WITH PASSWORD, CHECK_EXPIRATION=ON","ALTER LOGIN ... SET EXPIRATION=1","GRANT LOGIN ... EXPIRE"], correct:1, exp:"CREATE LOGIN con CHECK_EXPIRATION=ON fuerza el cambio periódico de contraseña en cuentas SQL Server." },
+    { q:"¿Por qué se recomienda evitar el uso de la cuenta 'sa'?", options:["Porque consume más memoria","Porque es una cuenta genérica de alto privilegio difícil de auditar","Porque no soporta contraseñas","Porque no puede crear bases de datos"], correct:1, exp:"La cuenta 'sa' es un vector de ataque conocido; cada módulo debe tener su propio login nominado para auditoría." },
+    { q:"¿Qué vista de sistema permite verificar si CHECK_POLICY está activo en los logins SQL?", options:["sys.server_principals","sys.database_principals","sys.sql_logins","sys.credentials"], correct:2, exp:"sys.sql_logins contiene las columnas is_policy_checked e is_expiration_checked para verificar las políticas." }
+  ],
+  // Tema 2 — Cuentas de Servicio
+  [
+    { q:"¿Qué herramienta se recomienda para cambiar la cuenta de servicio de SQL Server?", options:["SSMS","SQL Server Configuration Manager","Administrador de tareas de Windows","Registry Editor"], correct:1, exp:"SQL Server Configuration Manager es la herramienta oficial para gestionar cuentas de servicio de forma segura." },
+    { q:"¿Qué vista DMV permite ver las cuentas de servicio activas en la instancia SQL Server?", options:["sys.dm_os_sys_info","sys.dm_server_services","sys.service_broker_endpoints","sys.dm_exec_sessions"], correct:1, exp:"sys.dm_server_services muestra el nombre de la cuenta de servicio, estado y PID de cada servicio SQL activo." },
+    { q:"¿Por qué se desaconseja usar 'LocalSystem' como cuenta de servicio SQL Server?", options:["Porque no puede conectarse a la red","Porque tiene privilegios excesivos sobre el sistema operativo","Porque no soporta TCP/IP","Porque no puede leer archivos MDF"], correct:1, exp:"LocalSystem otorga control total sobre el SO; si el servicio es comprometido, el atacante gana acceso total al sistema." },
+    { q:"¿Qué columna de sys.dm_io_virtual_file_stats mide la latencia de escritura?", options:["num_of_reads","io_stall_read_ms","io_stall_write_ms","num_of_writes"], correct:2, exp:"io_stall_write_ms mide el tiempo acumulado de espera en operaciones de escritura en disco para cada archivo." },
+    { q:"¿Qué significa forzar 'ForceEncryption = Yes' en la configuración de red de SQL Server?", options:["Cifra los datos en reposo con TDE","Obliga a que todas las conexiones de red usen TLS/SSL","Activa Always Encrypted en todas las tablas","Comprime los datos en la red"], correct:1, exp:"ForceEncryption = Yes requiere que todos los clientes establezcan conexiones cifradas con TLS, protegiendo datos en tránsito." },
+    { q:"¿Qué columna de sys.dm_exec_connections indica si la conexión está cifrada?", options:["net_transport","encrypt_option","session_id","connect_time"], correct:1, exp:"La columna encrypt_option en sys.dm_exec_connections muestra si el canal de comunicación usa cifrado (TRUE/FALSE)." }
+  ],
+  // Tema 3 — Roles
+  [
+    { q:"¿Qué instrucción crea un rol personalizado en SQL Server?", options:["CREATE LOGIN","CREATE USER","CREATE ROLE","CREATE SCHEMA"], correct:2, exp:"CREATE ROLE crea un nuevo rol de base de datos que puede recibir permisos y tener miembros asignados." },
+    { q:"¿Qué instrucción agrega un usuario o rol como miembro de otro rol existente?", options:["GRANT ROLE","ALTER ROLE ... ADD MEMBER","EXECUTE AS ROLE","SP_ADDROLEMEMBER solo"], correct:1, exp:"ALTER ROLE [nombre] ADD MEMBER [usuario] es la forma moderna de asignar miembros a roles en SQL Server 2012+." },
+    { q:"¿Por qué es preferible asignar permisos a esquemas en lugar de a tablas individuales?", options:["Porque los esquemas ocupan menos disco","Porque simplifica la auditoría y administración de permisos","Porque las tablas no soportan permisos","Porque los esquemas son más rápidos en las consultas"], correct:1, exp:"Asignar permisos por esquema evita la dispersión de configuraciones individuales y facilita futuros despliegues y auditorías." },
+    { q:"¿Qué sucede cuando se anidan roles en SQL Server (un rol como miembro de otro)?", options:["Se genera un error de circularidad","El rol interno pierde sus permisos","El rol externo hereda los permisos del rol interno","Los permisos se cancelan entre sí"], correct:2, exp:"En SQL Server, los roles anidados crean herencia acumulativa: el rol externo suma los permisos del rol interno." },
+    { q:"¿Qué rol fijo de base de datos permite solo leer datos de todas las tablas?", options:["db_owner","db_datawriter","db_datareader","db_securityadmin"], correct:2, exp:"db_datareader otorga SELECT sobre todas las tablas y vistas de la base de datos, sin permisos de escritura." },
+    { q:"¿Qué instrucción quita a un usuario de un rol de base de datos?", options:["DROP MEMBER","REVOKE ROLE","ALTER ROLE ... DROP MEMBER","DELETE FROM ROLE"], correct:2, exp:"ALTER ROLE [nombre] DROP MEMBER [usuario] elimina la membresía del usuario en ese rol de base de datos." }
+  ],
+  // Tema 4 — GRANT DENY REVOKE
+  [
+    { q:"Si a un usuario se le aplica GRANT SELECT y DENY SELECT sobre la misma tabla, ¿cuál prevalece?", options:["GRANT, porque fue primero","DENY, tiene prioridad absoluta","Se cancelan mutuamente y el usuario no puede acceder","Depende del orden de ejecución"], correct:1, exp:"DENY siempre tiene precedencia sobre GRANT en SQL Server, sin importar el orden o la membresía a roles." },
+    { q:"¿Qué instrucción elimina un permiso previamente otorgado con GRANT?", options:["DROP GRANT","DENY","REVOKE","DELETE PERMISSION"], correct:2, exp:"REVOKE elimina un permiso concedido previamente con GRANT, limpiando las ACLs internas del motor." },
+    { q:"¿Cuál es la diferencia principal entre DENY y REVOKE?", options:["DENY elimina el permiso; REVOKE lo bloquea activamente","REVOKE elimina el permiso; DENY lo bloquea activamente impidiendo que otros GRANT lo restauren","Son equivalentes","DENY solo funciona en tablas; REVOKE funciona en esquemas"], correct:1, exp:"REVOKE simplemente quita el permiso. DENY lo bloquea activamente, anulando incluso GRANTs heredados de roles." },
+    { q:"¿Qué instrucción deshabilita un login sin eliminarlo físicamente del servidor?", options:["DROP LOGIN","DELETE LOGIN","ALTER LOGIN ... DISABLE","REVOKE LOGIN"], correct:2, exp:"ALTER LOGIN [nombre] DISABLE invalida el token de conexión pero preserva el objeto login con sus metadatos históricos." },
+    { q:"¿Por qué aplicar DENY al rol 'public' en el esquema Documento es una práctica de seguridad?", options:["Porque public es el rol de mayor privilegio","Porque todo usuario pertenece al rol public por defecto","Porque DENY en public no afecta a db_owner","Porque bloquea solo conexiones externas"], correct:1, exp:"Todos los usuarios de SQL Server pertenecen al rol public. Un DENY en public garantiza que ningún usuario sin permiso explícito pueda acceder." },
+    { q:"¿Qué comando concede solo el permiso de SELECT sobre una columna específica de una tabla?", options:["GRANT SELECT ON SCHEMA","GRANT SELECT (columna) ON OBJECT::tabla TO usuario","GRANT COLUMN SELECT","ALTER TABLE ... GRANT"], correct:1, exp:"GRANT SELECT (columna) ON OBJECT::tabla TO usuario permite permisos de lectura a nivel de columna individual en SQL Server." }
+  ],
+  // Tema 5 — Cifrado
+  [
+    { q:"¿Qué tecnología cifra toda la base de datos GradosTitulos en reposo, incluyendo sus backups?", options:["Always Encrypted","Dynamic Data Masking","TDE (Transparent Data Encryption)","SSL/TLS"], correct:2, exp:"TDE cifra los archivos físicos MDF, NDF y LDF en disco, incluyendo los backups .bak, usando AES-256." },
+    { q:"¿Qué algoritmo de cifrado usa TDE al crear DATABASE ENCRYPTION KEY?", options:["DES","MD5","AES_256","RSA_2048"], correct:2, exp:"AES_256 es el algoritmo estándar recomendado para TDE, ofreciendo 256 bits de cifrado simétrico de alta seguridad." },
+    { q:"¿Cuál es la diferencia entre ENCRYPTION_TYPE = DETERMINISTIC y RANDOMIZED en Always Encrypted?", options:["DETERMINISTIC es más seguro que RANDOMIZED","DETERMINISTIC produce siempre el mismo valor cifrado (permite búsquedas); RANDOMIZED produce valores diferentes cada vez","RANDOMIZED permite usar índices normales","No hay diferencia práctica entre ambos"], correct:1, exp:"DETERMINISTIC permite buscar por igualdad e indexar. RANDOMIZED produce valores distintos cada cifrado, impidiendo criptoanálisis por patrones." },
+    { q:"¿Por qué es crítico hacer backup del certificado TDE en un medio físico desconectado?", options:["Para ahorrar espacio en disco","Para poder restaurar la BD en caso de pérdida del servidor: sin el certificado el backup es ilegible","Para mejorar el rendimiento de TDE","Para cumplir con normativas de contabilidad"], correct:1, exp:"Sin el certificado TDE, los backups cifrados no pueden restaurarse. El backup del certificado debe guardarse fuera de la red." },
+    { q:"¿Qué función del Dynamic Data Masking oculta parcialmente un texto mostrando solo los primeros y últimos caracteres?", options:["default()","email()","partial()","random()"], correct:2, exp:"La función partial(prefijo, 'MÁSCARA', sufijo) muestra los primeros y últimos N caracteres y enmascara el centro." },
+    { q:"¿Quién posee la Column Master Key (CMK) en Always Encrypted?", options:["El DBA del servidor SQL","El motor de SQL Server","El cliente/aplicación que accede a los datos","La cuenta de servicio SQL Server Agent"], correct:2, exp:"En Always Encrypted, la CMK reside en el cliente (certificado de Windows del usuario), nunca en el servidor SQL Server." }
+  ],
+  // Tema 6 — Auditoría
+  [
+    { q:"¿Qué grupo de auditoría registra los inicios de sesión fallidos en SQL Server Audit?", options:["SCHEMA_OBJECT_CHANGE_GROUP","FAILED_LOGIN_GROUP","DATABASE_PERMISSION_CHANGE_GROUP","AUDIT_CHANGE_GROUP"], correct:1, exp:"FAILED_LOGIN_GROUP captura cada intento fallido de login con IP, hostname, usuario y fecha exacta del intento." },
+    { q:"¿Cuál es la diferencia entre Server Audit Specification y Database Audit Specification?", options:["No hay diferencia","Server audita eventos de instancia (logins, DDL global); Database audita eventos dentro de una BD específica","Database es más completa que Server","Server solo audita archivos; Database audita memoria"], correct:1, exp:"Las especificaciones de servidor capturan eventos globales de la instancia. Las de BD capturan DML/DDL dentro de una base de datos." },
+    { q:"¿Qué función de sistema permite leer los archivos de auditoría binarios generados por SQL Server Audit?", options:["sys.fn_read_audit_file","fn_get_audit_log","sys.fn_get_audit_file","OPENROWSET('AUDIT')"], correct:2, exp:"sys.fn_get_audit_file lee los archivos .sqlaudit binarios y los expone como tabla relacional consultable con SELECT." },
+    { q:"¿Qué grupo de auditoría registra cambios en permisos de la base de datos?", options:["DATABASE_ROLE_MEMBER_CHANGE_GROUP","DATABASE_PERMISSION_CHANGE_GROUP","SCHEMA_OBJECT_CHANGE_GROUP","SUCCESSFUL_DATABASE_AUTHENTICATION_GROUP"], correct:1, exp:"DATABASE_PERMISSION_CHANGE_GROUP registra cualquier GRANT, DENY o REVOKE ejecutado en la base de datos." },
+    { q:"¿Por qué se recomienda escribir los logs de auditoría en un volumen dedicado con permisos restringidos?", options:["Para mejorar el rendimiento de las consultas","Para evitar que los propios administradores puedan modificar o eliminar las evidencias","Para ahorrar espacio en disco","Para cumplir con el estándar ISO 9001"], correct:1, exp:"Un volumen dedicado con ACLs estrictas de Windows impide que incluso los DBAs puedan alterar los registros de auditoría." },
+    { q:"¿Qué grupo de auditoría captura comandos DDL como DROP TABLE o ALTER SCHEMA?", options:["DATABASE_OBJECT_CREATION_GROUP","FAILED_LOGIN_GROUP","SCHEMA_OBJECT_CHANGE_GROUP","DATABASE_ROLE_MEMBER_CHANGE_GROUP"], correct:2, exp:"SCHEMA_OBJECT_CHANGE_GROUP registra ALTER, DROP y CREATE sobre objetos de esquema, con la firma digital del usuario ejecutor." }
+  ]
+];
+
+// ═══════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════
+let currentLevelIndex = 0;
+let currentSubMission = 'main';
+const solvedStates = new Set();
+
+const hudLevelTag = document.getElementById('hudLevelTag');
+const hudProjectCat = document.getElementById('hudProjectCat');
+const hudLevelTitle = document.getElementById('hudLevelTitle');
+const subMissionSelector = document.getElementById('subMissionSelector');
+const slideContent = document.getElementById('slideContent');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const pageIndicator = document.getElementById('pageIndicator');
+const levelNavList = document.getElementById('levelNavList');
+const searchBox = document.getElementById('searchBox');
+const completionBar = document.getElementById('completionBar');
+const completionPercentage = document.getElementById('completionPercentage');
+
+// ── Lightbox ──
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('active');
+}
+document.getElementById('lightboxClose').onclick = () => {
+  document.getElementById('lightbox').classList.remove('active');
+};
+document.getElementById('lightbox').onclick = (e) => {
+  if (e.target === document.getElementById('lightbox')) {
+    document.getElementById('lightbox').classList.remove('active');
+  }
+};
+
+// ── Sidebar ──
+function initLevelsSidebar() {
+  levelNavList.innerHTML = '';
+  databaseProjects.forEach((proj, idx) => {
+    const isCurrent = idx === currentLevelIndex;
+    const isSolved = solvedStates.has(idx);
+    const btn = document.createElement('button');
+    btn.className = `w-full text-left p-2.5 rounded border-2 transition flex items-center justify-between text-xs font-bold gap-2 ${
+      isCurrent
+        ? 'bg-purple-950/80 border-purple-500 text-yellow-300 shadow-[0_0_8px_rgba(167,139,250,0.4)]'
+        : 'bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:border-purple-900/60'
+    }`;
+    btn.onclick = () => { selectLevel(idx); playSound('blip'); };
+    const icon = isSolved
+      ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>'
+      : '<i class="fa-solid fa-shield-halved text-zinc-600 animate-pulse"></i>';
+    btn.innerHTML = `
+      <div class="flex items-center gap-2 overflow-hidden">
+        <span class="text-[10px] uppercase text-purple-400 shrink-0 font-arcade text-lg leading-none">${proj.world}</span>
+        <span class="truncate block font-arcade text-lg font-normal tracking-wide">${proj.title}</span>
+      </div>
+      <span class="shrink-0">${icon}</span>
+    `;
+    levelNavList.appendChild(btn);
+  });
+  updateProgression();
+}
+
+searchBox.oninput = (e) => {
+  const q = e.target.value.toLowerCase();
+  levelNavList.querySelectorAll('button').forEach((btn, idx) => {
+    const proj = databaseProjects[idx];
+    const match = proj.title.toLowerCase().includes(q) || proj.world.toLowerCase().includes(q) || proj.category.toLowerCase().includes(q);
+    btn.classList.toggle('hidden', !match);
+  });
+};
+
+function selectLevel(idx) {
+  currentLevelIndex = idx;
+  currentSubMission = 'main';
+  subMissionSelector.value = 'main';
+  renderSlide();
+  initLevelsSidebar();
+}
+
+function updateProgression() {
+  const pct = Math.round((solvedStates.size / databaseProjects.length) * 100);
+  completionPercentage.innerText = `${pct}%`;
+  completionBar.style.width = `${pct}%`;
+}
+
+// ── Slide Renderer ──
+function getScriptImageSrc(proj, sub) {
+  const base = proj.scriptIndex;
+  if (sub === 'main')  return proj.main.scriptImage;
+  if (sub === 'prop1') return proj.prop1.scriptImage;
+  return proj.prop2.scriptImage;
+}
+
+function renderSlide() {
+  const proj = databaseProjects[currentLevelIndex];
+  const activeData = proj[currentSubMission];
+  const imgSrc = activeData.scriptImage;
+
+  hudLevelTag.innerText = proj.world;
+  hudProjectCat.innerText = `[${proj.category}]`;
+  hudLevelTitle.innerText = proj.title;
+  pageIndicator.innerText = `TEMA ${currentLevelIndex + 1} / ${databaseProjects.length}`;
+
+  let prefix = "01. ENUNCIADO PRINCIPAL: ";
+  let colorTheme = "border-emerald-500/30 bg-emerald-950/20";
+  let fontColor = "text-emerald-400";
+  if (currentSubMission === 'prop1') { prefix = "02. SUB-MISIÓN 1: "; colorTheme = "border-cyan-500/30 bg-cyan-950/20"; fontColor = "text-cyan-400"; }
+  if (currentSubMission === 'prop2') { prefix = "03. SUB-MISIÓN 2: "; colorTheme = "border-yellow-500/30 bg-yellow-950/20"; fontColor = "text-yellow-400"; }
+
+  slideContent.innerHTML = `
+    <div class="space-y-4">
+      <div class="border-l-4 border-purple-500 pl-4">
+        <h3 class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-1">Estatus Actual</h3>
+        <h4 class="text-xl font-bold font-arcade text-yellow-300 text-2xl tracking-wide uppercase">${prefix}${activeData.title}</h4>
+      </div>
+
+      <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 relative group">
+        <div class="absolute -top-2.5 left-4 px-2 py-0.5 bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-400 font-bold uppercase rounded">
+          <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i> Enunciado de la Quest
+        </div>
+        <p class="text-sm text-zinc-300 mt-1 leading-relaxed font-semibold">${activeData.enunciado}</p>
+      </div>
+
+      <!-- Imagen del script -->
+      <div class="relative bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
+        <div class="flex justify-between items-center bg-zinc-900 px-4 py-2 text-xs border-b border-zinc-800">
+          <span class="text-purple-400 font-bold uppercase flex items-center gap-1.5 font-arcade text-lg tracking-wider">
+            <i class="fa-solid fa-image"></i> CAPTURA DEL SCRIPT
+          </span>
+          <button onclick="openLightbox('${imgSrc}')" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded text-[11px] flex items-center gap-1 transition active:scale-95">
+            <i class="fa-solid fa-expand"></i> VER IMAGEN
+          </button>
+        </div>
+        <div class="script-img-container p-2 bg-zinc-950" onclick="openLightbox('${imgSrc}')">
+          <img src="${imgSrc}" alt="Script del ejercicio" class="rounded-lg" onerror="this.parentElement.innerHTML='<div class=\\'p-6 text-center text-zinc-500 font-arcade text-xl\\'>📁 ${imgSrc}<br><span class=\\'text-xs text-zinc-600\\'>Coloca la imagen en la carpeta img/</span></div>'">
+          <div class="script-img-overlay"><i class="fa-solid fa-magnifying-glass mr-2"></i>CLICK PARA AMPLIAR</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-zinc-950/60 p-4 rounded-xl border ${colorTheme} flex flex-col gap-2">
+          <h5 class="text-xs font-bold uppercase ${fontColor} tracking-wider flex items-center gap-1.5 font-arcade text-lg">
+            <i class="fa-solid fa-circle-info"></i> Justificación Técnica
+          </h5>
+          <p class="text-xs text-zinc-300 leading-relaxed font-sans">${activeData.justification}</p>
+        </div>
+        <div class="bg-zinc-950/60 p-4 rounded-xl border border-purple-500/20 flex flex-col gap-2">
+          <h5 class="text-xs font-bold uppercase text-purple-400 tracking-wider flex items-center gap-1.5 font-arcade text-lg">
+            <i class="fa-solid fa-user-shield"></i> Buenas Prácticas
+          </h5>
+          <p class="text-xs text-zinc-300 leading-relaxed font-sans whitespace-pre-line">${activeData.practices}</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  prevBtn.disabled = currentLevelIndex === 0 && currentSubMission === 'main';
+}
+
+subMissionSelector.onchange = (e) => { currentSubMission = e.target.value; renderSlide(); playSound('blip'); };
+
+prevBtn.onclick = () => {
+  if (currentSubMission === 'prop2')      { currentSubMission = 'prop1'; subMissionSelector.value = 'prop1'; }
+  else if (currentSubMission === 'prop1') { currentSubMission = 'main';  subMissionSelector.value = 'main'; }
+  else if (currentLevelIndex > 0)         { currentLevelIndex--; currentSubMission = 'prop2'; subMissionSelector.value = 'prop2'; }
+  renderSlide(); initLevelsSidebar(); playSound('blip');
+};
+nextBtn.onclick = () => {
+  if (currentSubMission === 'main')        { currentSubMission = 'prop1'; subMissionSelector.value = 'prop1'; }
+  else if (currentSubMission === 'prop1')  { currentSubMission = 'prop2'; subMissionSelector.value = 'prop2'; }
+  else if (currentLevelIndex < databaseProjects.length - 1) {
+    currentLevelIndex++; currentSubMission = 'main'; subMissionSelector.value = 'main';
+    solvedStates.add(currentLevelIndex - 1); initLevelsSidebar();
+  } else { currentLevelIndex = 0; currentSubMission = 'main'; subMissionSelector.value = 'main'; }
+  renderSlide(); initLevelsSidebar(); playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+const tabMission = document.getElementById('tabMissionRoom');
+const tabArena   = document.getElementById('tabArcadeArena');
+const missionSection = document.getElementById('missionRoomSection');
+const arenaSection   = document.getElementById('arcadeArenaSection');
+
+tabMission.onclick = () => {
+  tabMission.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-purple-500 bg-purple-950 text-yellow-300 shadow-[0_0_15px_rgba(167,139,250,0.3)]";
+  tabArena.className   = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-pink-900/50";
+  missionSection.classList.remove('hidden'); arenaSection.classList.add('hidden');
+  playSound('blip');
+};
+tabArena.onclick = () => {
+  tabArena.className   = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-pink-500 bg-pink-950 text-yellow-300 shadow-[0_0_15px_rgba(236,72,153,0.3)]";
+  tabMission.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-purple-900/50";
+  missionSection.classList.add('hidden'); arenaSection.classList.remove('hidden');
+  playSound('lvlup'); initBattleArena();
+};
+
+// ═══════════════════════════════════════════
+//  QUIZ / BATTLE
+// ═══════════════════════════════════════════
+let currentQuizIndex = 0;
+let heroHp = 100, bossHp = 100;
+let activeQuizPool = [];
+
+function setHero(sprite, name) {
+  document.getElementById('heroSprite').innerText = sprite;
+  document.getElementById('battleLog').innerText = `¡HAS SELECCIONADO AL HÉROE ${name.toUpperCase()}!`;
+  playSound('lvlup');
+}
+
+function buildQuizPool() {
+  const sel = document.getElementById('quizThemeFilter').value;
+  if (sel === 'all') {
+    activeQuizPool = quizByTheme.flat().sort(() => Math.random() - 0.5);
+  } else {
+    activeQuizPool = [...quizByTheme[parseInt(sel)]].sort(() => Math.random() - 0.5);
+  }
+}
+
+document.getElementById('quizThemeFilter').onchange = () => { initBattleArena(); };
+
+function initBattleArena() {
+  currentQuizIndex = 0; heroHp = 100; bossHp = 100;
+  buildQuizPool();
+  updateBattleStats(); renderQuestion();
+  document.getElementById('battleLog').innerText = "¡RESPONDE Y PROTEGE LA BASE DE DATOS!";
+}
+
+function updateBattleStats() {
+  document.getElementById('heroHpBar').style.width = `${heroHp}%`;
+  document.getElementById('bossHpBar').style.width = `${bossHp}%`;
+}
+
+function renderQuestion() {
+  const qc = document.getElementById('quizContainer');
+  if (heroHp <= 0) {
+    qc.innerHTML = `<div class="text-center p-6 space-y-4">
+      <h3 class="font-retro-title text-red-500 text-lg animate-bounce">GAME OVER</h3>
+      <p class="text-xs text-zinc-300">El hacker ha comprometido la base de datos. ¡Estudia más seguridad SQL!</p>
+      <button onclick="initBattleArena()" class="px-4 py-2 bg-pink-600 text-white rounded text-xs font-bold border-2 border-pink-400">VOLVER A INTENTAR</button>
+    </div>`; playSound('hit'); return;
+  }
+  if (bossHp <= 0) {
+    qc.innerHTML = `<div class="text-center p-6 space-y-4">
+      <h3 class="font-retro-title text-emerald-400 text-lg animate-bounce">¡VICTORIA!</h3>
+      <p class="text-xs text-zinc-300">¡Has derrotado al Black Hat Hacker y protegido GradosTitulos!</p>
+      <button onclick="initBattleArena()" class="px-4 py-2 bg-emerald-600 text-white rounded text-xs font-bold border-2 border-emerald-400">JUGAR DE NUEVO</button>
+    </div>`; playSound('lvlup'); return;
+  }
+  if (currentQuizIndex >= activeQuizPool.length) { currentQuizIndex = 0; buildQuizPool(); }
+  const qData = activeQuizPool[currentQuizIndex];
+  qc.innerHTML = `
+    <div class="space-y-4">
+      <span class="text-xs uppercase tracking-widest text-pink-500 font-bold font-retro-title block">Pregunta de Seguridad ${currentQuizIndex + 1} / ${activeQuizPool.length}</span>
+      <h3 class="text-sm font-bold text-zinc-200 leading-relaxed bg-zinc-950 p-3 rounded-lg border border-zinc-800">${qData.q}</h3>
+      <div class="flex flex-col gap-2">
+        ${qData.options.map((opt, i) => `
+          <button onclick="handleAnswer(${i})" class="w-full text-left p-3 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 flex gap-2 items-center transition active:scale-95 duration-100">
+            <span class="bg-purple-900 text-purple-200 w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">${String.fromCharCode(65+i)}</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function handleAnswer(index) {
+  const qData = activeQuizPool[currentQuizIndex];
+  const logBox = document.getElementById('battleLog');
+  const impact = document.getElementById('battleImpact');
+  const boss   = document.getElementById('bossSprite');
+  const hero   = document.getElementById('heroSprite');
+  if (index === qData.correct) {
+    bossHp = Math.max(0, bossHp - 20); playSound('laser');
+    boss.classList.add('translate-x-12','opacity-50');
+    impact.innerText = "¡CRIT!";
+    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-emerald-400 opacity-100 transform scale-100 transition-all duration-300";
+    logBox.innerText = `✅ CORRECTO: ${qData.exp}`;
+    setTimeout(() => { boss.classList.remove('translate-x-12','opacity-50'); impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300"; }, 4000);
+  } else {
+    heroHp = Math.max(0, heroHp - 25); playSound('hit');
+    hero.classList.add('-translate-x-12','opacity-50');
+    impact.innerText = "HURT!";
+    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-100 transform scale-100 transition-all duration-300";
+    logBox.innerText = `❌ INCORRECTO. ${qData.exp}`;
+    setTimeout(() => { hero.classList.remove('-translate-x-12','opacity-50'); impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300"; }, 4000);
+  }
+  currentQuizIndex++;
+  updateBattleStats();
+  setTimeout(renderQuestion, 4200);
+}
+
+// ═══════════════════════════════════════════
+//  CRT TOGGLE
+// ═══════════════════════════════════════════
+document.getElementById('toggleCrt').onclick = () => {
+  const body = document.body;
+  if (body.classList.contains('crt')) {
+    body.classList.remove('crt','crt-flicker');
+    document.getElementById('toggleCrt').innerHTML = '<i class="fa-solid fa-desktop text-red-500"></i> CRT Filter: OFF';
+  } else {
+    body.classList.add('crt','crt-flicker');
+    document.getElementById('toggleCrt').innerHTML = '<i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON';
+  }
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  FULL DOC MODAL
+// ═══════════════════════════════════════════
+function renderFullContinuousDocument() {
+  const space = document.getElementById('continuousDocumentSpace');
+  space.innerHTML = '';
+  databaseProjects.forEach((proj, idx) => {
+    const sec = document.createElement('section');
+    sec.className = 'border-b-4 border-zinc-800 pb-10 mb-10 space-y-8';
+    const makeBlock = (sub, label, color, imgSrc) => `
+      <div class="space-y-4 document-element-wrapper border-t border-zinc-800/60 pt-6">
+        <h3 class="text-lg font-bold ${color} font-arcade text-2xl uppercase tracking-wide">${label}: ${sub.title}</h3>
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-sm text-zinc-300 leading-relaxed">
+          <strong class="text-zinc-400">Enunciado:</strong> ${sub.enunciado}
+        </div>
+        <div class="script-img-container cursor-pointer" onclick="openLightbox('${imgSrc}')">
+          <img src="${imgSrc}" alt="Captura del script" class="rounded-lg w-full" onerror="this.parentElement.innerHTML='<div class=\\'p-4 text-center text-zinc-500 font-arcade text-lg\\'>📁 ${imgSrc}</div>'">
+          <div class="script-img-overlay"><i class="fa-solid fa-magnifying-glass mr-2"></i>CLICK PARA AMPLIAR</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-zinc-950/60 border border-purple-900/30 p-4 rounded-xl text-xs space-y-1">
+            <strong class="${color} block uppercase font-arcade text-base">Justificación Técnica:</strong>
+            <p class="text-zinc-300 leading-relaxed">${sub.justification}</p>
+          </div>
+          <div class="bg-zinc-950/60 border border-purple-900/30 p-4 rounded-xl text-xs space-y-1">
+            <strong class="text-purple-400 block uppercase font-arcade text-base">Buenas Prácticas:</strong>
+            <p class="text-zinc-300 leading-relaxed whitespace-pre-line">${sub.practices}</p>
+          </div>
+        </div>
+      </div>
+    `;
+    sec.innerHTML = `
+      <div class="flex items-center justify-between border-b border-purple-500/20 pb-4">
+        <div>
+          <span class="px-2 py-0.5 bg-purple-900 text-purple-100 font-bold rounded text-xs uppercase tracking-wider font-arcade">${proj.world}</span>
+          <h2 class="font-arcade text-3xl text-yellow-300 mt-1 uppercase tracking-wider">${proj.title}</h2>
+        </div>
+        <span class="text-xs text-zinc-500 font-bold font-arcade text-xl">${proj.category}</span>
+      </div>
+      <div class="space-y-12">
+        ${makeBlock(proj.main,  "01. Enunciado Principal", "text-emerald-400", proj.main.scriptImage)}
+        ${makeBlock(proj.prop1, "02. Ejercicio Propuesto 1", "text-cyan-400",   proj.prop1.scriptImage)}
+        ${makeBlock(proj.prop2, "03. Ejercicio Propuesto 2", "text-yellow-400", proj.prop2.scriptImage)}
+      </div>
+    `;
+    space.appendChild(sec);
+  });
+}
+
+document.getElementById('docSearchBox').oninput = (e) => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.document-element-wrapper').forEach(el => {
+    el.classList.toggle('opacity-25', !el.innerText.toLowerCase().includes(q));
+  });
+};
+
+document.getElementById('exportDoc').onclick = () => {
+  renderFullContinuousDocument();
+  document.getElementById('fullDocModal').classList.remove('hidden');
+  playSound('lvlup');
+};
+document.getElementById('closeFullDoc').onclick = () => {
+  document.getElementById('fullDocModal').classList.add('hidden');
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  TECLADO
+// ═══════════════════════════════════════════
+document.onkeydown = (e) => {
+  if (e.key === "ArrowLeft")  prevBtn.click();
+  else if (e.key === "ArrowRight") nextBtn.click();
+};
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+window.onload = () => { initLevelsSidebar(); renderSlide(); };
+</script>
+</body>
+</html>

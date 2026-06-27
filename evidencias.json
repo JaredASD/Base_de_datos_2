@@ -58,5 +58,15 @@
     "type": "img",
     "filename": "Control de acceso mediante GRANT, DENY y REVOKE.png",
     "date": "26/6/2026"
+  },
+  {
+    "id": 1782533274599,
+    "week": 11,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/Creación de roles fijos y personalizados.png",
+    "type": "img",
+    "filename": "Creación de roles fijos y personalizados.png",
+    "date": "26/6/2026"
   }
 ]

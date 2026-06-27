@@ -38,5 +38,15 @@
     "type": "img",
     "filename": "Auditoria y monitoreo de eventos con SQL Server Audit.png",
     "date": "26/6/2026"
+  },
+  {
+    "id": 1782533270075,
+    "week": 11,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/Cifrado%20y%20proteccion%20de%20datos%20(TDE%2C%20Always%20Encrypted).png",
+    "type": "img",
+    "filename": "Cifrado y proteccion de datos (TDE, Always Encrypted).png",
+    "date": "26/6/2026"
   }
 ]

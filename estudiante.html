@@ -1303,7 +1303,20 @@ function buildMissionHTML(num) {
 
                 </div>
                 ` : ''}
+                
+                ${num === 12 ? `
+                <div style="text-align:center; margin-top:20px;">
 
+                    <button class="pixel-btn"
+                        onclick="window.open('tarea_3.html','_blank')">
+
+                        🎮 ABRIR TAREA
+
+                    </button>
+
+                </div>
+                ` : ''}
+                
             </div>
 
         </div>`;

@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL BACKUP QUEST: Backup & Restore en SQL Server</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    .font-arcade { font-family: 'VT323', monospace; }
+    .font-retro-title { font-family: 'Press Start 2P', monospace; }
+    .font-code { font-family: 'JetBrains Mono', monospace; }
+
+    .crt::after {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+                  linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
+      background-size: 100% 4px, 6px 100%;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .crt-flicker { animation: flicker 0.15s infinite; }
+    @keyframes flicker {
+      0% { opacity: 0.98; } 50% { opacity: 1; } 100% { opacity: 0.99; }
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+    .retro-border {
+      border: 4px solid #0c1a2e;
+      box-shadow: 0 0 15px rgba(14,165,233,0.35);
+    }
+    .neon-text-cyan { text-shadow: 0 0 8px rgba(34,211,238,0.6); }
+    .neon-text-amber { text-shadow: 0 0 8px rgba(251,191,36,0.6); }
+
+    .star-bg {
+      background-image: radial-gradient(#ffffff 1px, transparent 1px),
+                        radial-gradient(#ffffff 0.5px, transparent 0.5px);
+      background-size: 40px 40px, 60px 60px;
+      background-position: 0 0, 20px 20px;
+      animation: moveStars 40s linear infinite;
+    }
+    @keyframes moveStars {
+      from { background-position: 0 0, 20px 20px; }
+      to   { background-position: 1000px 500px, 1020px 520px; }
+    }
+
+    .script-img-container {
+      position: relative;
+      cursor: pointer;
+      border: 2px solid #0ea5e9;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 18px rgba(14,165,233,0.45);
+      transition: box-shadow 0.2s;
+    }
+    .script-img-container:hover {
+      box-shadow: 0 0 28px rgba(56,189,248,0.75);
+    }
+    .script-img-container img {
+      width: 100%;
+      display: block;
+    }
+    .script-img-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.65);
+      text-align: center;
+      padding: 6px 0;
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      color: #38bdf8;
+      letter-spacing: 2px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .script-img-container:hover .script-img-overlay { opacity: 1; }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 82vh;
+      border: 3px solid #0ea5e9;
+      border-radius: 10px;
+      box-shadow: 0 0 40px rgba(14,165,233,0.6);
+    }
+    #lightboxClose {
+      margin-top: 14px;
+      padding: 8px 22px;
+      background: #0369a1;
+      color: #fff;
+      border: 2px solid #38bdf8;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #lightboxClose:hover { background: #0284c7; }
+  </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 font-code selection:bg-sky-600 selection:text-white crt crt-flicker min-h-screen flex flex-col justify-between star-bg">
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <img id="lightboxImg" src="" alt="Script ampliado">
+  <button id="lightboxClose"><i class="fa-solid fa-xmark mr-2"></i>CERRAR</button>
+</div>
+
+<!-- Splash Screen -->
+<div id="splashScreen" class="fixed inset-0 bg-zinc-950 z-[200] flex flex-col justify-center items-center p-4 transition-all duration-700">
+  <div class="max-w-2xl text-center space-y-6 bg-zinc-900/90 retro-border rounded-2xl p-8 relative">
+    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image:radial-gradient(#0ea5e9 1px, transparent 1px);background-size:16px 16px;"></div>
+    <h1 class="font-retro-title text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-400 to-amber-300 animate-pulse tracking-wide leading-relaxed">
+      SQL BACKUP QUEST<br><span class="text-sm">BACKUP & RESTORE EDITION</span>
+    </h1>
+    <p class="text-zinc-400 text-xs tracking-widest font-bold uppercase">Manual de Backup & Restore en SQL Server — Universidad Peruana Los Andes (UPLA)</p>
+    <div class="border-t border-sky-900/50 py-4 my-2 text-xs text-zinc-300 space-y-2">
+      <p class="text-amber-400 font-bold"><i class="fa-solid fa-database"></i> ESTRATEGIAS DE BACKUP · RESTAURACIÓN · MANTENIMIENTO · PUNTO EN EL TIEMPO</p>
+      <p>Explora los 6 temas y 36 proyectos del manual de Backup & Restore. ¡Derrota al villano con el quiz de cada tema!</p>
+    </div>
+    <button id="insertCoinBtn" class="px-6 py-4 bg-amber-500 text-black hover:bg-amber-400 border-4 border-amber-300 rounded-xl font-retro-title text-sm tracking-wider shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all transform active:scale-95 duration-150">
+      INSERT COIN // START GAME
+    </button>
+    <p class="text-[10px] text-zinc-500 uppercase tracking-widest">© 2026 UPLA Arcade Laboratories — Backup &amp; Restore Edición</p>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-zinc-900/95 border-b-4 border-sky-950 p-4 sticky top-0 z-50 shadow-2xl backdrop-blur">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-sky-700 rounded-lg flex items-center justify-center animate-bounce shadow-[0_0_15px_rgba(14,165,233,0.7)]">
+        <i class="fa-solid fa-database text-2xl text-amber-300"></i>
+      </div>
+      <div>
+        <h1 class="font-arcade text-4xl text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-400 to-amber-300 tracking-wider">
+          SQL BACKUP QUEST
+        </h1>
+        <p class="text-xs text-sky-400 uppercase tracking-widest font-bold">UPLA — Manual de Backup &amp; Restore en SQL Server // V1</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap justify-center items-center gap-3">
+      <button id="toggleCrt" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
+        <i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON
+      </button>
+      <button id="exportDoc" class="px-3 py-1.5 bg-amber-500 text-black hover:bg-amber-400 border-2 border-amber-300 rounded text-xs font-bold flex items-center gap-2 transition">
+        <i class="fa-solid fa-book-open"></i> Modo Lectura Continua
+      </button>
+      <button id="muteBtn" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs flex items-center gap-2 transition">
+        <i class="fa-solid fa-volume-high text-amber-400"></i> Audio: ON
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="max-w-7xl w-full mx-auto px-4 mt-4">
+  <div class="grid grid-cols-2 gap-4">
+    <button id="tabMissionRoom" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-sky-500 bg-sky-950 text-amber-300 shadow-[0_0_15px_rgba(14,165,233,0.3)]">
+      <i class="fa-solid fa-terminal mr-2"></i> MISSION COMMAND
+    </button>
+    <button id="tabArcadeArena" class="py-3 text-center rounded-xl font-retro-title text-xs border-4 transition-all duration-200 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-amber-900/50">
+      <i class="fa-solid fa-dragon mr-2"></i> ARCADE ARENA (QUIZ)
+    </button>
+  </div>
+</div>
+
+<!-- Mission Room -->
+<main id="missionRoomSection" class="max-w-7xl w-full mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 my-4">
+
+  <!-- Sidebar -->
+  <aside id="worldMapSidebar" class="lg:col-span-1 bg-zinc-900/90 retro-border rounded-xl p-4 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+    <div class="border-b-2 border-sky-950 pb-2">
+      <h2 class="font-arcade text-3xl text-amber-400 flex items-center gap-2">
+        <i class="fa-solid fa-folder-open text-xl"></i> SELEC. NIVEL
+      </h2>
+      <p class="text-xs text-zinc-400">6 Temas · 36 Proyectos de Backup.</p>
+    </div>
+    <div class="relative">
+      <input type="text" id="searchBox" placeholder="Buscar tema / proyecto..." class="w-full bg-zinc-950 border-2 border-zinc-800 rounded p-2 text-xs focus:border-sky-500 focus:outline-none text-zinc-300 pl-8">
+      <i class="fa-solid fa-search absolute left-2.5 top-3 text-zinc-600 text-xs"></i>
+    </div>
+    <div class="bg-zinc-950 p-2.5 rounded border border-sky-900/40">
+      <div class="flex justify-between text-xs mb-1">
+        <span class="text-zinc-400 font-bold">Progreso de la Quest:</span>
+        <span id="completionPercentage" class="text-amber-400 font-bold">0%</span>
+      </div>
+      <div class="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+        <div id="completionBar" class="bg-gradient-to-r from-sky-500 to-emerald-500 h-full w-0 transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+      </div>
+    </div>
+    <nav class="flex flex-col gap-2 overflow-y-auto flex-grow pr-1" id="levelNavList"></nav>
+  </aside>
+
+  <!-- Slide Player -->
+  <section class="lg:col-span-3 flex flex-col gap-4">
+    <div class="bg-zinc-900/90 retro-border rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span id="hudLevelTag" class="px-2 py-0.5 bg-sky-900 text-sky-200 border border-sky-500 rounded text-xs font-bold uppercase tracking-widest">Tema 01</span>
+          <span id="hudProjectCat" class="text-xs text-amber-400 uppercase font-bold tracking-wider neon-text-amber">[Backup Completo]</span>
+        </div>
+        <h2 id="hudLevelTitle" class="font-arcade text-4xl text-white mt-1 leading-none tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400">
+          Cargando Consola...
+        </h2>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 self-end md:self-auto">
+        <span class="text-xs text-zinc-400 uppercase">Sub-Misión:</span>
+        <select id="subMissionSelector" class="bg-zinc-950 border-2 border-sky-900 rounded p-1.5 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-400 cursor-pointer">
+          <option value="p1">P1: Proyecto 1</option>
+          <option value="p2">P2: Proyecto 2</option>
+          <option value="p3">P3: Proyecto 3</option>
+          <option value="p4">P4: Proyecto 4</option>
+          <option value="p5">P5: Proyecto 5</option>
+          <option value="p6">P6: Proyecto 6</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-zinc-900/90 retro-border rounded-xl p-6 min-h-[500px] flex flex-col justify-between shadow-2xl relative overflow-hidden">
+      <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image:radial-gradient(#0ea5e9 1px, transparent 1px);background-size:24px 24px;"></div>
+      <div id="slideContent" class="space-y-6 relative z-10 transition-all duration-300"></div>
+      <div class="border-t-2 border-zinc-800 pt-4 mt-6 flex justify-between items-center relative z-10">
+        <button id="prevBtn" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-600 rounded text-xs font-bold flex items-center gap-2 transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+          <i class="fa-solid fa-arrow-left"></i> ANTERIOR
+        </button>
+        <span id="pageIndicator" class="text-xs bg-zinc-950 px-3 py-1 rounded border border-zinc-800 font-bold text-zinc-400">TEMA 1 · P1 / 36</span>
+        <button id="nextBtn" class="px-4 py-2 bg-sky-700 hover:bg-sky-600 border-2 border-sky-400 rounded text-xs font-bold flex items-center gap-2 transition active:scale-95">
+          SIGUIENTE <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Arcade Arena -->
+<section id="arcadeArenaSection" class="max-w-7xl w-full mx-auto p-4 flex-grow hidden my-4">
+  <div class="bg-zinc-900/90 retro-border rounded-xl p-6 flex flex-col lg:flex-row gap-6 relative">
+    <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image:radial-gradient(#f59e0b 1px, transparent 1px);background-size:20px 20px;"></div>
+
+    <div class="w-full lg:w-1/2 flex flex-col gap-4 relative z-10">
+      <div class="border-b-4 border-amber-900 pb-2">
+        <h2 class="font-retro-title text-sm text-amber-500 flex items-center gap-2">
+          <i class="fa-solid fa-dragon animate-pulse"></i> RETRO SQL BACKUP QUIZ ARENA
+        </h2>
+        <p class="text-xs text-zinc-400 mt-1">¡Derrota al Ransomware Boss con tus conocimientos de Backup & Restore!</p>
+      </div>
+
+      <div class="bg-zinc-950 p-3 rounded-xl border border-sky-900/50">
+        <label class="text-xs text-sky-400 font-bold uppercase block mb-2"><i class="fa-solid fa-filter mr-1"></i> Filtrar quiz por tema:</label>
+        <select id="quizThemeFilter" class="w-full bg-zinc-900 border-2 border-sky-900 rounded p-2 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-400 cursor-pointer">
+          <option value="all">🔀 Todas las preguntas (aleatorio)</option>
+          <option value="0">💾 Tema 1 — Estrategias de Backup</option>
+          <option value="1">🔄 Tema 2 — Restauración de Bases de Datos</option>
+          <option value="2">🔍 Tema 3 — Mantenimiento y Verificación</option>
+          <option value="3">⚙️ Tema 4 — BACKUP y RESTORE DATABASE</option>
+          <option value="4">📅 Tema 5 — Planes de Mantenimiento y Retención</option>
+          <option value="5">⏱️ Tema 6 — Restauración Punto en el Tiempo</option>
+        </select>
+      </div>
+
+      <div class="bg-zinc-950 rounded-xl border-4 border-zinc-800 h-64 relative overflow-hidden flex flex-col justify-between p-4">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-sky-950/20 pointer-events-none"></div>
+        <div class="flex justify-between items-center text-[10px] uppercase font-retro-title z-10">
+          <div class="space-y-1">
+            <span class="text-sky-400 block font-bold">DBA Guardian:</span>
+            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+              <div id="heroHpBar" class="bg-emerald-500 h-full w-full transition-all duration-300"></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-right">
+            <span class="text-red-500 block font-bold">Ransomware Boss:</span>
+            <div class="w-28 bg-zinc-800 h-3 rounded overflow-hidden border border-zinc-700">
+              <div id="bossHpBar" class="bg-red-500 h-full w-full transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center h-full relative">
+          <div id="heroSprite" class="text-5xl transform transition-all duration-300">💾</div>
+          <div id="battleImpact" class="absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300">CRIT!</div>
+          <div id="bossSprite" class="text-5xl transform transition-all duration-300">☠️</div>
+        </div>
+        <div id="battleLog" class="text-center font-arcade text-2xl text-amber-400 bg-zinc-900 border border-zinc-800 rounded py-1 z-10 truncate px-2">
+          ¡PROTEGE LOS BACKUPS DE GRADOSTITULOS!
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="setHero('💾','DBA Guardian')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">💾</span><span class="text-[9px] uppercase font-bold text-sky-400">DBA Guardian</span>
+        </button>
+        <button onclick="setHero('🧙‍♂️','Backup Wizard')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">🧙‍♂️</span><span class="text-[9px] uppercase font-bold text-emerald-400">Backup Wizard</span>
+        </button>
+        <button onclick="setHero('🤖','Recovery Bot')" class="bg-zinc-950 hover:bg-zinc-800 border-2 border-zinc-800 rounded p-2 text-center text-xs flex flex-col items-center gap-1">
+          <span class="text-xl">🤖</span><span class="text-[9px] uppercase font-bold text-amber-400">Recovery Bot</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="quizContainer" class="w-full lg:w-1/2 flex flex-col justify-between gap-4 relative z-10"></div>
+  </div>
+</section>
+
+<!-- Full Doc Modal -->
+<div id="fullDocModal" class="fixed inset-0 bg-zinc-950 z-[100] overflow-y-auto hidden p-4 md:p-8">
+  <div class="max-w-5xl mx-auto bg-zinc-900/95 retro-border rounded-2xl p-6 md:p-10 shadow-2xl">
+    <div class="border-b-4 border-amber-500 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <span class="px-3 py-1 bg-amber-500 text-black font-bold rounded text-xs uppercase tracking-widest font-arcade">Vista Completa del Manual</span>
+        <h1 class="font-arcade text-5xl text-white mt-2">BACKUP &amp; RESTORE EN SQL SERVER</h1>
+        <p class="text-sm text-sky-400 mt-1 font-semibold">Manual completo con todos los temas y proyectos del curso.</p>
+      </div>
+      <div class="flex gap-3 shrink-0">
+        <button id="closeFullDoc" class="px-4 py-2 bg-red-600 hover:bg-red-500 border-2 border-red-400 rounded text-xs font-bold transition">
+          <i class="fa-solid fa-circle-xmark"></i> CERRAR VISTA
+        </button>
+      </div>
+    </div>
+    <div class="mb-8 max-w-md">
+      <label class="block text-xs font-bold text-zinc-400 uppercase mb-2">Buscador en el manual:</label>
+      <input type="text" id="docSearchBox" placeholder="Buscar (ej. diferencial, RESTORE, log)..." class="w-full bg-zinc-950 border-2 border-sky-900 rounded p-2 text-sm focus:outline-none focus:border-amber-400">
+    </div>
+    <div id="continuousDocumentSpace" class="space-y-12"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 bg-emerald-950 border-2 border-emerald-500 text-emerald-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-[9999]">
+  <i class="fa-solid fa-circle-check text-xl text-emerald-400 animate-pulse"></i>
+  <div>
+    <p class="text-xs font-bold uppercase tracking-wider">¡Backup Registrado!</p>
+    <p class="text-[10px] text-emerald-300">Proyecto marcado como completado.</p>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-zinc-950 border-t-4 border-zinc-900 p-4 text-center text-xs text-zinc-500">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+    <p>© 2026 Universidad Peruana Los Andes (UPLA) • Manual de Backup &amp; Restore en SQL Server.</p>
+    <p class="flex items-center gap-1.5 font-arcade text-lg text-zinc-400">
+      <i class="fa-solid fa-heart text-red-500 animate-pulse"></i> BACKUP · RESTORE · RECOVERY
+    </p>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════════
+let synthEnabled = true;
+function playSound(type) {
+  if (!synthEnabled) return;
+  try {
+    if (type === 'coin') {
+      const s = new Tone.Synth({ oscillator:{type:"square"}, envelope:{attack:0.01,decay:0.1,sustain:0.2,release:0.1} }).toDestination();
+      s.triggerAttackRelease("B5","16n"); setTimeout(()=>s.triggerAttackRelease("E6","8n"),100);
+    } else if (type === 'blip') {
+      const s = new Tone.MonoSynth({ oscillator:{type:"triangle"}, envelope:{attack:0.01,decay:0.05,sustain:0,release:0.05} }).toDestination();
+      s.triggerAttackRelease("A3","16n");
+    } else if (type === 'lvlup') {
+      const s = new Tone.Synth({ oscillator:{type:"sawtooth"} }).toDestination();
+      s.triggerAttackRelease("C4","16n"); setTimeout(()=>s.triggerAttackRelease("E4","16n"),80);
+      setTimeout(()=>s.triggerAttackRelease("G4","16n"),160); setTimeout(()=>s.triggerAttackRelease("C5","8n"),240);
+    } else if (type === 'hit') {
+      const n = new Tone.NoiseSynth({ noise:{type:"pink"}, envelope:{attack:0.005,decay:0.2,sustain:0} }).toDestination();
+      n.triggerAttack();
+    } else if (type === 'laser') {
+      const s = new Tone.MonoSynth({ oscillator:{type:"sawtooth"}, filter:{Q:2,type:"lowpass"} }).toDestination();
+      s.triggerAttackRelease("G5","16n"); s.frequency.rampTo("C3",0.15);
+    }
+  } catch(e) { console.warn("Audio:",e); }
+}
+
+document.getElementById('insertCoinBtn').onclick = () => {
+  Tone.start();
+  document.getElementById('splashScreen').classList.add('opacity-0','pointer-events-none');
+  playSound('lvlup');
+};
+
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.onclick = () => {
+  synthEnabled = !synthEnabled;
+  muteBtn.innerHTML = synthEnabled
+    ? '<i class="fa-solid fa-volume-high text-amber-400"></i> Audio: ON'
+    : '<i class="fa-solid fa-volume-xmark text-red-500"></i> Audio: OFF';
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  DATOS — 6 TEMAS × 6 PROYECTOS = 36
+//  Imágenes: img/script2_1.png ... img/script2_36.png
+// ═══════════════════════════════════════════
+const themes = [
+  // ═══ TEMA 1 ═══════════════════════════════
+  {
+    id: "TEMA 1",
+    category: "Estrategias de Backup",
+    title: "Estrategias de Backup: Completo, Diferencial y Transaccional",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Respaldo Completo Institucional de GradosTitulos",
+        enunciado: "La Oficina de TI requiere implementar una política de respaldo completo diario para la base de datos GradosTitulos, que almacena información crítica de estudiantes, trámites, evaluaciones, resoluciones y diplomas. El estudiante deberá crear un procedimiento que genere un respaldo completo y registre la fecha de ejecución.",
+        scriptImage: "img/script2_1.png",
+        justification: "El backup completo (BACKUP DATABASE ... TO DISK) captura una imagen íntegra de todos los archivos de datos y del log de transacciones activo en el momento de su ejecución. En SQL Server, el proceso es online gracias al registro de transacciones, permitiendo operaciones de escritura simultáneas. El uso de WITH COMPRESSION reduce el tamaño del archivo BAK hasta un 70 % sin degradar el rendimiento, siendo especialmente crítico para bases como GradosTitulos que contienen blobs de documentos escaneados.",
+        practices: "Incluir WITH CHECKSUM para que SQL Server valide la integridad de cada página durante la escritura del backup. Almacenar los respaldos completos en un servidor NAS o unidad de cinta desconectada de la red de producción, siguiendo la regla 3-2-1 (3 copias, 2 medios distintos, 1 offsite). Registrar cada ejecución en una tabla de auditoría interna con fecha, tamaño y operador."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Backups Diferenciales para Trámites Académicos",
+        enunciado: "La universidad necesita reducir los tiempos de respaldo debido al crecimiento de las tablas de los esquemas Tramite y Documento. Diseñe una estrategia que combine respaldos completos semanales y diferenciales diarios.",
+        scriptImage: "img/script2_2.png",
+        justification: "El backup diferencial (BACKUP DATABASE ... WITH DIFFERENTIAL) captura únicamente las extensiones de datos modificadas desde el último backup completo, usando el DCM (Differential Changed Map) de SQL Server. Esto reduce drásticamente los tiempos y volúmenes de respaldo a medida que avanza la semana, siendo más eficiente que múltiples backups completos para tablas de alta escritura como Tramite.SolicitudGrado y Documento.ResolucionDecanal.",
+        practices: "Ejecutar el backup completo el domingo a las 02:00 h y los diferenciales de lunes a sábado a las 22:00 h mediante SQL Server Agent. Nunca sustituir el backup completo semanal, ya que el diferencial depende de él para la restauración. Verificar con RESTORE VERIFYONLY que cada diferencial sea recuperable antes de eliminar el respaldo del día anterior."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Estrategia Integral Full + Differential + Log Backup",
+        enunciado: "La base de datos GradosTitulos opera durante las 24 horas y registra continuamente solicitudes de grados y títulos. Diseñe una estrategia que contemple: respaldo completo semanal, diferencial diario y respaldo del log de transacciones cada 30 minutos.",
+        scriptImage: "img/script2_3.png",
+        justification: "El backup del log de transacciones (BACKUP LOG) requiere que la base esté en modelo de recuperación FULL o BULK_LOGGED. Cada backup de log captura los registros VLF (Virtual Log Files) generados desde el último log backup y trunca el espacio reutilizable del LDF, controlando su crecimiento. La cadena ininterrumpida de log backups cada 30 minutos garantiza una RPO (Recovery Point Objective) de máximo 30 minutos, aceptable para operaciones académicas nocturnas de alta concurrencia.",
+        practices: "Verificar que el modelo de recuperación sea FULL antes de iniciar la cadena de log backups. No mezclar backups diferenciales con el uso de BACKUP LOG ... WITH TRUNCATE_ONLY, ya que rompe la cadena LSN (Log Sequence Number). Monitorear el tamaño del LDF con sys.dm_db_log_space_usage para detectar un VLF fragmentado o un log que no se esté truncando correctamente."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Estrategia de Respaldo para Alta Disponibilidad",
+        enunciado: "Se requiere diseñar una estrategia de recuperación ante desastres para la plataforma institucional de grados y títulos. El estudiante deberá definir respaldos completos, diferenciales y transaccionales para garantizar una recuperación máxima de 15 minutos.",
+        scriptImage: "img/script2_4.png",
+        justification: "Para cumplir un RTO (Recovery Time Objective) de 15 minutos, la estrategia debe combinar backups de log cada 15 minutos con la preconfiguración de un servidor de standby cálido donde la base ya esté en estado STANDBY o NORECOVERY. SQL Server permite pre-aplicar el backup completo y los diferenciales durante horas de bajo tráfico, dejando únicamente los log backups restantes para aplicar en el momento del failover.",
+        practices: "Documentar y probar el procedimiento de failover al menos una vez al mes. Mantener una secuencia de logs numerada con BACKUP LOG ... WITH NAME que facilite la identificación del punto de restauración bajo presión. Usar WITH STATS = 10 para monitorear el progreso del restore en tiempo real durante la recuperación de emergencia."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Estrategia Corporativa Avanzada de Respaldo",
+        enunciado: "La Universidad ha identificado que GradosTitulos es crítica para la gestión de expedientes. Se requiere implementar una estrategia avanzada con RPO de 15 minutos que incluya: backup completo cada domingo, diferencial diario, log cada 15 minutos, compresión y verificación automática de integridad.",
+        scriptImage: "img/script2_5.png",
+        justification: "La combinación de WITH COMPRESSION y WITH CHECKSUM en cada nivel de backup (completo, diferencial y log) aprovecha el CPU moderno para reducir I/O de disco, siendo especialmente beneficioso cuando el cuello de botella es el ancho de banda de escritura hacia la unidad de backup. La verificación automática con RESTORE VERIFYONLY después de cada backup detecta páginas corruptas antes de que se produzca una emergencia real, cumpliendo las mejores prácticas del estándar ISO/IEC 27031.",
+        practices: "Automatizar la verificación inmediatamente después de cada backup mediante jobs encadenados en SQL Server Agent. Registrar el resultado de VERIFYONLY en una tabla de control. Usar copias de seguridad a múltiples destinos (MIRROR TO) para alta redundancia sin coste adicional de licencia en ediciones Standard y Enterprise."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Estrategia de Respaldo para Disaster Recovery",
+        enunciado: "La Oficina de TI requiere implementar una estrategia de Disaster Recovery para GradosTitulos. Diseñe un esquema de respaldo que permita reconstruir completamente la base en un servidor alterno ante la pérdida total del servidor principal.",
+        scriptImage: "img/script2_6.png",
+        justification: "Una estrategia de DR completa requiere que los backups se almacenen en una ubicación geográficamente separada del servidor principal. SQL Server permite enviar backups directamente a rutas UNC de servidores remotos o a Azure Blob Storage (BACKUP TO URL). La capacidad de restaurar en un servidor alterno con hardware diferente depende de que se hayan respaldado también los logins de servidor y los jobs del Agent, que no forman parte del backup de base de datos.",
+        practices: "Documentar el RTO y RPO acordados con la Dirección y validarlos con simulacros trimestrales de DR. Respaldar adicionalmente las master, msdb y model databases, indispensables para reconstruir la instancia SQL Server desde cero. Generar scripts de recreación de logins con sys.sp_hexadecimal para preservar los SIDs y evitar huérfanos tras el restore en el servidor alterno."
+      }
+    ]
+  },
+
+  // ═══ TEMA 2 ═══════════════════════════════
+  {
+    id: "TEMA 2",
+    category: "Restauración en Distintos Escenarios",
+    title: "Restauración de Bases de Datos en Distintos Escenarios",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Restauración tras Eliminación Accidental de Registros",
+        enunciado: "Un administrador eliminó accidentalmente registros relacionados con expedientes de titulación. Restaure la base de datos utilizando el respaldo más reciente.",
+        scriptImage: "img/script2_7.png",
+        justification: "Cuando se produce una eliminación accidental de datos, el primer paso es realizar un log backup de cola (BACKUP LOG ... WITH NORECOVERY) del LDF actual para capturar todas las transacciones hasta el instante del incidente. A continuación, se aplica la secuencia: backup completo con NORECOVERY, backups diferenciales con NORECOVERY y log backups con NORECOVERY hasta el punto de tiempo deseado, cerrando con RESTORE DATABASE ... WITH RECOVERY para dejar la BD accesible.",
+        practices: "Nunca ejecutar RESTORE DATABASE ... WITH RECOVERY hasta haber aplicado todos los log backups necesarios, ya que esto rompe la cadena de restauración. Poner la base en modo SINGLE_USER antes de iniciar el proceso para evitar conexiones concurrentes. Validar el contenido restaurado en un entorno de pruebas antes de reemplazar la base de producción."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Restauración en un Servidor Alternativo",
+        enunciado: "La universidad requiere habilitar un servidor de contingencia para pruebas y recuperación. Restaure la base de datos GradosTitulos en una nueva instancia SQL Server.",
+        scriptImage: "img/script2_8.png",
+        justification: "Al restaurar en un servidor diferente, SQL Server puede presentar discrepancias de SID entre los logins del servidor y los usuarios de la base de datos (usuarios huérfanos). El procedimiento sp_change_users_login o ALTER USER ... WITH LOGIN resuelve esta condición. También es necesario especificar las rutas físicas correctas para los archivos MDF y LDF con la cláusula MOVE ... TO dentro del RESTORE DATABASE.",
+        practices: "Usar RESTORE FILELISTONLY antes del restore para obtener los nombres lógicos de los archivos y construir correctamente las cláusulas MOVE. Documentar las diferencias de configuración entre el servidor principal y el alterno (collation, versión de SQL Server, filegroups) para anticipar posibles incompatibilidades. Actualizar los jobs del Agent que referencien rutas hardcodeadas del servidor anterior."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Recuperación tras Corrupción del Archivo MDF",
+        enunciado: "El archivo principal de datos presenta corrupción física. Implemente el procedimiento de restauración completo utilizando respaldos disponibles.",
+        scriptImage: "img/script2_9.png",
+        justification: "La corrupción física del archivo MDF (páginas con checksum incorrecto detectadas por DBCC CHECKDB) requiere restauración completa desde backup. SQL Server no puede reparar daño físico en hardware; solo puede recuperar datos desde la cadena de respaldos. El proceso implica detener el servicio SQL, eliminar o renombrar el MDF corrupto, y ejecutar la secuencia completa de restore. El comando DBCC CHECKDB ... WITH REPAIR_ALLOW_DATA_LOSS es una opción de último recurso que puede provocar pérdida adicional de datos.",
+        practices: "Ejecutar DBCC CHECKDB semanalmente en horario de baja concurrencia para detectar corrupción temprana antes de que se propague. Habilitar la opción de servidor PAGE_VERIFY = CHECKSUM para que SQL Server detecte corrupción en lectura de páginas. Nunca usar REPAIR_ALLOW_DATA_LOSS sin haber intentado primero la restauración desde backup."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Recuperación ante Desastre Total del Servidor",
+        enunciado: "Una falla de almacenamiento destruyó completamente el servidor donde se encontraba la base GradosTitulos. Diseñe el proceso de recuperación completa.",
+        scriptImage: "img/script2_10.png",
+        justification: "La recuperación total del servidor requiere reinstalar el sistema operativo y SQL Server, reconstruir la instancia con la misma collation y versión, restaurar primero las bases del sistema (master, msdb, model) y finalmente GradosTitulos. La base master contiene los metadatos de todos los logins, linked servers y configuraciones de instancia. Sin su restauración correcta, los jobs del Agent y los endpoints de Service Broker no funcionarán tras el failover.",
+        practices: "Mantener documentado en papel o medio externo la versión exacta de SQL Server, collation de instancia, directorios de datos y ubicación de los filegroups, ya que este documento es ilegible si está almacenado únicamente en la base de datos destruida. Probar el proceso completo de reconstrucción al menos una vez al año en un entorno aislado, cronometrando el tiempo real de recuperación para validar el RTO declarado."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Recuperación Completa tras Corrupción del Archivo MDF (Avanzado)",
+        enunciado: "Se detectó corrupción física en el archivo principal de datos de GradosTitulos, impidiendo el acceso a las tablas relacionadas con expedientes de titulación. Recupere completamente la base utilizando la secuencia de respaldos disponibles.",
+        scriptImage: "img/script2_11.png",
+        justification: "En escenarios avanzados de corrupción donde la base sigue en línea pero con páginas inaccesibles, SQL Server permite realizar un Page Restore (RESTORE DATABASE ... PAGE = 'fileId:pageId') sin desconectar la base de producción, siempre que la base esté en modo de recuperación FULL. Esta técnica restaura únicamente las páginas corruptas específicas desde el backup y aplica los log backups posteriores para ponerlas al día, minimizando la ventana de indisponibilidad.",
+        practices: "Identificar las páginas corruptas con DBCC CHECKDB ... WITH NO_INFOMSGS y obtener los IDs exactos de página antes de ejecutar el page restore. Aplicar los log backups inmediatamente después del page restore para sincronizar las páginas con el resto de la base. Documentar todas las páginas restauradas y sus LSNs de inicio y fin para la auditoría técnica post-incidente."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Restauración en un Servidor de Contingencia",
+        enunciado: "La Universidad requiere habilitar un centro alterno de recuperación para continuar los procesos de grados y títulos. Restaure la base en una instancia secundaria.",
+        scriptImage: "img/script2_12.png",
+        justification: "El servidor de contingencia debe mantenerse en estado STANDBY (RESTORE DATABASE ... WITH STANDBY) para permitir consultas de lectura mientras se aplican log backups periódicamente, implementando un Log Shipping manual básico. El estado STANDBY es preferible a NORECOVERY cuando se necesita validar la consistencia de los datos o ejecutar reportes durante el periodo de inactividad del servidor principal.",
+        practices: "Documentar el proceso de 'switchover' para que el equipo de TI pueda ejecutarlo bajo presión en menos de 15 minutos. Actualizar las cadenas de conexión de las aplicaciones académicas para apuntar al servidor de contingencia. Verificar que los jobs de SQL Agent del servidor de contingencia estén deshabilitados para evitar ejecuciones duplicadas mientras el primario sigue activo."
+      }
+    ]
+  },
+
+  // ═══ TEMA 3 ═══════════════════════════════
+  {
+    id: "TEMA 3",
+    category: "Mantenimiento y Verificación de Copias",
+    title: "Mantenimiento y Verificación de Copias de Seguridad",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Verificación de Integridad de Backups",
+        enunciado: "Verifique que todos los respaldos generados para GradosTitulos sean recuperables.",
+        scriptImage: "img/script2_13.png",
+        justification: "RESTORE VERIFYONLY lee el archivo BAK completo y valida la estructura interna del backup set, el checksum de cada página (si se usó WITH CHECKSUM al crear el backup) y la coherencia de los metadatos de cabecera. No restaura datos al disco, por lo que es un proceso de bajo impacto que puede ejecutarse en producción. La verificación es la única garantía real de que un backup es recuperable, ya que un archivo BAK puede existir físicamente pero estar corrupto o truncado.",
+        practices: "Automatizar RESTORE VERIFYONLY inmediatamente después de cada backup completado mediante un job encadenado en SQL Server Agent. Registrar el resultado (éxito o error con código) en una tabla de auditoría de backups. Configurar alertas por correo electrónico al operador cuando VERIFYONLY retorne error, para acción correctiva antes del próximo ciclo de respaldo."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Inventario Histórico de Copias de Seguridad",
+        enunciado: "Construya un reporte que muestre todos los respaldos realizados durante el último mes.",
+        scriptImage: "img/script2_14.png",
+        justification: "Las tablas msdb.dbo.backupset y msdb.dbo.backupmediafamily contienen el historial completo de backups ejecutados desde la instalación de SQL Server. backupset almacena metadatos de cada backup set (tipo, tamaño, fechas, LSN de inicio y fin), mientras backupmediafamily contiene la ruta física de cada archivo BAK. El JOIN entre ambas tablas permite generar reportes de inventario sin acceder a los archivos físicos, siendo ideal para auditorías de cumplimiento y revisión de políticas.",
+        practices: "Establecer un umbral de alerta si no existe un backup de tipo 'D' (completo) en las últimas 24 horas para GradosTitulos. Exportar el reporte mensual de inventario en formato CSV y guardarlo junto con los archivos BAK como evidencia documental de la política de backup institucional. Purgar periódicamente la tabla backupset de registros obsoletos con msdb.dbo.sp_delete_backuphistory para mantener el rendimiento de las consultas de inventario."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Detección de Respaldos Obsoletos",
+        enunciado: "Identifique copias de seguridad que excedan la política institucional de retención.",
+        scriptImage: "img/script2_15.png",
+        justification: "Una política de retención mal gestionada genera dos riesgos opuestos: acumular archivos BAK obsoletos que consumen almacenamiento costoso, o eliminar respaldos prematuramente antes de que haya un backup más reciente que los sustituya. La consulta sobre msdb.dbo.backupset filtrada por backup_finish_date permite identificar respaldos fuera de la ventana de retención definida. La eliminación debe seguir un orden inverso: primero eliminar los log backups más antiguos, luego los diferenciales y finalmente los completos que ya no son necesarios como base de restauración.",
+        practices: "Nunca eliminar el último backup completo disponible, incluso si supera el periodo de retención, hasta que exista un backup completo más reciente verificado. Implementar la eliminación como un job separado del job de backup, con un retraso de 24 horas, para prevenir borrados accidentales por ejecuciones concurrentes. Registrar en la tabla de auditoría cada archivo eliminado con fecha, tamaño y operador."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Sistema Automatizado de Verificación",
+        enunciado: "Diseñe una solución que valide diariamente la integridad de todos los respaldos de GradosTitulos.",
+        scriptImage: "img/script2_16.png",
+        justification: "Un sistema automatizado de verificación combina un procedimiento almacenado que itera sobre los backups del día actual en msdb.dbo.backupset, ejecuta RESTORE VERIFYONLY para cada uno y registra el resultado. El procedimiento puede encapsularse en un job de SQL Agent con notificaciones por Database Mail ante cualquier fallo. La automatización elimina el error humano de olvidar verificar manualmente y proporciona evidencia auditada de la integridad de cada backup.",
+        practices: "Incluir en el procedimiento un bloque TRY...CATCH que capture los errores de RESTORE VERIFYONLY y los registre con el mensaje de error completo, número de error y hora exacta. Configurar el job de verificación para ejecutarse 30 minutos después del job de backup, asegurando que todos los archivos estén cerrados y listos para verificación. Revisar semanalmente la tabla de resultados de verificación como parte de los controles operativos de TI."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Sistema Automatizado de Validación de Backups",
+        enunciado: "Diseñe un mecanismo que valide diariamente todos los respaldos de la base GradosTitulos.",
+        scriptImage: "img/script2_17.png",
+        justification: "La validación avanzada va más allá de RESTORE VERIFYONLY e incluye restaurar periódicamente el backup completo en un servidor de pruebas y ejecutar DBCC CHECKDB sobre la base restaurada. Esta técnica, conocida como 'test restore', es la única forma de garantizar que los datos son completamente recuperables y consistentes lógicamente. Las instituciones con cumplimiento ISO 22301 deben documentar la frecuencia y resultados de estos test restores.",
+        practices: "Programar test restores completos al menos una vez al mes en el servidor de contingencia, fuera del horario laboral. Comparar el recuento de registros de las tablas críticas (Tramite.SolicitudGrado, Documento.Diploma) entre la base de producción y la restaurada como validación adicional de integridad de datos. Documentar el tiempo de restauración real medido para actualizar el RTO declarado ante la Dirección."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Auditoría Integral del Historial de Copias de Seguridad",
+        enunciado: "La Dirección de TI solicita un reporte detallado de los respaldos ejecutados sobre GradosTitulos durante los últimos 90 días.",
+        scriptImage: "img/script2_18.png",
+        justification: "El reporte de auditoría de 90 días cruza datos de msdb.dbo.backupset (metadatos del backup), msdb.dbo.backupmediafamily (rutas físicas) y opcionalmente la tabla de auditoría interna de verificaciones, para ofrecer una vista consolidada de: fecha y hora de cada backup, tipo (completo/diferencial/log), tamaño comprimido, destino físico, usuario que lo ejecutó, resultado de la verificación y si fue utilizado en alguna restauración. Este reporte es requerido en auditorías de continuidad del negocio y certificaciones ISO.",
+        practices: "Formatear el reporte agrupando los backups por semana y tipo para facilitar la identificación visual de brechas en la cobertura de respaldo. Incluir una columna de cumplimiento que marque en rojo los días donde no se ejecutó el backup esperado según la política. Archivar el reporte en formato PDF firmado digitalmente como evidencia para auditorías externas."
+      }
+    ]
+  },
+
+  // ═══ TEMA 4 ═══════════════════════════════
+  {
+    id: "TEMA 4",
+    category: "BACKUP DATABASE y RESTORE DATABASE",
+    title: "Uso de BACKUP DATABASE y RESTORE DATABASE",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Respaldo Manual de la Base GradosTitulos",
+        enunciado: "Realice un respaldo completo utilizando únicamente instrucciones T-SQL.",
+        scriptImage: "img/script2_19.png",
+        justification: "La instrucción BACKUP DATABASE permite un control total sobre cada parámetro del proceso de respaldo, a diferencia de los asistentes gráficos de SSMS que generan T-SQL implícito. El uso de WITH NAME para identificar el backup set, WITH DESCRIPTION para documentar el propósito y WITH STATS = 10 para monitorear el progreso constituye la forma profesional de ejecutar backups manuales en entornos de producción. Los parámetros BUFFERCOUNT y MAXTRANSFERSIZE ajustan el rendimiento del I/O del backup según las características del almacenamiento destino.",
+        practices: "Nombrar el archivo BAK con un patrón que incluya el nombre de la base, tipo de backup, fecha y hora: GradosTitulos_FULL_20260615_0200.bak. Evitar ejecutar backups manuales en producción durante el horario de mayor carga sin coordinarlo con el equipo de aplicaciones. Guardar el script T-SQL del backup manual en el repositorio de gestión de configuración para su reutilización y auditoría."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Restauración Completa desde Archivo BAK",
+        enunciado: "Recupere la base de datos utilizando un archivo de respaldo existente.",
+        scriptImage: "img/script2_20.png",
+        justification: "Antes de ejecutar RESTORE DATABASE, siempre es necesario ejecutar RESTORE HEADERONLY para validar los metadatos del archivo BAK (versión de SQL Server con la que se creó, tipo de backup, LSNs) y RESTORE FILELISTONLY para obtener los nombres lógicos de los archivos y sus rutas originales. Estos dos comandos informacionales son esenciales para construir correctamente las cláusulas MOVE cuando la ruta de destino difiere de la original, situación común en restauraciones cruzadas.",
+        practices: "Siempre forzar la conexión única con ALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE antes del restore para desconectar sesiones activas. Restaurar en una base con nombre diferente (GradosTitulos_Test) para validar el contenido antes de reemplazar la producción. Documentar el LSN de inicio y fin del backup restaurado para referencia en futuras operaciones de log shipping o replicación."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Automatización de Backups y Restores",
+        enunciado: "Diseñe procedimientos almacenados que automaticen respaldos y restauraciones.",
+        scriptImage: "img/script2_21.png",
+        justification: "Los procedimientos almacenados de backup utilizan SQL dinámico (EXEC sp_executesql o EXEC(@sql)) para construir la instrucción BACKUP DATABASE con parámetros variables como nombre de base, ruta de destino y timestamp. Esta arquitectura permite a un único procedimiento gestionar respaldos de múltiples bases de datos con distintas políticas, centralizando la lógica de negocio del backup en un único objeto versionable y auditable dentro de la base msdb o una base de administración dedicada.",
+        practices: "Parametrizar el tipo de backup (FULL, DIFF, LOG) como argumento del procedimiento para maximizar la reutilización. Incluir validaciones previas: verificar que la base existe, que está en línea, y que tiene espacio suficiente en el destino antes de ejecutar el backup. Versionar el procedimiento con comentarios de cambio en el encabezado del script para mantener un historial de modificaciones auditado."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Framework Institucional de Recuperación",
+        enunciado: "Construya un conjunto de scripts reutilizables para respaldo y restauración de todas las bases institucionales.",
+        scriptImage: "img/script2_22.png",
+        justification: "Un framework institucional de backup centraliza la política de respaldo de todas las bases de datos del servidor (GradosTitulos, matrícula, planillas, etc.) en un conjunto de objetos T-SQL en una base de administración (DBA_Admin o similar). El framework itera sobre sys.databases para generar backups de todas las bases en línea, aplica las políticas de compresión, verificación y retención de forma uniforme y registra cada operación en tablas de auditoría compartidas.",
+        practices: "Excluir las bases del sistema de la política de backup de usuario (WHERE database_id > 4) y crear jobs separados para las bases del sistema con rutas y frecuencias propias. Centralizar las alertas de fallo en un único operador de Database Mail para que el equipo de TI reciba notificaciones consolidadas, no una alerta por cada base. Documentar el framework con diagrama de arquitectura y manual de operación para el personal de TI de guardia."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Framework Automatizado de Respaldo con Fecha/Hora",
+        enunciado: "Desarrolle un procedimiento almacenado reutilizable que genere respaldos completos de GradosTitulos utilizando fecha y hora en el nombre del archivo.",
+        scriptImage: "img/script2_23.png",
+        justification: "El uso de CONVERT(VARCHAR, GETDATE(), 112) para la fecha (formato YYYYMMDD) y REPLACE(CONVERT(VARCHAR, GETDATE(), 108), ':', '') para la hora (formato HHMMSS) en el nombre del archivo garantiza que cada backup genere un archivo único y ordenable lexicográficamente por fecha. Esta convención es especialmente importante cuando se acumulan múltiples backups en el mismo directorio y se necesita identificar el más reciente sin inspeccionar los metadatos del archivo.",
+        practices: "Incluir el tipo de backup en el nombre del archivo (FULL, DIFF, LOG) para distinguirlos visualmente en el explorador de archivos. Usar rutas UNC con autenticación de cuenta de servicio para escribir backups directamente en el servidor de almacenamiento centralizado, evitando rutas locales que no sobreviven a un fallo total del servidor. Implementar logs de error con RAISERROR para notificación inmediata al operador cuando el backup falla por espacio insuficiente."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Plataforma de Restauración Automatizada",
+        enunciado: "Construya un procedimiento que permita restaurar automáticamente GradosTitulos desde cualquier archivo BAK seleccionado.",
+        scriptImage: "img/script2_24.png",
+        justification: "Una plataforma de restauración automatizada recibe como parámetro la ruta del archivo BAK y ejecuta automáticamente: RESTORE HEADERONLY para validar el backup set, RESTORE FILELISTONLY para mapear los archivos lógicos, la construcción dinámica de las cláusulas MOVE según las rutas de destino configuradas y finalmente el RESTORE DATABASE con WITH RECOVERY. Este nivel de automatización elimina los errores manuales más comunes en restauraciones bajo presión, como rutas incorrectas o cláusulas MOVE faltantes.",
+        practices: "Incluir un parámetro opcional @WithStandby para restaurar en modo STANDBY en lugar de RECOVERY, habilitando el servidor de contingencia sin comprometer la cadena de log backups. Registrar en la tabla de auditoría la ruta exacta del BAK utilizado, los LSNs de inicio y fin y el tiempo total de restauración. Implementar una validación post-restore que ejecute una consulta de conteo sobre las tablas más críticas para confirmar la consistencia básica de los datos restaurados."
+      }
+    ]
+  },
+
+  // ═══ TEMA 5 ═══════════════════════════════
+  {
+    id: "TEMA 5",
+    category: "Planes de Mantenimiento y Retención",
+    title: "Planes de Mantenimiento y Políticas de Retención",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Plan de Mantenimiento Semanal",
+        enunciado: "Creación de un Plan de Mantenimiento Semanal para GradosTitulos.",
+        scriptImage: "img/script2_25.png",
+        justification: "Los planes de mantenimiento de SQL Server encapsulan tareas programadas de administración de bases de datos mediante SQL Server Agent. Un plan semanal típico combina: backup completo del domingo, reorganización de índices fragmentados levemente (< 30 %) durante la semana, reconstrucción de índices muy fragmentados (> 30 %) el fin de semana, actualización de estadísticas y verificación de integridad con DBCC CHECKDB. La automatización mediante planes de mantenimiento reduce el coste operativo y garantiza la consistencia en la ejecución de estas tareas críticas.",
+        practices: "Preferir scripts T-SQL encapsulados en jobs sobre los planes visuales de SSMS Maintenance Plan Wizard, ya que los scripts son versionables en control de código fuente y portables entre instancias. Ejecutar la reorganización/reconstrucción de índices en horario de baja concurrencia para minimizar el bloqueo de tablas. Separar en jobs independientes las tareas de backup, índices y verificación para facilitar el diagnóstico cuando solo una de ellas falla."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Política de Retención de 90 Días",
+        enunciado: "Implemente una política institucional para conservar respaldos durante 90 días.",
+        scriptImage: "img/script2_26.png",
+        justification: "Una política de retención de 90 días es el estándar mínimo recomendado para instituciones educativas que procesan expedientes académicos con valor legal. La implementación técnica combina la purga automática de archivos BAK más antiguos de 90 días usando xp_cmdshell o cmdlets de PowerShell invocados desde T-SQL, con la limpieza paralela del historial en msdb.dbo.backupset mediante sp_delete_backuphistory. Es fundamental que la purga de archivos físicos y la purga del historial en msdb estén sincronizadas para evitar referencias huérfanas.",
+        practices: "Calcular el espacio de almacenamiento necesario para 90 días de backups antes de implementar la política: (tamaño backup completo × 13 semanas) + (tamaño diferencial × 90 días) + (tamaño log backup × 90 días × 24 × 2). Nunca purgar los backups mediante la interfaz gráfica de SSMS, ya que no elimina el registro de msdb.dbo.backupset. Guardar al menos una copia del backup completo mensual más allá de los 90 días para cumplimiento regulatorio."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Plan de Mantenimiento Integral",
+        enunciado: "Diseñe un plan que incluya: backups, reorganización de índices, actualización de estadísticas y verificación de integridad.",
+        scriptImage: "img/script2_27.png",
+        justification: "Un plan de mantenimiento integral coordina las cuatro tareas fundamentales del ciclo de vida de la base de datos: los backups garantizan la recuperabilidad, la gestión de índices mantiene el rendimiento de las consultas, la actualización de estadísticas asegura que el optimizador de consultas tome decisiones óptimas, y DBCC CHECKDB garantiza la integridad física y lógica de los datos. Estas tareas están interrelacionadas: reconstruir un índice genera escrituras en el log que aumentan el tamaño del próximo log backup.",
+        practices: "Usar sys.dm_db_index_physical_stats para evaluar la fragmentación antes de decidir entre REORGANIZE (baja fragmentación, sin bloqueo) y REBUILD (alta fragmentación, bloqueo de tabla o ONLINE REBUILD en Enterprise). Actualizar estadísticas con FULLSCAN solo para tablas pequeñas; para tablas grandes usar el porcentaje de muestreo por defecto para minimizar el impacto en producción. Revisar mensualmente el plan de mantenimiento para ajustar los umbrales de fragmentación según el crecimiento real de la base."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Gestión Corporativa de Retención a 5 Años",
+        enunciado: "Diseñe una política institucional de respaldo y retención para cinco años de operación.",
+        scriptImage: "img/script2_28.png",
+        justification: "Una política de retención a 5 años combina múltiples niveles de almacenamiento (tiered storage): backups de los últimos 90 días en almacenamiento rápido de disco (hot tier), backups de 91 días a 1 año en almacenamiento de menor velocidad (cool tier), y backups anuales en almacenamiento de archivo offline (cold tier o cintas). SQL Server Backup to URL con Azure Blob Storage permite automatizar este tiering mediante políticas de ciclo de vida del almacenamiento en la nube, sin intervención manual.",
+        practices: "Documentar formalmente la política de retención con aprobación de la Dirección y el área legal, especificando los periodos exactos de retención por tipo de backup y las excepciones para litigios o auditorías externas. Considerar que los backups de bases de datos con datos personales están sujetos a la Ley N° 29733 de Protección de Datos Personales del Perú, que puede requerir destrucción certificada de los medios al final del periodo de retención. Revisar anualmente la política para ajustarla a cambios regulatorios o crecimiento de la base de datos."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Plan Corporativo de Mantenimiento Integral",
+        enunciado: "Diseñe un plan de mantenimiento que incluya: respaldo completo, reorganización de índices, actualización de estadísticas y validación de integridad.",
+        scriptImage: "img/script2_29.png",
+        justification: "El plan corporativo de mantenimiento define una matriz de tareas por ventana de tiempo: backup completo semanal como línea base de recuperabilidad, mantenimiento de índices diferenciado por fragmentación los miércoles, actualización de estadísticas los jueves para preparar al optimizador para el pico de trabajo del viernes (cierre de trámites semanales) y DBCC CHECKDB los sábados cuando el impacto en la concurrencia es mínimo. Esta distribución equilibra la carga de I/O y CPU a lo largo de la semana.",
+        practices: "Usar Ola Hallengren's Maintenance Solution como referencia de mejores prácticas de la industria para los scripts T-SQL de mantenimiento, adaptándolos a los esquemas específicos de GradosTitulos. Implementar un dashboard de seguimiento que muestre el estado de cada tarea de mantenimiento (éxito, fallo, tiempo de ejecución) para la revisión diaria del DBA. Establecer SLAs internos para cada tarea: si DBCC CHECKDB supera X horas, escalar automáticamente al responsable de infraestructura."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Política de Retención Automatizada de 180 Días",
+        enunciado: "Diseñe una política institucional que elimine automáticamente respaldos con más de 180 días de antigüedad.",
+        scriptImage: "img/script2_30.png",
+        justification: "La automatización de la purga de backups a 180 días requiere un job que combine: la consulta a msdb.dbo.backupset para identificar los backups expirados, la construcción dinámica del comando de eliminación del archivo físico (xp_cmdshell o PowerShell), y la limpieza del registro histórico en msdb mediante sp_delete_backuphistory. La lógica de negocio debe garantizar que siempre exista al menos un backup completo válido antes de eliminar el más antiguo, implementando una comprobación de seguridad antes de cada eliminación.",
+        practices: "Implementar la purga como una transacción lógica: primero verificar que existe un backup más reciente verificado, luego eliminar el archivo físico, finalmente limpiar el registro de msdb. Si cualquier paso falla, detener la purga y notificar al operador. Generar un reporte de purga que liste los archivos eliminados, sus fechas y tamaños, como evidencia para la auditoría de gestión de almacenamiento. Ejecutar la purga en horario nocturno de baja actividad para minimizar el impacto en el rendimiento del servidor de almacenamiento."
+      }
+    ]
+  },
+
+  // ═══ TEMA 6 ═══════════════════════════════
+  {
+    id: "TEMA 6",
+    category: "Restauración Punto en el Tiempo",
+    title: "Restauración Punto en el Tiempo (Point-in-Time Recovery)",
+    projects: [
+      {
+        key: "p1", label: "P1",
+        title: "Recuperación Antes de una Eliminación Accidental",
+        enunciado: "Un operador eliminó registros de expedientes a las 10:15 a.m. Restaure la base exactamente a las 10:14 a.m.",
+        scriptImage: "img/script2_31.png",
+        justification: "La restauración point-in-time requiere que la base de datos esté en modelo de recuperación FULL y que exista una cadena ininterrumpida de log backups que cubra el momento objetivo. Se ejecuta la secuencia: backup de log de cola (WITH NORECOVERY, NO_TRUNCATE) para capturar las transacciones hasta el instante del incidente, restore del backup completo con NORECOVERY, restore de los diferenciales con NORECOVERY y restore de los log backups con la cláusula STOPAT = '2026-06-15 10:14:00'. El STOPAT instruye al motor a aplicar únicamente las transacciones confirmadas antes del instante especificado.",
+        practices: "Actuar con rapidez: cuanto antes se tome el log backup de cola, menor será la pérdida de datos. Si la base sigue en línea y las transacciones siguen ejecutándose después del incidente, el log backup de cola capturará también las transacciones que deben ser excluidas en la restauración. Restaurar siempre en una copia separada de la base (GradosTitulos_Recovery) para validar el contenido antes de reemplazar la producción mediante RESTORE DATABASE con REPLACE."
+      },
+      {
+        key: "p2", label: "P2",
+        title: "Recuperación de Cambios Incorrectos Masivos",
+        enunciado: "Un proceso masivo actualizó incorrectamente estados de trámites. Restaure la base al estado previo a la actualización incorrecta.",
+        scriptImage: "img/script2_32.png",
+        justification: "Una actualización masiva incorrecta (UPDATE sin WHERE correcto o con lógica errónea) puede ser la causa más difícil de detectar en tiempo real, ya que los datos son técnicamente válidos pero semánticamente incorrectos. La restauración point-in-time con STOPAT justo antes de la ejecución del proceso masivo es la solución correcta. Alternativamente, si se conoce el tiempo exacto de inicio del proceso, se puede usar RESTORE LOG ... WITH STOPBEFOREMARK = 'nombre_marca' si se definieron marcas de transacción (BEGIN TRANSACTION WITH MARK) antes de ejecutar el proceso masivo.",
+        practices: "Implementar la práctica de marcar transacciones críticas con BEGIN TRANSACTION WITH MARK antes de ejecutar procesos masivos en producción: BEGIN TRANSACTION 'ActualizacionEstados_20260615' WITH MARK. Esta marca queda registrada en el log y permite restaurar con precisión hasta justo antes de esa marca. Exigir que los procesos masivos de actualización tengan un mecanismo de rollback documentado y probado antes de ejecutarse en producción."
+      },
+      {
+        key: "p3", label: "P3",
+        title: "Recuperación Selectiva de Incidente Crítico",
+        enunciado: "Un error en producción afectó las tablas Tramite y Evaluacion. Diseñe una recuperación punto en el tiempo minimizando la indisponibilidad.",
+        scriptImage: "img/script2_33.png",
+        justification: "Cuando solo un subconjunto de tablas ha sido afectado, la restauración point-in-time completa implica perder todas las transacciones válidas ocurridas en otras tablas después del incidente. Una alternativa más quirúrgica combina: restaurar la base completa en un servidor paralelo con STOPAT en el momento previo al incidente, extraer los datos correctos de las tablas afectadas (Tramite.SolicitudGrado, Evaluacion.Sustentacion) mediante INSERT ... SELECT desde el servidor de recuperación hacia la producción, y finalmente re-aplicar manualmente las transacciones legítimas perdidas.",
+        practices: "Documentar el procedimiento de recuperación selectiva antes de que ocurra un incidente, no durante. Usar Linked Servers o funciones OPENDATASOURCE para consultar la base restaurada en el servidor paralelo sin copiar físicamente los datos. Validar la integridad referencial de los datos seleccionados antes de insertarlos en producción para evitar violaciones de constraints de clave foránea entre las tablas restauradas y las no restauradas."
+      },
+      {
+        key: "p4", label: "P4",
+        title: "Simulación de Recuperación Forense Institucional",
+        enunciado: "Se detectó una modificación maliciosa durante una ventana específica de tiempo. Realice una recuperación forense que permita restaurar GradosTitulos al momento anterior al incidente y documentar todo el procedimiento.",
+        scriptImage: "img/script2_34.png",
+        justification: "La recuperación forense difiere de una recuperación operativa normal en que debe preservar evidencia. Antes de iniciar el proceso, se deben generar hashes criptográficos (SHA-256) de los archivos MDF, LDF y BAK disponibles para certificar su integridad como evidencia. La restauración se ejecuta en un entorno aislado (sin acceso a red) para prevenir contaminación adicional. Los log backups posteriores al incidente deben preservarse sin modificar como evidencia de las transacciones maliciosas.",
+        practices: "Documentar cada paso del proceso forense con timestamps precisos, incluyendo el nombre del operador, la herramienta utilizada y el resultado. Colaborar con el área de seguridad informática y, si corresponde, con el área legal antes de tomar acciones sobre los datos comprometidos. Preservar los archivos BAK y LDF originales en un medio de solo lectura (write-protected) como evidencia antes de ejecutar cualquier restore que pueda sobrescribir datos del servidor afectado."
+      },
+      {
+        key: "p5", label: "P5",
+        title: "Recuperación Exacta de Expedientes Eliminados",
+        enunciado: "A las 11:45 a.m. se eliminaron accidentalmente registros de expedientes de titulación. Recupere la base exactamente a las 11:44:59 a.m.",
+        scriptImage: "img/script2_35.png",
+        justification: "La precisión de segundos en la cláusula STOPAT = '2026-06-15 11:44:59' requiere que el log backup de cola capture las transacciones hasta ese instante exacto. SQL Server aplica todas las transacciones cuyo tiempo de confirmación (commit time en el log) sea anterior o igual al valor de STOPAT, excluyendo la transacción de DELETE que se confirmó a las 11:45:00 o posterior. La granularidad del log de SQL Server registra cada transacción con precisión de milisegundos, garantizando que el STOPAT con precisión de segundos sea suficientemente exacto.",
+        practices: "Verificar el tiempo exacto de la eliminación accidental consultando el log de transacciones con fn_dblog() o la herramienta ApexSQL Log antes de ejecutar el restore, para confirmar que el STOPAT elegido está realmente antes del DELETE. Tras la restauración, ejecutar una consulta de verificación que confirme que los expedientes eliminados están presentes y que las transacciones legítimas posteriores a las 11:44:59 no están incluidas en la base restaurada."
+      },
+      {
+        key: "p6", label: "P6",
+        title: "Recuperación Forense de una Modificación Maliciosa",
+        enunciado: "Se detectó una modificación no autorizada en las tablas del esquema Documento relacionadas con resoluciones y diplomas. Realice una recuperación punto en el tiempo que permita restaurar el estado exacto de la base antes de la alteración.",
+        scriptImage: "img/script2_36.png",
+        justification: "Las modificaciones maliciosas en tablas de alto valor legal (Documento.ResolucionDecanal, Documento.Diploma) pueden ser intentos de falsificación de certificados académicos. El análisis forense previo a la restauración debe usar fn_dblog() para identificar las transacciones sospechosas en el log: el usuario ejecutor, el tiempo exacto, las páginas modificadas y los valores antes/después. Con esta información se determina el STOPAT preciso. La restauración debe realizarse primero en un entorno aislado para confirmar que el estado restaurado no contiene las modificaciones maliciosas.",
+        practices: "Activar SQL Server Audit con DATABASE_OBJECT_CHANGE_GROUP y SCHEMA_OBJECT_CHANGE_GROUP sobre el esquema Documento antes de que ocurra el incidente, para tener evidencia adicional en el archivo de auditoría independiente del log de transacciones. Tras la recuperación, cambiar todas las contraseñas de los logins con acceso al esquema Documento y revisar los permisos asignados para identificar el vector de ataque. Reportar el incidente a la Dirección de TI y al área legal dentro de las 24 horas siguientes al descubrimiento, según los protocolos de respuesta a incidentes de seguridad."
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════
+//  PREGUNTAS DEL QUIZ — 6 temas × 6 preguntas = 36
+// ═══════════════════════════════════════════
+const quizByTheme = [
+  // Tema 1 — Estrategias de Backup
+  [
+    { q:"¿Qué tipo de backup captura ÚNICAMENTE las páginas de datos modificadas desde el último backup completo?", options:["Backup de log","Backup completo","Backup diferencial","Backup parcial"], correct:2, exp:"El backup diferencial usa el DCM (Differential Changed Map) para capturar solo las extensiones modificadas desde el último backup completo." },
+    { q:"¿Qué modelo de recuperación es OBLIGATORIO para poder ejecutar backups del log de transacciones?", options:["SIMPLE","BULK_LOGGED o FULL","READ_ONLY","EMERGENCY"], correct:1, exp:"Solo los modelos FULL y BULK_LOGGED permiten backups del log. El modelo SIMPLE trunca automáticamente el log en cada checkpoint." },
+    { q:"¿Qué opción de BACKUP DATABASE reduce el tamaño del archivo BAK hasta un 70 % sin restauración adicional?", options:["WITH CHECKSUM","WITH COMPRESSION","WITH STATS","WITH MIRROR"], correct:1, exp:"WITH COMPRESSION activa la compresión de backup de SQL Server, que reduce significativamente el tamaño del archivo BAK aprovechando el CPU." },
+    { q:"¿Qué parámetro de BACKUP DATABASE valida la integridad de cada página durante la escritura del backup?", options:["WITH STATS","WITH FORMAT","WITH CHECKSUM","WITH INIT"], correct:2, exp:"WITH CHECKSUM hace que SQL Server calcule y valide el checksum de cada página durante el backup, detectando corrupción en origen." },
+    { q:"¿Cuánto tiempo puede existir entre el backup completo y el diferencial más reciente sin afectar la estrategia de 3 niveles?", options:["No importa, no están relacionados","Máximo 1 hora","El diferencial depende del completo: sin el completo no se puede restaurar el diferencial","Solo se puede usar si están en el mismo archivo BAK"], correct:2, exp:"El backup diferencial no es autónomo: siempre requiere restaurar primero el backup completo base antes de aplicar el diferencial." },
+    { q:"¿Qué significa RPO (Recovery Point Objective) en el contexto de estrategias de backup?", options:["Tiempo máximo para restaurar la base de datos","Máxima pérdida de datos aceptable medida en tiempo","Número mínimo de backups por semana","Tamaño máximo permitido del archivo BAK"], correct:1, exp:"El RPO define cuántos datos puede perder la organización como máximo: un RPO de 30 minutos significa que puede perder hasta 30 minutos de transacciones." }
+  ],
+  // Tema 2 — Restauración
+  [
+    { q:"¿Qué instrucción se debe ejecutar ANTES de restaurar cuando la base está en línea y tiene usuarios conectados?", options:["BACKUP LOG ... WITH NO_TRUNCATE","ALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE","DBCC CHECKDB","DROP DATABASE GradosTitulos"], correct:1, exp:"SET SINGLE_USER con ROLLBACK IMMEDIATE desconecta a todos los usuarios y bloquea nuevas conexiones, permitiendo el restore exclusivo." },
+    { q:"¿Qué comando informacional revela los nombres lógicos de los archivos dentro de un archivo BAK?", options:["RESTORE HEADERONLY","RESTORE FILELISTONLY","RESTORE LABELONLY","RESTORE VERIFYONLY"], correct:1, exp:"RESTORE FILELISTONLY lista cada archivo lógico del backup con su nombre lógico, tipo (data/log) y rutas originales, necesarios para las cláusulas MOVE." },
+    { q:"¿Qué cláusula de RESTORE DATABASE permite cambiar la ruta física de destino de los archivos MDF y LDF?", options:["WITH REPLACE","WITH STANDBY","WITH MOVE ... TO","WITH NORECOVERY"], correct:2, exp:"WITH MOVE 'NombreLogico' TO 'RutaFísica' redirige cada archivo lógico del backup a una ruta diferente en el servidor de destino." },
+    { q:"¿En qué estado queda la base de datos cuando se usa RESTORE DATABASE ... WITH NORECOVERY?", options:["Online y accesible","Offline y sin aplicar rollback pendiente: lista para recibir más backups","En modo READ_ONLY","Eliminada automáticamente"], correct:1, exp:"WITH NORECOVERY deja la base en estado 'Restoring', sin ejecutar el rollback de transacciones abiertas, para poder aplicar más backups en secuencia." },
+    { q:"¿Qué comando detecta páginas corruptas en una base de datos sin restaurar desde backup?", options:["DBCC SHRINKFILE","DBCC CHECKDB","DBCC DBREINDEX","DBCC OPENTRAN"], correct:1, exp:"DBCC CHECKDB verifica la integridad de todas las páginas, índices y metadatos de la base de datos, reportando cualquier corrupción detectada." },
+    { q:"¿Qué vista del sistema muestra si hay usuarios huérfanos (sin login correspondiente) tras restaurar en un servidor diferente?", options:["sys.server_principals","sys.database_principals","sys.dm_exec_sessions","sys.login_token"], correct:1, exp:"sys.database_principals lista los usuarios de la base; si su SID no coincide con ningún login en sys.server_principals, son usuarios huérfanos." }
+  ],
+  // Tema 3 — Mantenimiento y Verificación
+  [
+    { q:"¿Qué comando verifica que un archivo BAK es recuperable SIN restaurar datos al disco?", options:["RESTORE DATABASE ... WITH RECOVERY","RESTORE VERIFYONLY","DBCC CHECKDB","BACKUP VERIFY"], correct:1, exp:"RESTORE VERIFYONLY lee y valida el archivo BAK completo sin escribir datos en disco, siendo un proceso de bajo impacto en producción." },
+    { q:"¿En qué tabla de msdb se almacena el historial de todos los backups ejecutados?", options:["msdb.dbo.sysjobs","msdb.dbo.backupset","msdb.dbo.backupmediaset","msdb.dbo.backupfilegroup"], correct:1, exp:"msdb.dbo.backupset contiene un registro por cada backup completado: tipo, tamaño, fechas, base de datos y LSNs de inicio y fin." },
+    { q:"¿Qué procedimiento almacenado del sistema elimina el historial de backups más antiguo de una fecha específica?", options:["sp_delete_backuphistory","sp_purge_backup","sp_clean_backup_history","xp_delete_backup"], correct:0, exp:"msdb.dbo.sp_delete_backuphistory elimina los registros de backupset y backupmediafamily anteriores a la fecha especificada." },
+    { q:"¿Qué combinación de tablas de msdb permite obtener la ruta física de cada archivo BAK junto con sus metadatos?", options:["backupset + sysjobs","backupset + backupmediafamily","backupmediafamily + sysoperators","backupset + msdb.dbo.log_shipping_monitor_history_detail"], correct:1, exp:"El JOIN entre backupset (metadatos) y backupmediafamily (rutas físicas) proporciona información completa sobre cada backup ejecutado." },
+    { q:"¿Qué vista DMV permite obtener el porcentaje de fragmentación de los índices de una base de datos?", options:["sys.indexes","sys.dm_db_index_physical_stats","sys.dm_db_index_usage_stats","sys.index_columns"], correct:1, exp:"sys.dm_db_index_physical_stats devuelve avg_fragmentation_in_percent para cada índice, permitiendo decidir entre REORGANIZE y REBUILD." },
+    { q:"¿Cuándo se recomienda usar ALTER INDEX ... REBUILD en lugar de REORGANIZE?", options:["Siempre, REBUILD es mejor","Cuando la fragmentación supera el 30 %","Cuando la fragmentación es menor al 5 %","Solo para índices de tipo COLUMNSTORE"], correct:1, exp:"Con fragmentación > 30 %, REBUILD recrea el índice completamente. Entre 5 y 30 %, REORGANIZE desfragmenta in-place con menor bloqueo." }
+  ],
+  // Tema 4 — BACKUP y RESTORE DATABASE
+  [
+    { q:"¿Qué cláusula de BACKUP DATABASE controla la frecuencia de actualización del progreso en la pantalla?", options:["WITH NAME","WITH DESCRIPTION","WITH STATS = N","WITH FORMAT"], correct:2, exp:"WITH STATS = 10 hace que SQL Server muestre un mensaje de progreso cada 10 % completado del backup, facilitando el monitoreo." },
+    { q:"¿Cuál es el formato de nombre recomendado para archivos BAK que incluye fecha y hora?", options:["GradosTitulos.bak","backup_latest.bak","GradosTitulos_FULL_YYYYMMDD_HHMMSS.bak","GT_$(date).bak"], correct:2, exp:"El patrón NombreBase_Tipo_Fecha_Hora.bak garantiza unicidad, orden lexicográfico por fecha y facilidad de identificación del backup más reciente." },
+    { q:"¿Qué función T-SQL genera la fecha en formato YYYYMMDD para usar en nombres de archivos de backup?", options:["FORMAT(GETDATE(),'yyyyMMdd')","CONVERT(VARCHAR, GETDATE(), 112)","STR(GETDATE(), 8)","DATEPART(yy,GETDATE())"], correct:1, exp:"CONVERT(VARCHAR, GETDATE(), 112) devuelve la fecha en formato ISO 8601 compacto YYYYMMDD, ideal para nombres de archivo ordenables." },
+    { q:"¿Qué instrucción T-SQL muestra los metadatos de la cabecera de un archivo BAK sin restaurar datos?", options:["RESTORE FILELISTONLY","RESTORE HEADERONLY","RESTORE LABELONLY","RESTORE VERIFYONLY"], correct:1, exp:"RESTORE HEADERONLY devuelve información sobre el backup set: tipo, fechas, versión SQL, LSNs y nombre de la base de datos de origen." },
+    { q:"¿Qué instrucción debe ejecutarse ANTES del RESTORE DATABASE para desconectar usuarios en producción?", options:["KILL (SELECT session_id FROM sys.dm_exec_sessions)","ALTER DATABASE GradosTitulos SET SINGLE_USER WITH ROLLBACK IMMEDIATE","DROP DATABASE GradosTitulos","SHUTDOWN WITH NOWAIT"], correct:1, exp:"SET SINGLE_USER con ROLLBACK IMMEDIATE es la forma correcta y segura de desconectar usuarios y prevenir nuevas conexiones antes del restore." },
+    { q:"¿Qué parámetro del RESTORE DATABASE restaura en modo lectura permitiendo consultas mientras se aplican más log backups?", options:["WITH RECOVERY","WITH NORECOVERY","WITH STANDBY = 'archivo.undo'","WITH REPLACE"], correct:2, exp:"WITH STANDBY deja la base en modo lectura entre aplicaciones de log backups, permitiendo consultas de validación sin comprometer la cadena de restauración." }
+  ],
+  // Tema 5 — Planes de Mantenimiento y Retención
+  [
+    { q:"¿Qué elemento del Plan de Mantenimiento de SSMS ejecuta DBCC CHECKDB en todas las bases de datos?", options:["Check Database Integrity Task","Rebuild Index Task","Update Statistics Task","Back Up Database Task"], correct:0, exp:"La tarea 'Check Database Integrity Task' del Plan de Mantenimiento ejecuta DBCC CHECKDB en las bases seleccionadas según el horario configurado." },
+    { q:"¿Cuál es la diferencia entre REORGANIZE y REBUILD de índices en términos de disponibilidad de la tabla?", options:["Ambos bloquean la tabla completamente","REORGANIZE permite acceso concurrente; REBUILD bloquea la tabla (o usa ONLINE en Enterprise)","REBUILD es más rápido y no bloquea","REORGANIZE requiere más espacio en disco que REBUILD"], correct:1, exp:"REORGANIZE desfragmenta el índice de forma online sin bloquear la tabla. REBUILD recrea el índice completamente; ONLINE REBUILD (Enterprise) minimiza el bloqueo." },
+    { q:"¿Qué porcentaje de fragmentación se considera el umbral para ejecutar REBUILD en lugar de REORGANIZE?", options:["5 %","10 %","30 %","50 %"], correct:2, exp:"La práctica estándar: fragmentación < 5 % → sin acción, entre 5 y 30 % → REORGANIZE, > 30 % → REBUILD para reconstrucción completa del índice." },
+    { q:"¿Qué regla de respaldo establece: 3 copias de los datos, en 2 medios distintos, 1 copia offsite?", options:["Regla 2-1-1","Regla 3-2-1","Regla 5-4-3","Regla RPO/RTO"], correct:1, exp:"La regla 3-2-1 es el estándar de la industria para políticas de backup: 3 copias totales, en 2 tipos de medio distintos, 1 copia fuera del sitio principal." },
+    { q:"¿Qué procedimiento del sistema SQL Server elimina archivos de backup físicos más antiguos de N días?", options:["sp_delete_backuphistory","xp_delete_file (Maintenance Plan Cleanup Task)","sp_purge_old_backups","xp_cmdshell con DEL"], correct:1, exp:"La tarea de limpieza de mantenimiento (Maintenance Cleanup Task) usa xp_delete_file internamente para eliminar archivos BAK más antiguos del período especificado." },
+    { q:"¿Qué ley peruana regula la retención y destrucción de datos personales almacenados en backups?", options:["Ley N° 27444 (Procedimiento Administrativo)","Ley N° 29733 (Protección de Datos Personales)","Ley N° 30096 (Delitos Informáticos)","Ley N° 28612 (Uso de Software en Entidades Públicas)"], correct:1, exp:"La Ley N° 29733 de Protección de Datos Personales del Perú regula el tratamiento, almacenamiento y destrucción de datos personales, incluyendo los contenidos en backups." }
+  ],
+  // Tema 6 — Restauración Punto en el Tiempo
+  [
+    { q:"¿Qué cláusula de RESTORE LOG detiene la aplicación del log en un instante específico de tiempo?", options:["WITH UNTIL","WITH STOPAT = 'fecha'","WITH RECOVERY = 'fecha'","WITH POINT = 'fecha'"], correct:1, exp:"WITH STOPAT = 'YYYY-MM-DD HH:MM:SS' instruye a SQL Server a aplicar solo las transacciones confirmadas antes o en ese instante exacto." },
+    { q:"¿Qué tipo de backup especial se realiza ANTES de iniciar una restauración point-in-time para capturar las últimas transacciones?", options:["Backup completo de emergencia","Backup diferencial urgente","Backup de log de cola (tail-log backup con NO_TRUNCATE)","Backup de páginas individuales"], correct:2, exp:"El tail-log backup (BACKUP LOG ... WITH NORECOVERY, NO_TRUNCATE) captura las transacciones del LDF activo hasta el momento del incidente, completando la cadena de log." },
+    { q:"¿Cuál es el orden correcto de una restauración point-in-time completa?", options:["Log backups → Diferencial → Completo → Tail-log","Tail-log → Completo → Diferencial → Log backups","Completo (NORECOVERY) → Diferencial (NORECOVERY) → Log backups (STOPAT) → RECOVERY","Completo (RECOVERY) → Log backups (STOPAT)"], correct:2, exp:"El orden correcto es: backup completo con NORECOVERY, diferenciales con NORECOVERY, log backups con NORECOVERY hasta el STOPAT, y finalmente RESTORE DATABASE WITH RECOVERY." },
+    { q:"¿Qué función de SQL Server permite leer el contenido del log de transacciones activo para análisis forense?", options:["sys.dm_db_log_space_usage","fn_dblog(NULL, NULL)","sys.dm_exec_query_stats","sys.dm_os_ring_buffers"], correct:1, exp:"fn_dblog(NULL, NULL) retorna las entradas del log de transacciones activo, permitiendo identificar timestamps exactos de operaciones DML específicas." },
+    { q:"¿Qué instrucción T-SQL permite restaurar únicamente páginas específicas de datos sin desconectar la base de producción?", options:["RESTORE DATABASE ... WITH PAGE","RESTORE DATABASE ... PAGE = 'fileId:pageId'","RESTORE FILEGROUP ... PAGE","DBCC REPAIR_PAGE"], correct:1, exp:"RESTORE DATABASE [bd] PAGE = 'fileId:pageId' FROM DISK restaura páginas individuales corruptas mientras la base sigue en línea (requiere modelo FULL)." },
+    { q:"¿Qué instrucción se usa para crear una marca de transacción que permita restaurar exactamente hasta antes de ese punto?", options:["SAVE TRANSACTION nombre","BEGIN TRANSACTION nombre WITH MARK","COMMIT TRANSACTION WITH MARK","ALTER DATABASE SET RECOVERY MARK"], correct:1, exp:"BEGIN TRANSACTION 'nombre' WITH MARK registra una marca nombrada en el log de transacciones, usable luego con RESTORE LOG ... WITH STOPATMARK = 'nombre'." }
+  ]
+];
+
+// ═══════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════
+let currentThemeIndex = 0;
+let currentProjectKey = "p1";
+const solvedStates = new Set();
+
+// Aplanar todos los proyectos para navegación lineal
+const allProjects = [];
+themes.forEach((t, ti) => {
+  t.projects.forEach(p => {
+    allProjects.push({ themeIndex: ti, theme: t, project: p });
+  });
+});
+let currentFlatIndex = 0;
+
+const hudLevelTag   = document.getElementById('hudLevelTag');
+const hudProjectCat = document.getElementById('hudProjectCat');
+const hudLevelTitle = document.getElementById('hudLevelTitle');
+const subMissionSelector = document.getElementById('subMissionSelector');
+const slideContent  = document.getElementById('slideContent');
+const prevBtn       = document.getElementById('prevBtn');
+const nextBtn       = document.getElementById('nextBtn');
+const pageIndicator = document.getElementById('pageIndicator');
+const levelNavList  = document.getElementById('levelNavList');
+const searchBox     = document.getElementById('searchBox');
+const completionBar = document.getElementById('completionBar');
+const completionPercentage = document.getElementById('completionPercentage');
+
+// ── Lightbox ──
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('active');
+}
+document.getElementById('lightboxClose').onclick = () => document.getElementById('lightbox').classList.remove('active');
+document.getElementById('lightbox').onclick = (e) => {
+  if (e.target === document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('active');
+};
+
+// ── Sidebar ──
+function initLevelsSidebar() {
+  levelNavList.innerHTML = '';
+  themes.forEach((theme, ti) => {
+    // Theme header
+    const header = document.createElement('div');
+    header.className = 'pt-2 pb-1';
+    header.innerHTML = `<span class="text-[10px] text-sky-500 font-bold uppercase tracking-widest font-arcade text-base">${theme.id} — ${theme.category}</span>`;
+    levelNavList.appendChild(header);
+
+    theme.projects.forEach((proj, pi) => {
+      const flatIdx = ti * 6 + pi;
+      const isCurrent = flatIdx === currentFlatIndex;
+      const isSolved  = solvedStates.has(flatIdx);
+      const btn = document.createElement('button');
+      btn.className = `w-full text-left p-2 rounded border-2 transition flex items-center justify-between text-xs font-bold gap-2 ${
+        isCurrent
+          ? 'bg-sky-950/80 border-sky-500 text-amber-300 shadow-[0_0_8px_rgba(14,165,233,0.4)]'
+          : 'bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:border-sky-900/60'
+      }`;
+      btn.onclick = () => { currentFlatIndex = flatIdx; updateSelectorFromFlat(); renderSlide(); initLevelsSidebar(); playSound('blip'); };
+      const icon = isSolved
+        ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>'
+        : '<i class="fa-solid fa-database text-zinc-600"></i>';
+      btn.innerHTML = `
+        <div class="flex items-center gap-2 overflow-hidden">
+          <span class="text-[10px] text-amber-400 shrink-0 font-bold">${proj.label}</span>
+          <span class="truncate block font-arcade text-base font-normal">${proj.title}</span>
+        </div>
+        <span class="shrink-0">${icon}</span>
+      `;
+      levelNavList.appendChild(btn);
+    });
+  });
+  updateProgression();
+}
+
+searchBox.oninput = (e) => {
+  const q = e.target.value.toLowerCase();
+  levelNavList.querySelectorAll('button').forEach(btn => {
+    btn.classList.toggle('hidden', !btn.innerText.toLowerCase().includes(q));
+  });
+};
+
+function updateProgression() {
+  const pct = Math.round((solvedStates.size / allProjects.length) * 100);
+  completionPercentage.innerText = `${pct}%`;
+  completionBar.style.width = `${pct}%`;
+}
+
+function updateSelectorFromFlat() {
+  const { project } = allProjects[currentFlatIndex];
+  subMissionSelector.value = project.key;
+}
+
+function updateSelectorOptions() {
+  const { theme } = allProjects[currentFlatIndex];
+  // All options are always P1-P6; just set the value
+  const opts = subMissionSelector.options;
+  for (let i = 0; i < opts.length; i++) {
+    const p = theme.projects[i];
+    opts[i].value = p.key;
+    opts[i].text = `${p.label}: ${p.title.substring(0, 35)}${p.title.length > 35 ? '…' : ''}`;
+  }
+}
+
+// ── Render ──
+function renderSlide() {
+  const { themeIndex, theme, project } = allProjects[currentFlatIndex];
+
+  hudLevelTag.innerText   = theme.id;
+  hudProjectCat.innerText = `[${theme.category}]`;
+  hudLevelTitle.innerText = project.title;
+  pageIndicator.innerText = `${theme.id} · ${project.label} — #${currentFlatIndex + 1} / ${allProjects.length}`;
+
+  updateSelectorOptions();
+  subMissionSelector.value = project.key;
+
+  prevBtn.disabled = currentFlatIndex === 0;
+
+  const imgSrc = project.scriptImage;
+
+  slideContent.innerHTML = `
+    <div class="space-y-4">
+      <div class="border-l-4 border-sky-500 pl-4">
+        <h3 class="text-xs uppercase tracking-widest text-sky-400 font-bold mb-1">${theme.id} · ${project.label} — ${theme.category}</h3>
+        <h4 class="text-xl font-bold font-arcade text-amber-300 text-2xl tracking-wide uppercase">${project.title}</h4>
+      </div>
+
+      <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 relative">
+        <div class="absolute -top-2.5 left-4 px-2 py-0.5 bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-400 font-bold uppercase rounded">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Enunciado del Proyecto
+        </div>
+        <p class="text-sm text-zinc-300 mt-1 leading-relaxed font-semibold">${project.enunciado}</p>
+      </div>
+
+      <div class="relative bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
+        <div class="flex justify-between items-center bg-zinc-900 px-4 py-2 text-xs border-b border-zinc-800">
+          <span class="text-sky-400 font-bold uppercase flex items-center gap-1.5 font-arcade text-lg tracking-wider">
+            <i class="fa-solid fa-image"></i> CAPTURA DEL SCRIPT — ${imgSrc}
+          </span>
+          <button onclick="openLightbox('${imgSrc}')" class="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white font-bold rounded text-[11px] flex items-center gap-1 transition active:scale-95">
+            <i class="fa-solid fa-expand"></i> VER IMAGEN
+          </button>
+        </div>
+        <div class="script-img-container p-2 bg-zinc-950" onclick="openLightbox('${imgSrc}')">
+          <img src="${imgSrc}" alt="Script del proyecto ${project.label}" class="rounded-lg"
+            onerror="this.parentElement.innerHTML='<div class=\\'p-8 text-center\\'>
+              <div class=\\'text-zinc-600 font-arcade text-2xl mb-2\\'>📁 ${imgSrc}</div>
+              <div class=\\'text-xs text-zinc-700\\'>Coloca la imagen en la carpeta img/</div>
+            </div>'">
+          <div class="script-img-overlay"><i class="fa-solid fa-magnifying-glass mr-2"></i>CLICK PARA AMPLIAR</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-zinc-950/60 p-4 rounded-xl border border-sky-500/20 flex flex-col gap-2">
+          <h5 class="text-xs font-bold uppercase text-sky-400 tracking-wider flex items-center gap-1.5 font-arcade text-lg">
+            <i class="fa-solid fa-circle-info"></i> Justificación Técnica
+          </h5>
+          <p class="text-xs text-zinc-300 leading-relaxed font-sans">${project.justification}</p>
+        </div>
+        <div class="bg-zinc-950/60 p-4 rounded-xl border border-amber-500/20 flex flex-col gap-2">
+          <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5 font-arcade text-lg">
+            <i class="fa-solid fa-star"></i> Buenas Prácticas
+          </h5>
+          <p class="text-xs text-zinc-300 leading-relaxed font-sans">${project.practices}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+subMissionSelector.onchange = (e) => {
+  // Find the flat index for the selected project key in the current theme
+  const { themeIndex } = allProjects[currentFlatIndex];
+  const projIdx = themes[themeIndex].projects.findIndex(p => p.key === e.target.value);
+  if (projIdx !== -1) {
+    currentFlatIndex = themeIndex * 6 + projIdx;
+    renderSlide();
+    initLevelsSidebar();
+    playSound('blip');
+  }
+};
+
+prevBtn.onclick = () => {
+  if (currentFlatIndex > 0) { currentFlatIndex--; renderSlide(); initLevelsSidebar(); playSound('blip'); }
+};
+nextBtn.onclick = () => {
+  if (currentFlatIndex < allProjects.length - 1) {
+    solvedStates.add(currentFlatIndex);
+    currentFlatIndex++;
+    renderSlide(); initLevelsSidebar(); playSound('blip');
+  } else {
+    solvedStates.add(currentFlatIndex);
+    currentFlatIndex = 0;
+    renderSlide(); initLevelsSidebar(); playSound('lvlup');
+  }
+};
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+const tabMission = document.getElementById('tabMissionRoom');
+const tabArena   = document.getElementById('tabArcadeArena');
+const missionSection = document.getElementById('missionRoomSection');
+const arenaSection   = document.getElementById('arcadeArenaSection');
+
+tabMission.onclick = () => {
+  tabMission.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-sky-500 bg-sky-950 text-amber-300 shadow-[0_0_15px_rgba(14,165,233,0.3)]";
+  tabArena.className   = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-amber-900/50";
+  missionSection.classList.remove('hidden'); arenaSection.classList.add('hidden');
+  playSound('blip');
+};
+tabArena.onclick = () => {
+  tabArena.className   = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-amber-500 bg-amber-950 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]";
+  tabMission.className = "py-3 text-center rounded-xl font-retro-title text-xs border-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-sky-900/50";
+  missionSection.classList.add('hidden'); arenaSection.classList.remove('hidden');
+  playSound('lvlup'); initBattleArena();
+};
+
+// ═══════════════════════════════════════════
+//  QUIZ / BATTLE
+// ═══════════════════════════════════════════
+let currentQuizIndex = 0;
+let heroHp = 100, bossHp = 100;
+let activeQuizPool = [];
+
+function setHero(sprite, name) {
+  document.getElementById('heroSprite').innerText = sprite;
+  document.getElementById('battleLog').innerText = `¡HAS SELECCIONADO AL HÉROE ${name.toUpperCase()}!`;
+  playSound('lvlup');
+}
+
+function buildQuizPool() {
+  const sel = document.getElementById('quizThemeFilter').value;
+  if (sel === 'all') {
+    activeQuizPool = quizByTheme.flat().sort(() => Math.random() - 0.5);
+  } else {
+    activeQuizPool = [...quizByTheme[parseInt(sel)]].sort(() => Math.random() - 0.5);
+  }
+}
+
+document.getElementById('quizThemeFilter').onchange = () => { initBattleArena(); };
+
+function initBattleArena() {
+  currentQuizIndex = 0; heroHp = 100; bossHp = 100;
+  buildQuizPool(); updateBattleStats(); renderQuestion();
+  document.getElementById('battleLog').innerText = "¡RESPONDE Y PROTEGE LOS BACKUPS DE GRADOSTITULOS!";
+}
+
+function updateBattleStats() {
+  document.getElementById('heroHpBar').style.width = `${heroHp}%`;
+  document.getElementById('bossHpBar').style.width = `${bossHp}%`;
+}
+
+function renderQuestion() {
+  const qc = document.getElementById('quizContainer');
+  if (heroHp <= 0) {
+    qc.innerHTML = `<div class="text-center p-6 space-y-4">
+      <h3 class="font-retro-title text-red-500 text-lg animate-bounce">GAME OVER</h3>
+      <p class="text-xs text-zinc-300">El Ransomware Boss ha cifrado la base de datos. ¡Estudia más Backup & Restore!</p>
+      <button onclick="initBattleArena()" class="px-4 py-2 bg-red-700 text-white rounded text-xs font-bold border-2 border-red-400">VOLVER A INTENTAR</button>
+    </div>`; playSound('hit'); return;
+  }
+  if (bossHp <= 0) {
+    qc.innerHTML = `<div class="text-center p-6 space-y-4">
+      <h3 class="font-retro-title text-emerald-400 text-lg animate-bounce">¡VICTORIA!</h3>
+      <p class="text-xs text-zinc-300">¡Has derrotado al Ransomware Boss y los backups de GradosTitulos están a salvo!</p>
+      <button onclick="initBattleArena()" class="px-4 py-2 bg-emerald-600 text-white rounded text-xs font-bold border-2 border-emerald-400">JUGAR DE NUEVO</button>
+    </div>`; playSound('lvlup'); return;
+  }
+  if (currentQuizIndex >= activeQuizPool.length) { currentQuizIndex = 0; buildQuizPool(); }
+  const qData = activeQuizPool[currentQuizIndex];
+  qc.innerHTML = `
+    <div class="space-y-4">
+      <span class="text-xs uppercase tracking-widest text-amber-500 font-bold font-retro-title block">Pregunta ${currentQuizIndex + 1} / ${activeQuizPool.length}</span>
+      <h3 class="text-sm font-bold text-zinc-200 leading-relaxed bg-zinc-950 p-3 rounded-lg border border-zinc-800">${qData.q}</h3>
+      <div class="flex flex-col gap-2">
+        ${qData.options.map((opt, i) => `
+          <button onclick="handleAnswer(${i})" class="w-full text-left p-3 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 flex gap-2 items-center transition active:scale-95">
+            <span class="bg-sky-900 text-sky-200 w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">${String.fromCharCode(65+i)}</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function handleAnswer(index) {
+  const qData = activeQuizPool[currentQuizIndex];
+  const logBox = document.getElementById('battleLog');
+  const impact = document.getElementById('battleImpact');
+  const boss   = document.getElementById('bossSprite');
+  const hero   = document.getElementById('heroSprite');
+  if (index === qData.correct) {
+    bossHp = Math.max(0, bossHp - 20); playSound('laser');
+    boss.classList.add('translate-x-12','opacity-50');
+    impact.innerText = "¡CRIT!";
+    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-emerald-400 opacity-100 transform scale-100 transition-all duration-300";
+    logBox.innerText = `✅ CORRECTO: ${qData.exp}`;
+    setTimeout(() => { boss.classList.remove('translate-x-12','opacity-50'); impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300"; }, 4000);
+  } else {
+    heroHp = Math.max(0, heroHp - 25); playSound('hit');
+    hero.classList.add('-translate-x-12','opacity-50');
+    impact.innerText = "HURT!";
+    impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-100 transform scale-100 transition-all duration-300";
+    logBox.innerText = `❌ INCORRECTO. ${qData.exp}`;
+    setTimeout(() => { hero.classList.remove('-translate-x-12','opacity-50'); impact.className = "absolute inset-0 flex justify-center items-center text-4xl font-retro-title text-red-500 opacity-0 pointer-events-none transform scale-50 transition-all duration-300"; }, 4000);
+  }
+  currentQuizIndex++;
+  updateBattleStats();
+  setTimeout(renderQuestion, 4200);
+}
+
+// ═══════════════════════════════════════════
+//  CRT TOGGLE
+// ═══════════════════════════════════════════
+document.getElementById('toggleCrt').onclick = () => {
+  const body = document.body;
+  if (body.classList.contains('crt')) {
+    body.classList.remove('crt','crt-flicker');
+    document.getElementById('toggleCrt').innerHTML = '<i class="fa-solid fa-desktop text-red-500"></i> CRT Filter: OFF';
+  } else {
+    body.classList.add('crt','crt-flicker');
+    document.getElementById('toggleCrt').innerHTML = '<i class="fa-solid fa-desktop text-emerald-400"></i> CRT Filter: ON';
+  }
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  FULL DOC MODAL
+// ═══════════════════════════════════════════
+function renderFullContinuousDocument() {
+  const space = document.getElementById('continuousDocumentSpace');
+  space.innerHTML = '';
+  themes.forEach((theme) => {
+    const themeSection = document.createElement('section');
+    themeSection.className = 'border-b-4 border-zinc-800 pb-10 mb-10 space-y-8';
+    let projHTML = '';
+    theme.projects.forEach(proj => {
+      projHTML += `
+        <div class="space-y-4 document-element-wrapper border-t border-zinc-800/60 pt-6">
+          <h3 class="text-lg font-bold text-sky-400 font-arcade text-2xl uppercase tracking-wide">${proj.label}: ${proj.title}</h3>
+          <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-sm text-zinc-300 leading-relaxed">
+            <strong class="text-zinc-400">Enunciado:</strong> ${proj.enunciado}
+          </div>
+          <div class="script-img-container cursor-pointer" onclick="openLightbox('${proj.scriptImage}')">
+            <img src="${proj.scriptImage}" alt="${proj.label}" class="rounded-lg w-full"
+              onerror="this.parentElement.innerHTML='<div class=\\'p-4 text-center text-zinc-500 font-arcade text-lg\\'>📁 ${proj.scriptImage}</div>'">
+            <div class="script-img-overlay"><i class="fa-solid fa-magnifying-glass mr-2"></i>CLICK PARA AMPLIAR</div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-zinc-950/60 border border-sky-900/30 p-4 rounded-xl text-xs space-y-1">
+              <strong class="text-sky-400 block uppercase font-arcade text-base">Justificación Técnica:</strong>
+              <p class="text-zinc-300 leading-relaxed">${proj.justification}</p>
+            </div>
+            <div class="bg-zinc-950/60 border border-amber-900/30 p-4 rounded-xl text-xs space-y-1">
+              <strong class="text-amber-400 block uppercase font-arcade text-base">Buenas Prácticas:</strong>
+              <p class="text-zinc-300 leading-relaxed">${proj.practices}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    themeSection.innerHTML = `
+      <div class="flex items-center justify-between border-b border-sky-500/20 pb-4">
+        <div>
+          <span class="px-2 py-0.5 bg-sky-900 text-sky-100 font-bold rounded text-xs uppercase tracking-wider font-arcade">${theme.id}</span>
+          <h2 class="font-arcade text-3xl text-amber-300 mt-1 uppercase tracking-wider">${theme.title}</h2>
+        </div>
+        <span class="text-xs text-zinc-500 font-bold font-arcade text-xl">${theme.category}</span>
+      </div>
+      <div class="space-y-12">${projHTML}</div>
+    `;
+    space.appendChild(themeSection);
+  });
+}
+
+document.getElementById('docSearchBox').oninput = (e) => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.document-element-wrapper').forEach(el => {
+    el.classList.toggle('opacity-25', !el.innerText.toLowerCase().includes(q));
+  });
+};
+
+document.getElementById('exportDoc').onclick = () => {
+  renderFullContinuousDocument();
+  document.getElementById('fullDocModal').classList.remove('hidden');
+  playSound('lvlup');
+};
+document.getElementById('closeFullDoc').onclick = () => {
+  document.getElementById('fullDocModal').classList.add('hidden');
+  playSound('blip');
+};
+
+// ═══════════════════════════════════════════
+//  TECLADO
+// ═══════════════════════════════════════════
+document.onkeydown = (e) => {
+  if (e.key === "ArrowLeft")  prevBtn.click();
+  else if (e.key === "ArrowRight") nextBtn.click();
+};
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+window.onload = () => { initLevelsSidebar(); renderSlide(); };
+</script>
+</body>
+</html>

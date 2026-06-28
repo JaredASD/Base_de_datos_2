@@ -64,9 +64,9 @@
     "week": 11,
     "title": "infografias",
     "description": "",
-    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/CreaciÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³n de roles fijos y personalizados.png",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/CreaciÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³n de roles fijos y personalizados.png",
     "type": "img",
-    "filename": "CreaciÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³n de roles fijos y personalizados.png",
+    "filename": "CreaciÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³n de roles fijos y personalizados.png",
     "date": "26/6/2026"
   },
   {
@@ -117,6 +117,16 @@
     "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana12/Uso%20de%20BACKUP%20DATABASE%20y%20RESTORE%20DATABASE.png",
     "type": "img",
     "filename": "Uso de BACKUP DATABASE y RESTORE DATABASE.png",
+    "date": "27/6/2026"
+  },
+  {
+    "id": 1782613767325,
+    "week": 12,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana12/Mantenimiento%20y%20verificacion%20de%20copias%20de%20seguridad.png",
+    "type": "img",
+    "filename": "Mantenimiento y verificacion de copias de seguridad.png",
     "date": "27/6/2026"
   }
 ]

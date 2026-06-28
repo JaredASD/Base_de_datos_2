@@ -64,9 +64,9 @@
     "week": 11,
     "title": "infografias",
     "description": "",
-    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/CreaciÃÂ³n de roles fijos y personalizados.png",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana11/CreaciÃÂÃÂ³n de roles fijos y personalizados.png",
     "type": "img",
-    "filename": "CreaciÃÂ³n de roles fijos y personalizados.png",
+    "filename": "CreaciÃÂÃÂ³n de roles fijos y personalizados.png",
     "date": "26/6/2026"
   },
   {
@@ -88,5 +88,15 @@
     "type": "img",
     "filename": "Autenticacion SQL y Windows diferencias y practicas seguras.png",
     "date": "26/6/2026"
+  },
+  {
+    "id": 1782613760531,
+    "week": 12,
+    "title": "infografias",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana12/Restauracion%20punto%20en%20el%20tiempo.png",
+    "type": "img",
+    "filename": "Restauracion punto en el tiempo.png",
+    "date": "27/6/2026"
   }
 ]

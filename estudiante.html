@@ -1317,6 +1317,32 @@ function buildMissionHTML(num) {
                 </div>
                 ` : ''}
                 
+                ${num === 15 ? `
+                <div style="text-align:center; margin-top:20px;">
+
+                    <button class="pixel-btn"
+                        onclick="window.open('Cuestionario_Parte1.html','_blank')">
+
+                        🎮 ABRIR CUESTIONARIO
+
+                    </button>
+
+                </div>
+                ` : ''}
+                
+                ${num === 16 ? `
+                <div style="text-align:center; margin-top:20px;">
+
+                    <button class="pixel-btn"
+                        onclick="window.open('Cuestionario_Parte2.html','_blank')">
+
+                        🎮 ABRIR CUESIONARIO
+
+                    </button>
+
+                </div>
+                ` : ''}
+                
             </div>
 
         </div>`;

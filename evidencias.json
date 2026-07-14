@@ -8,5 +8,15 @@
     "type": "img",
     "filename": "Uso de planes de mantenimiento (Database Maintenance Plans)..png",
     "date": "13/7/2026"
+  },
+  {
+    "id": 1784001805063,
+    "week": 14,
+    "title": "infos",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana14/Creacion%20de%20jobs%20y%20alerts%20con%20SQL%20Server%20Agent.png",
+    "type": "img",
+    "filename": "Creacion de jobs y alerts con SQL Server Agent.png",
+    "date": "13/7/2026"
   }
 ]

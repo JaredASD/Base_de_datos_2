@@ -18,5 +18,15 @@
     "type": "img",
     "filename": "Creacion de jobs y alerts con SQL Server Agent.png",
     "date": "13/7/2026"
+  },
+  {
+    "id": 1784003132595,
+    "week": 13,
+    "title": "ejer",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana13/Ejercicios_13.pdf",
+    "type": "pdf",
+    "filename": "SQL_PERFORMANCE_QUEST.pdf",
+    "date": "13/7/2026"
   }
 ]

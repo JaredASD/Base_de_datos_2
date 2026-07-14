@@ -38,5 +38,15 @@
     "type": "pdf",
     "filename": "DBA_Arcade_High_Availability.pdf",
     "date": "13/7/2026"
+  },
+  {
+    "id": 1784003284859,
+    "week": 14,
+    "title": "ejer",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana14/Ejercicios_14.pdf",
+    "type": "pdf",
+    "filename": "DBA_Arcade_High_Availability_compressed.pdf",
+    "date": "13/7/2026"
   }
 ]

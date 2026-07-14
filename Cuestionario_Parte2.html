@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Azure Quest - Parte II</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-void:#0a0e1f;
+  --bg-void-2:#060811;
+  --bg-panel:#1b2340;
+  --bg-panel-2:#141a34;
+  --bg-panel-light:#2a3358;
+  --border-frame:#6b7cc7;
+  --border-frame-dim:#3a4470;
+  --text-primary:#eef1ff;
+  --text-dim:#8b95c4;
+  --hp-player:#3ddc84;
+  --hp-player-mid:#ffd23f;
+  --hp-player-low:#ff5a5a;
+  --hp-enemy:#ff6b6b;
+  --accent-gold:#ffd23f;
+  --accent-violet:#b98aff;
+  --accent-cyan:#4ecdc4;
+  --danger:#ff3860;
+  --font-display:'Press Start 2P', monospace;
+  --font-body:'VT323', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-void);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+  image-rendering:pixelated;
+}
+button{font-family:inherit;cursor:pointer;}
+::selection{background:var(--accent-violet);color:var(--bg-void);}
+
+/* focus visibility */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+  outline:3px dashed var(--accent-gold);
+  outline-offset:3px;
+}
+
+/* ---------- background atmosphere ---------- */
+#starfield{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(185,138,255,0.10), transparent 45%),
+    radial-gradient(ellipse at 80% 85%, rgba(78,205,196,0.08), transparent 45%),
+    var(--bg-void);
+}
+#starfield span{
+  position:absolute;width:2px;height:2px;background:#fff;border-radius:0;
+  opacity:.7;animation:twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.9;}}
+
+#scanlines{
+  position:fixed;inset:0;z-index:50;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 3px
+  );
+  mix-blend-mode:multiply;
+  opacity:.5;
+}
+#vignette{
+  position:fixed;inset:0;z-index:49;pointer-events:none;
+  box-shadow:inset 0 0 18vw 4vw rgba(0,0,0,0.65);
+}
+
+/* ---------- layout screens ---------- */
+.screen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  padding:24px 16px 60px;
+}
+.screen.active{display:flex;}
+
+/* ---------- pixel frame utility ---------- */
+.pixel-frame{
+  border:4px solid var(--border-frame);
+  background:var(--bg-panel);
+  box-shadow:
+    0 0 0 2px var(--bg-void-2),
+    0 0 0 6px var(--border-frame-dim),
+    0 10px 0 rgba(0,0,0,0.35);
+  position:relative;
+}
+.pixel-frame::before, .pixel-frame::after{
+  content:"";position:absolute;width:10px;height:10px;
+  background:var(--accent-gold);
+  box-shadow:0 0 0 2px var(--bg-void-2);
+}
+.pixel-frame::before{top:-7px;left:-7px;}
+.pixel-frame::after{bottom:-7px;right:-7px;}
+
+/* ---------- title screen ---------- */
+#view-title{justify-content:center;text-align:center;gap:28px;}
+.logo{
+  font-family:var(--font-display);
+  font-size:clamp(22px,6vw,44px);
+  line-height:1.5;
+  color:var(--accent-gold);
+  text-shadow:
+    3px 3px 0 #b8860b,
+    6px 6px 0 rgba(0,0,0,.6);
+  letter-spacing:2px;
+}
+.logo small{
+  display:block;
+  font-size:.32em;
+  color:var(--accent-cyan);
+  text-shadow:2px 2px 0 rgba(0,0,0,.6);
+  margin-top:14px;
+  letter-spacing:1px;
+}
+.blink{animation:blink 1.1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.prompt{
+  font-family:var(--font-display);
+  font-size:clamp(11px,2.6vw,15px);
+  color:var(--text-primary);
+}
+.title-buttons{display:flex;flex-direction:column;gap:14px;width:min(360px,88vw);}
+.btn{
+  font-family:var(--font-display);
+  font-size:clamp(10px,2vw,13px);
+  color:var(--text-primary);
+  background:var(--bg-panel-light);
+  border:3px solid var(--border-frame);
+  padding:14px 10px;
+  box-shadow:0 5px 0 var(--border-frame-dim), 0 5px 0 4px rgba(0,0,0,.25);
+  transition:transform .08s ease;
+  text-align:center;
+}
+.btn:hover, .btn:focus-visible{background:#39447a;}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--border-frame-dim);}
+.btn.gold{color:#3a2a00;background:var(--accent-gold);border-color:#7a5b00;box-shadow:0 5px 0 #a8820a;}
+.btn.gold:hover{background:#ffdd6b;}
+.btn.ghost{background:transparent;}
+.footer-credit{
+  font-family:var(--font-body);
+  font-size:16px;color:var(--text-dim);max-width:560px;line-height:1.4;
+}
+
+/* ---------- help screen ---------- */
+.help-box{
+  max-width:640px;padding:22px 24px;margin-top:10px;
+}
+.help-box h2{font-family:var(--font-display);font-size:15px;color:var(--accent-violet);margin:0 0 16px;}
+.help-box p, .help-box li{font-family:var(--font-body);font-size:20px;line-height:1.5;color:var(--text-primary);}
+.help-box ul{padding-left:22px;margin:8px 0 18px;}
+.help-box .tag{color:var(--accent-gold);}
+
+/* ---------- map screen ---------- */
+#view-map{gap:18px;width:100%;max-width:640px;margin:0 auto;}
+.map-header{text-align:center;}
+.map-header h2{font-family:var(--font-display);font-size:clamp(13px,3vw,18px);color:var(--accent-gold);margin:6px 0;}
+.map-progress{font-family:var(--font-body);font-size:20px;color:var(--accent-cyan);}
+.trail{
+  position:relative;width:100%;padding:20px 0 10px;
+}
+.trail::before{
+  content:"";position:absolute;left:50%;top:0;bottom:0;width:0;
+  border-left:4px dashed var(--border-frame-dim);
+  transform:translateX(-50%);
+  z-index:0;
+}
+.node-row{display:flex;justify-content:center;margin:6px 0;position:relative;z-index:1;}
+.node-row.left{justify-content:flex-start;padding-left:6%;}
+.node-row.right{justify-content:flex-end;padding-right:6%;}
+.node{
+  width:min(78vw,260px);
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;cursor:pointer;
+  border:3px solid var(--border-frame);
+  background:var(--bg-panel);
+  box-shadow:0 4px 0 var(--border-frame-dim);
+  transition:transform .1s ease, background .15s ease;
+  text-align:left;color:inherit;
+}
+.node:hover, .node:focus-visible{background:#242c52;transform:translateY(-2px);}
+.node:active{transform:translateY(2px);box-shadow:0 1px 0 var(--border-frame-dim);}
+.node .glyph{
+  font-size:30px;width:52px;height:52px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-void-2);border:2px solid var(--border-frame-dim);
+}
+.node .info{flex:1;min-width:0;}
+.node .num{font-family:var(--font-display);font-size:10px;color:var(--accent-cyan);}
+.node .name{font-family:var(--font-body);font-size:19px;line-height:1.15;color:var(--text-primary);}
+.node .boss{font-family:var(--font-body);font-size:15px;color:var(--text-dim);}
+.node .star{font-family:var(--font-display);font-size:12px;color:var(--accent-gold);margin-top:4px;}
+.node.cleared{border-color:var(--accent-gold);}
+.node.final{border-color:var(--danger);}
+.node.final .glyph{background:#2a0a12;}
+
+/* ---------- battle screen ---------- */
+#view-battle{width:100%;max-width:560px;gap:10px;}
+.battle-topbar{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-display);font-size:10px;color:var(--text-dim);
+}
+.battle-topbar button{
+  background:transparent;border:2px solid var(--border-frame-dim);
+  color:var(--text-dim);padding:6px 8px;font-family:var(--font-display);font-size:9px;
+}
+.battle-topbar button:hover{color:var(--text-primary);border-color:var(--border-frame);}
+/*=========================
+LAYOUT BATALLA NUEVO
+=========================*/
+
+.battle-layout{
+
+    display:grid;
+
+    grid-template-columns:minmax(720px,1fr) 340px;
+
+    gap:22px;
+
+    width:100%;
+
+}
+
+#view-battle{
+
+    width:100%;
+
+    max-width:1500px;
+
+    margin:auto;
+
+}
+
+.battle-left{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.battle-right{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:15px;
+
+}
+
+.side-panel{
+
+    padding:18px;
+
+}
+
+.side-title{
+
+    font-family:var(--font-display);
+
+    font-size:10px;
+
+    color:var(--accent-gold);
+
+    margin-bottom:15px;
+
+}
+
+.side-stat{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:10px;
+
+    font-size:20px;
+
+}
+
+.side-stat span:last-child{
+
+    color:var(--accent-cyan);
+
+}
+
+.progress-mini{
+
+    margin-top:10px;
+
+    height:14px;
+
+    border:2px solid var(--border-frame);
+
+    background:var(--bg-void-2);
+
+}
+
+.progress-mini-fill{
+
+    height:100%;
+
+    width:0%;
+
+    background:var(--accent-gold);
+
+    transition:.3s;
+
+}
+
+.combat-log{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    max-height:170px;
+
+    overflow-y:auto;
+
+    font-size:18px;
+
+}
+
+.log-item{
+
+    border-left:3px solid var(--accent-violet);
+
+    padding-left:8px;
+
+}
+.combatant{
+  width:100%;padding:14px;display:flex;align-items:center;gap:14px;
+}
+.portrait{
+  position:relative;flex:none;
+  width:88px;height:88px;
+  border:4px solid var(--border-frame);
+  background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.12), transparent 60%), var(--bg-void-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;
+  box-shadow:0 0 0 3px var(--bg-void-2), 0 0 18px var(--glow, rgba(185,138,255,.35));
+}
+.portrait .corner{position:absolute;width:8px;height:8px;background:var(--accent-gold);}
+.portrait .corner.tl{top:-4px;left:-4px;}
+.portrait .corner.br{bottom:-4px;right:-4px;}
+.portrait.hit{animation:hitshake .35s ease;}
+.portrait.dead{animation:falldown .8s ease forwards;}
+@keyframes hitshake{
+  0%,100%{transform:translate(0,0) rotate(0);filter:none;}
+  20%{transform:translate(-6px,2px) rotate(-4deg);filter:brightness(2) saturate(0);}
+  40%{transform:translate(6px,-2px) rotate(4deg);filter:brightness(1.6);}
+  60%{transform:translate(-4px,0) rotate(-2deg);}
+  80%{transform:translate(4px,0) rotate(2deg);}
+}
+@keyframes falldown{
+  to{transform:translateY(30px) rotate(18deg);opacity:.15;}
+}
+.cstats{flex:1;min-width:0;}
+.cname{font-family:var(--font-display);font-size:11px;color:var(--text-primary);}
+.cname .lvl{color:var(--accent-cyan);}
+.hpbar-shell{
+  margin-top:8px;border:2px solid var(--border-frame-dim);
+  background:var(--bg-void-2);height:16px;position:relative;
+}
+.hpbar-fill{height:100%;width:100%;transition:width .5s cubic-bezier(.2,.8,.3,1);}
+.hpbar-fill.player{background:linear-gradient(180deg, var(--hp-player), #1f9c58);}
+.hpbar-fill.enemy{background:linear-gradient(180deg, var(--hp-enemy), #b32b2b);}
+.hptext{margin-top:3px;font-family:var(--font-body);font-size:16px;color:var(--text-dim);}
+.combo-tag{
+  font-family:var(--font-display);font-size:9px;color:var(--bg-void);
+  background:var(--accent-gold);padding:3px 6px;display:inline-block;margin-top:6px;
+}
+
+.dmg-float{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-display);font-size:16px;
+  pointer-events:none;
+  animation:floatup .9s ease forwards;
+  text-shadow:2px 2px 0 #000;
+  z-index:5;
+}
+.dmg-float.dmg-enemy{color:var(--accent-gold);}
+.dmg-float.dmg-player{color:var(--danger);}
+.dmg-float.crit{font-size:20px;color:#fff;}
+@keyframes floatup{
+  0%{opacity:0;transform:translate(-50%,10px) scale(.7);}
+  15%{opacity:1;transform:translate(-50%,-6px) scale(1.1);}
+  100%{opacity:0;transform:translate(-50%,-46px) scale(1);}
+}
+
+.vs-divider{
+  font-family:var(--font-display);font-size:11px;color:var(--accent-violet);
+  align-self:center;letter-spacing:3px;
+}
+
+.timerbar-shell{
+  width:100%;height:10px;border:2px solid var(--border-frame-dim);background:var(--bg-void-2);margin-top:4px;
+}
+.timerbar-fill{height:100%;width:100%;background:var(--accent-cyan);transition:width .1s linear, background .3s;}
+
+.dialog-box{
+  width:100%;padding:18px;margin-top:6px;
+}
+.qmeta{
+  font-family:var(--font-display);font-size:9px;color:var(--text-dim);
+  display:flex;justify-content:space-between;margin-bottom:10px;
+}
+.qtext{
+  font-family:var(--font-body);font-size:23px;line-height:1.35;
+  color:var(--text-primary);min-height:64px;
+}
+.options{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.opt{
+  display:flex;align-items:center;gap:10px;
+  text-align:left;background:var(--bg-panel-2);
+  border:2px solid var(--border-frame-dim);
+  color:var(--text-primary);
+  padding:11px 12px;font-family:var(--font-body);font-size:19px;line-height:1.25;
+}
+.opt .cursor{font-family:var(--font-display);font-size:11px;color:var(--accent-gold);opacity:0;flex:none;}
+.opt:hover:not(:disabled), .opt.kbd-selected{background:#2a3358;border-color:var(--border-frame);}
+.opt:hover:not(:disabled) .cursor, .opt.kbd-selected .cursor{opacity:1;}
+.opt:active:not(:disabled){transform:translateY(1px);}
+.opt:disabled{cursor:default;}
+.opt.correct{background:#173a24;border-color:var(--hp-player);}
+.opt.correct .cursor{opacity:1;color:var(--hp-player);}
+.opt.wrong{background:#3a1717;border-color:var(--danger);}
+.opt.wrong .cursor{opacity:1;color:var(--danger);}
+
+.tip-strip{
+  margin-top:14px;padding:10px 12px;background:var(--bg-void-2);
+  border-left:4px solid var(--accent-violet);
+  font-family:var(--font-body);font-size:18px;color:var(--text-dim);
+  display:none;line-height:1.4;
+}
+.tip-strip.show{display:block;}
+.tip-strip .who{color:var(--accent-violet);font-family:var(--font-display);font-size:9px;display:block;margin-bottom:6px;}
+
+.next-hint{
+  margin-top:10px;font-family:var(--font-body);font-size:15px;color:var(--text-dim);text-align:right;display:none;
+}
+.next-hint.show{display:block;}
+
+/* ---------- result screen ---------- */
+#view-result{justify-content:center;text-align:center;gap:20px;}
+.result-banner{font-family:var(--font-display);font-size:clamp(16px,4vw,26px);letter-spacing:2px;}
+.result-banner.victory{color:var(--accent-gold);text-shadow:3px 3px 0 #7a5b00;}
+.result-banner.defeat{color:var(--danger);text-shadow:3px 3px 0 #6b0a1e;}
+.rank-badge{
+  font-family:var(--font-display);font-size:64px;
+  width:110px;height:110px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
+  border:4px solid var(--accent-gold);
+  color:var(--accent-gold);
+  box-shadow:0 0 24px rgba(255,210,63,.4);
+}
+.stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;
+  font-family:var(--font-body);font-size:20px;width:min(360px,88vw);
+  text-align:left;
+}
+.stat-grid .label{color:var(--text-dim);}
+.stat-grid .value{color:var(--text-primary);text-align:right;}
+.result-buttons{display:flex;flex-direction:column;gap:12px;width:min(340px,88vw);}
+
+/* ---------- misc ---------- */
+.small-note{font-family:var(--font-body);font-size:15px;color:var(--text-dim);margin-top:18px;max-width:520px;text-align:center;}
+
+@media (max-width:480px){
+  .combatant{flex-direction:column;text-align:center;}
+  .cstats{width:100%;}
+  .qtext{font-size:20px;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .portrait.hit{animation:none;}
+  .portrait.dead{animation:none;opacity:.2;}
+  .dmg-float{animation:none;opacity:1;}
+  #starfield span{animation:none;opacity:.4;}
+  .blink{animation:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="starfield" aria-hidden="true"></div>
+<div id="scanlines" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+
+<!-- ===================== TITLE ===================== -->
+<section id="view-title" class="screen active" aria-label="Pantalla de título">
+  <div class="logo">
+    SQL Azure Quest
+
+PARTE II
+<br>
+    <small>EL CÓDICE DE LA NUBE</small>
+  </div>
+  <p class="prompt blink">▶ PULSA PARA COMENZAR ◀</p>
+  <div class="title-buttons">
+    <button class="btn gold" id="btn-play">⚔ INICIAR AVENTURA</button>
+    <button class="btn" id="btn-help">📖 CÓMO JUGAR</button>
+    <button class="btn ghost" id="btn-mute-title">🔊 SONIDO: ACTIVADO</button>
+  </div>
+  <p class="footer-credit">180 preguntas · 9 mazmorras de conocimiento basadas en <em>"Microsoft SQL Azure: Administración y desarrollo en la nube"</em> de María Pérez Marqués. Derrota a los 9 guardianes del Códice respondiendo correctamente antes de perder toda tu vida.</p>
+</section>
+
+<!-- ===================== HELP ===================== -->
+<section id="view-help" class="screen" aria-label="Instrucciones">
+  <div class="pixel-frame help-box">
+    <h2>📖 CÓMO JUGAR</h2>
+    <p>Cada capítulo del libro es una <span class="tag">mazmorra</span> custodiada por un guardián con <span class="tag">100 HP</span> (¡130 HP el guardián final!).</p>
+    <ul>
+      <li><span class="tag">Respuesta correcta</span> → tu héroe ataca y el guardián pierde HP.</li>
+      <li><span class="tag">Respuesta incorrecta o tiempo agotado</span> → el guardián contraataca y TÚ pierdes HP.</li>
+      <li>Encadena aciertos para activar <span class="tag">COMBO</span> y golpear más fuerte. Hay probabilidad de <span class="tag">GOLPE CRÍTICO</span>.</li>
+      <li>Tienes <span class="tag">20 segundos</span> por pregunta antes de que el guardián te sorprenda.</li>
+      <li>La batalla termina cuando un HP llega a 0, o al acabar las 20 preguntas del capítulo.</li>
+      <li>Al vencer obtendrás un <span class="tag">rango (S/A/B/C/D)</span> según tu precisión y la vida restante.</li>
+    </ul>
+    <p>Puedes usar el teclado: <span class="tag">1-4</span> para elegir respuesta, <span class="tag">↑/↓</span> y <span class="tag">Enter</span> para navegar, <span class="tag">Esc</span> para volver al mapa.</p>
+    <button class="btn gold" id="btn-help-back">◀ VOLVER</button>
+  </div>
+</section>
+
+<!-- ===================== MAP ===================== -->
+<section id="view-map" class="screen" aria-label="Mapa de capítulos">
+  <div class="map-header">
+    <h2>MAPA DEL CÓDICE</h2>
+    <p class="map-progress" id="map-progress">Mazmorras superadas: 0 / 9</p>
+  </div>
+  <div class="trail" id="trail"></div>
+  <button class="btn ghost" id="btn-map-title">⌂ MENÚ PRINCIPAL</button>
+</section>
+
+<!-- ===================== BATTLE ===================== -->
+<section id="view-battle" class="screen" aria-label="Batalla">
+  <div class="battle-topbar">
+    
+    <span id="battle-chapter-label">CAPÍTULO 1</span>
+    <button id="btn-flee">✕ HUIR AL MAPA</button>
+  </div>
+<div class="battle-layout">
+
+    <div class="battle-left">
+  <div class="pixel-frame combatant" id="enemy-panel">
+    <div class="portrait" id="enemy-portrait" style="--glow:rgba(255,107,107,.45)">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span id="enemy-glyph">👁️</span>
+    </div>
+    <div class="cstats">
+      <div class="cname" id="enemy-name">EL GUARDIÁN</div>
+      <div class="hpbar-shell"><div class="hpbar-fill enemy" id="enemy-hpfill"></div></div>
+      <div class="hptext" id="enemy-hptext">100 / 100 HP</div>
+    </div>
+  </div>
+
+  <div class="vs-divider">◆ VS ◆</div>
+
+  <div class="pixel-frame combatant" id="player-panel">
+    <div class="portrait" id="player-portrait" style="--glow:rgba(78,205,196,.45)">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span id="player-glyph">🛡️</span>
+    </div>
+    <div class="cstats">
+      <div class="cname">BYTE <span class="lvl">// explorador de datos</span></div>
+      <div class="hpbar-shell"><div class="hpbar-fill player" id="player-hpfill"></div></div>
+      <div class="hptext" id="player-hptext">100 / 100 HP</div>
+      <span class="combo-tag" id="combo-tag" style="display:none;"></span>
+    </div>
+  </div>
+
+  <div class="timerbar-shell"><div class="timerbar-fill" id="timer-fill"></div></div>
+
+  <div class="pixel-frame dialog-box">
+    <div class="qmeta">
+      <span id="q-counter">PREGUNTA 1 / 20</span>
+      <span id="q-timer">20s</span>
+    </div>
+    <div class="qtext" id="q-text">Cargando…</div>
+    <div class="options" id="q-options"></div>
+    <div class="tip-strip" id="tip-strip">
+      <span class="who">📜 EL CÓDICE REVELA:</span>
+      <span id="tip-text"></span>
+    </div>
+    <div class="next-hint" id="next-hint">Pulsa ENTER o ESPACIO para continuar ▶</div>
+  </div>
+      </div>
+      <div class="battle-right">
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            📊 ESTADÍSTICAS
+        </div>
+
+        <div class="side-stat">
+            <span>Precisión</span>
+            <span id="stat-accuracy">0%</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Aciertos</span>
+            <span id="stat-correct">0</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Errores</span>
+            <span id="stat-errors">0</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Combo</span>
+            <span id="stat-combo">0</span>
+        </div>
+
+    </div>
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            🗺 PROGRESO
+        </div>
+<div class="pixel-frame side-panel">
+
+    <div class="side-title">
+        👁 GUARDIÁN
+    </div>
+
+    <div id="guardian-name">
+
+        El Guardián
+
+    </div>
+
+</div>
+        <div id="chapter-progress">
+
+            Capítulo 1 / 9
+
+        </div>
+
+        <div class="progress-mini">
+
+            <div class="progress-mini-fill" id="progress-fill"></div>
+
+        </div>
+
+    </div>
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            ⚔ REGISTRO
+        </div>
+
+        <div class="combat-log" id="combat-log">
+
+            <div class="log-item">
+
+                Comienza la batalla...
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+</div>
+</section>
+
+<!-- ===================== RESULT ===================== -->
+<section id="view-result" class="screen" aria-label="Resultado de la batalla">
+  <div class="result-banner" id="result-banner">¡VICTORIA!</div>
+  <div class="rank-badge" id="rank-badge">S</div>
+  <div class="pixel-frame" style="padding:18px 24px;">
+    <div class="stat-grid">
+      <span class="label">Guardián:</span><span class="value" id="res-boss">—</span>
+      <span class="label">Aciertos:</span><span class="value" id="res-correct">0 / 20</span>
+      <span class="label">Precisión:</span><span class="value" id="res-accuracy">0%</span>
+      <span class="label">HP restante:</span><span class="value" id="res-hp">0 / 100</span>
+      <span class="label">Mejor combo:</span><span class="value" id="res-combo">0</span>
+    </div>
+  </div>
+  <div class="result-buttons">
+    <button class="btn gold" id="btn-retry">⟳ REINTENTAR MAZMORRA</button>
+    <button class="btn" id="btn-to-map">🗺 VOLVER AL MAPA</button>
+  </div>
+  <p class="small-note">El progreso se guarda solo durante esta sesión del navegador. Si recargas la página, el mapa vuelve a empezar.</p>
+</section>
+
+<script>
+"use strict";
+
+/* ======================================================================
+   DATOS: 9 capítulos x 20 preguntas
+   formato de cada pregunta: [texto, [op0,op1,op2,op3], indiceCorrecto, dato]
+   ====================================================================== */
+const CHAPTERS = [
+{
+  num:6, title:`Tipos de Datos, Funciones y Operadores`, boss:`El Alquimista de Tipos`,
+  glyph:`⚗️`, color:`#6fdc8c`,
+  questions:[
+    [`¿Qué tipo de datos de SQL Azure permite almacenar información geográfica sobre una superficie esférica (como coordenadas terrestres)?`,[`geometry`,`geography`,`hierarchyid`,`xml`],1,`El tipo geography maneja datos referenciados a coordenadas esféricas del planeta.`],
+    [`¿Qué tipo de datos representa una posición jerárquica, como un organigrama o un árbol?`,[`geography`,`geometry`,`hierarchyid`,`xml`],2,`hierarchyid permite representar posiciones dentro de una jerarquía.`],
+    [`¿Qué extensión de XQuery añade las palabras clave insert, delete y "replace value of"?`,[`XML DML`,`XPath 2.0`,`XQuery Update`,`XML Schema`],0,`XML DML agrega estas palabras clave con distinción de mayúsculas al lenguaje XQuery.`],
+    [`¿Qué método del tipo de datos xml devuelve un valor escalar tras consultar una instancia XML?`,[`query()`,`value()`,`nodes()`,`modify()`],1,`value() extrae un valor escalar de una instancia XML.`],
+    [`¿Qué método del tipo de datos xml comprueba si existe un nodo determinado?`,[`exist()`,`query()`,`nodes()`,`value()`],0,`exist() devuelve 1 si el nodo consultado existe.`],
+    [`¿Cuál de las siguientes es una función de agregado admitida por SQL Azure?`,[`ROW_NUMBER`,`AVG`,`OPENROWSET`,`TEXTPTR`],1,`AVG es una función de agregado admitida; las otras opciones no lo son (o son de otra categoría).`],
+    [`¿Qué función de categoría (ranking) asigna un número secuencial a cada fila de una partición?`,[`RANK`,`DENSE_RANK`,`ROW_NUMBER`,`NTILE`],2,`ROW_NUMBER asigna un número de fila secuencial dentro de una partición.`],
+    [`¿Se admiten las funciones de conjuntos de filas como OPENROWSET, OPENQUERY u OPENXML?`,[`Sí, todas ellas`,`No, ninguna de ellas`,`Solo OPENROWSET`,`Solo en modo de compatibilidad`],1,`Ninguna función de conjuntos de filas (OPENROWSET, OPENQUERY, OPENXML...) está admitida.`],
+    [`De las funciones de texto e imagen, ¿cuál es la ÚNICA que admite SQL Azure?`,[`TEXTPTR`,`TEXTVALID`,`PATINDEX`,`IMAGEVAL`],2,`En esta categoría, SQL Azure solo admite PATINDEX.`],
+    [`¿Qué operador realiza la operación módulo (el resto de una división entera)?`,[`/`,`%`,`//`,`MOD`],1,`El operador % devuelve el resto entero de una división, por ejemplo 12 % 5 = 2.`],
+    [`¿Qué operador compuesto multiplica una variable por un valor y le asigna el resultado?`,[`+=`,`*=`,`^=`,`|=`],1,`*= multiplica por el valor especificado y asigna el resultado.`],
+    [`¿Qué categoría de operador de Transact-SQL NO admite SQL Azure?`,[`Operadores aritméticos`,`Operadores lógicos`,`El operador de resolución de ámbito (::)`,`Operadores de comparación`],2,`El operador de resolución de ámbito es el único que la tabla marca como no admitido.`],
+    [`¿Cuántas de las tablas del sistema tradicionales de SQL Server admite Base de datos de SQL Azure?`,[`Todas`,`La mayoría`,`Ninguna`,`Solo cinco`],2,`SQL Azure no admite ninguna de las tablas del sistema clásicas de SQL Server.`],
+    [`De las vistas de compatibilidad, ¿cuál de las siguientes SÍ admite SQL Azure?`,[`sys.sysobjects`,`sys.syscharsets`,`sys.sysusers`,`sys.sysindexes`],1,`Solo sys.syscharsets, sys.syslanguages y sys.systypes están admitidas en esta categoría.`],
+    [`¿Qué vista de administración dinámica relacionada con la base de datos SÍ está soportada en SQL Azure?`,[`sys.dm_db_file_space_usage`,`sys.dm_db_partition_stats`,`sys.dm_db_session_space_usage`,`sys.dm_db_task_space_usage`],1,`De esta categoría, únicamente sys.dm_db_partition_stats está admitida.`],
+    [`¿Qué permiso de base de datos se necesita para consultar cualquier vista de administración dinámica?`,[`CONTROL`,`VIEW DATABASE STATE`,`ALTER`,`TAKE OWNERSHIP`],1,`Se requiere el permiso VIEW DATABASE STATE.`],
+    [`¿Se admiten las vistas del esquema de información (como INFORMATION_SCHEMA.TABLES)?`,[`No, están deshabilitadas`,`Sí, se admiten`,`Solo en modo lectura de master`,`Solo para tablas del sistema`],1,`Las vistas del esquema de información sí están soportadas en SQL Azure.`],
+    [`¿Qué operador se usa en Transact-SQL para concatenar dos cadenas de texto?`,[`&`,`+`,`||`,`CONCAT()`],1,`El signo + es el operador de concatenación de cadenas.`],
+    [`¿Cuál es el único operador de asignación disponible en Transact-SQL?`,[`:=`,`==`,`=`,`<-`],2,`El signo = es el único operador de asignación de Transact-SQL.`],
+    [`¿Qué método del tipo hierarchyid devuelve el nivel del nodo dentro del árbol?`,[`GetRoot`,`GetLevel`,`GetAncestor`,`GetDescendant`],1,`GetLevel devuelve el nivel del nodo actual en la jerarquía.`]
+  ]
+},
+{
+  num:7, title:`Instrucciones SQL Server Admitidas y Procedimientos`, boss:`El Censor de Sintaxis`,
+  glyph:`⚖️`, color:`#ff5a7a`,
+  questions:[
+    [`¿A qué valor fijo establece siempre SQL Azure el grado máximo de paralelismo en las consultas?`,[`0`,`1`,`4`,`Ilimitado`],1,`SQL Azure siempre fija el grado máximo de paralelismo en 1 e ignora la sugerencia MAXDOP.`],
+    [`¿Qué sugerencia de tabla (table hint) NO admite SQL Azure?`,[`NOLOCK`,`PAGLOCK`,`ROWLOCK`,`HOLDLOCK`],1,`SQL Azure no admite la sugerencia de tabla PAGLOCK.`],
+    [`¿Cuál de las siguientes categorías de instrucciones SET SÍ admite SQL Azure?`,[`SET FIPS_FLAGGER (junto a otras instrucciones de fecha, bloqueo y transacciones)`,`Ninguna instrucción SET`,`Solo SET NOCOUNT`,`Solo instrucciones de red`],0,`El libro lista numerosas categorías de instrucciones SET admitidas, incluida SET FIPS_FLAGGER.`],
+    [`¿Se admite la instrucción BACKUP en Base de datos de SQL Azure?`,[`Sí, con limitaciones`,`No, no se admite en absoluto`,`Solo BACKUP LOG`,`Solo en Business Edition`],1,`BACKUP figura entre las instrucciones no admitidas.`],
+    [`¿Se admite la instrucción RESTORE en Base de datos de SQL Azure?`,[`Sí, sin restricciones`,`No, no se admite`,`Solo RESTORE VERIFYONLY`,`Solo desde el Portal`],1,`RESTORE (y sus variantes) no se admite en SQL Azure.`],
+    [`¿Qué dos procedimientos almacenados son EXCLUSIVOS de SQL Azure para administrar el firewall?`,[`sp_helprule y sp_addrule`,`sp_set_firewall_rule y sp_delete_firewall_rule`,`sp_configure y sp_who`,`sp_firewall_on y sp_firewall_off`],1,`Son procedimientos específicos de Base de datos de SQL Azure, no existen en SQL Server local.`],
+    [`De los procedimientos de seguridad del sistema, ¿cuáles TRES admite SQL Azure?`,[`sp_addlogin`,`sp_grantlogin`,`sp_password`,`sp_addrolemember, sp_droprolemember y sp_helprole`],3,`Estos tres procedimientos de seguridad sí están admitidos; los demás listados en el libro no lo están.`],
+    [`¿Se admiten los procedimientos del sistema sp_server_info y sp_databases?`,[`Sí, ambos`,`No, ninguno de los dos`,`Solo sp_databases`,`Solo sp_server_info`],1,`Ambos procedimientos del catálogo no están admitidos en SQL Azure.`],
+    [`¿Qué código de error indica que la instrucción USE no se admite para cambiar de base de datos?`,[`40501`,`40508`,`40544`,`40611`],1,`El error 40508 indica que USE no se admite para conmutar de base de datos.`],
+    [`¿Qué código de error indica que una tabla sin índice clúster no se admite en esta versión?`,[`40054`,`40501`,`40544`,`40615`],0,`El error 40054 aparece cuando se crea una tabla sin índice clúster.`],
+    [`¿Cuántas reglas de firewall como máximo puede tener definidas un servidor SQL Azure?`,[`32`,`64`,`128`,`256`],2,`Un servidor puede tener hasta 128 reglas de firewall; superarlo produce el error 40611.`],
+    [`¿Qué código de error indica que un cliente no tiene permiso de firewall para acceder al servidor?`,[`40508`,`40544`,`40615`,`40197`],2,`El error 40615 indica que la dirección IP del cliente no tiene una regla de firewall que la permita.`],
+    [`¿Qué código de error indica que "el servicio está ocupado actualmente, vuelva a intentarlo"?`,[`40501`,`40549`,`40551`,`40611`],0,`El error 40501 pide reintentar la solicitud tras unos segundos.`],
+    [`¿Qué código de error se produce cuando una sesión termina por tener una transacción de larga duración?`,[`40544`,`40549`,`40552`,`40615`],1,`El error 40549 indica que la sesión terminó por una transacción demasiado larga.`],
+    [`¿Qué código de error se produce por adquirir demasiados bloqueos en una sola transacción?`,[`40550`,`40551`,`40553`,`40561`],0,`El error 40550 se produce al adquirir demasiados bloqueos en una transacción.`],
+    [`¿Qué código de error se produce por uso excesivo del espacio de TEMPDB?`,[`40549`,`40550`,`40551`,`40552`],2,`El error 40551 indica uso excesivo de TEMPDB.`],
+    [`¿Cuántos tipos de limitación (throttling) de recursos existen en SQL Azure?`,[`Uno`,`Dos (suave y estricta)`,`Tres`,`Cuatro`],1,`Existen dos tipos de limitación: la suave y la estricta.`],
+    [`En el modo de limitación número 3 ('Rechazar todo'), ¿qué instrucciones se pueden procesar?`,[`Solo SELECT`,`Solo DELETE`,`Ninguna`,`Todas menos INSERT`],2,`En el modo 3, ninguna instrucción se puede procesar.`],
+    [`Para obtener el MODO de limitación a partir de un código de motivo, ¿qué operación se aplica?`,[`Se divide entre 256`,`Se aplica módulo 4`,`Se multiplica por 2`,`Se convierte directamente a binario`],1,`El modo de limitación se obtiene aplicando módulo 4 al código de motivo.`],
+    [`Para obtener el TIPO DE RECURSO limitado a partir del código de motivo, ¿qué se hace tras dividir entre 256?`,[`Se suma 1`,`Se convierte el cociente a binario`,`Se aplica módulo 10`,`Se resta 256`],1,`Tras dividir entre 256, el cociente se convierte a su equivalente binario para identificar el recurso.`]
+  ]
+},
+{
+  num:8, title:`Lenguaje de Definición de Datos (DDL)`, boss:`El Forjador de Esquemas`,
+  glyph:`🔨`, color:`#d9a066`,
+  questions:[
+    [`¿Qué cláusula de ALTER DATABASE se usa para cambiar el nombre de una base de datos?`,[`MODIFY NAME`,`RENAME TO`,`SET NAME`,`CHANGE NAME`],0,`MODIFY NAME = nuevo_nombre cambia el nombre de la base de datos.`],
+    [`¿Qué cláusula de ALTER DATABASE permite cambiar el tamaño máximo (MAXSIZE) o la edición?`,[`ALTER EDITION`,`MODIFY`,`SET OPTIONS`,`RESIZE`],1,`MODIFY (MAXSIZE=... , EDITION=...) cambia esas propiedades.`],
+    [`¿Qué opción clásica de ALTER DATABASE NO admite SQL Azure?`,[`MODIFY NAME`,`COLLATE`,`MODIFY EDITION (dentro de MODIFY)`,`MAXSIZE (dentro de MODIFY)`],1,`COLLATE no se admite en una base de datos de usuario mediante ALTER DATABASE.`],
+    [`Si al crear una base de datos NO se especifica ni MAXSIZE ni EDITION, ¿qué se crea por defecto?`,[`Business Edition de 10 GB`,`Web Edition de 1 GB`,`Web Edition de 5 GB`,`Business Edition de 50 GB`],1,`Sin especificar nada, se crea una base de datos Web Edition de 1 GB.`],
+    [`¿Debe ser CREATE DATABASE la única instrucción dentro de un lote de Transact-SQL?`,[`No, se puede combinar con otras`,`Sí, debe ser la única instrucción`,`Solo en Web Edition`,`Solo si se copia una base de datos`],1,`CREATE DATABASE debe ser la única instrucción de su lote.`],
+    [`¿A qué base de datos hay que estar conectado para ejecutar la instrucción CREATE DATABASE?`,[`tempdb`,`model`,`master`,`tempdb o master`],2,`CREATE DATABASE se ejecuta estando conectado a master.`],
+    [`¿Qué tipo de funciones NO se pueden crear con CREATE FUNCTION en SQL Azure?`,[`Funciones escalares`,`Funciones con valores de tabla insertadas`,`Funciones CLR (escalares o con valores de tabla)`,`Funciones de múltiples instrucciones`],2,`No se admite crear funciones escalares ni con valores de tabla basadas en CLR.`],
+    [`¿Cuál de estas opciones de ALTER INDEX NO admite SQL Azure?`,[`REBUILD`,`DISABLE`,`PAD_INDEX`,`IGNORE_DUP_KEY`],2,`PAD_INDEX es una de las opciones de rebuild no admitidas.`],
+    [`¿Cuál es la longitud máxima del parámetro username completo (login@servidor)?`,[`64 caracteres`,`100 caracteres`,`128 caracteres`,`255 caracteres`],2,`El parámetro username está limitado a 128 caracteres en total.`],
+    [`¿Qué opción de ALTER LOGIN, relacionada con la caducidad de contraseñas, NO admite SQL Azure?`,[`PASSWORD`,`NAME`,`CHECK_EXPIRATION`,`OLD_PASSWORD`],2,`CHECK_EXPIRATION no está admitida como opción de ALTER LOGIN.`],
+    [`¿Qué debe existir en una tabla ANTES de que se permita una operación INSERT?`,[`Una vista indizada`,`Un índice clúster`,`Un desencadenador`,`Una clave externa`],1,`Toda tabla necesita un índice clúster antes de poder insertar filas.`],
+    [`¿Qué tipo de desencadenadores NO se pueden crear ni modificar en SQL Azure?`,[`Desencadenadores DML`,`Desencadenadores DDL con ámbito de base de datos`,`Desencadenadores de inicio de sesión (LOGON)`,`Desencadenadores INSTEAD OF`],2,`No se admiten desencadenadores en eventos de inicio de sesión.`],
+    [`¿Cuándo admite ALTER USER la cláusula WITH LOGIN?`,[`Siempre, sin condiciones`,`Solo si es la única instrucción del lote SQL`,`Nunca se admite`,`Solo en SQL dinámico`],1,`Solo se admite WITH LOGIN si ALTER USER es la única instrucción del lote.`],
+    [`¿Qué opción NO admite la instrucción ALTER VIEW en SQL Azure?`,[`SCHEMABINDING`,`VIEW_METADATA`,`ENCRYPTION`,`WITH CHECK OPTION`],2,`ENCRYPTION no está admitida por ALTER VIEW.`],
+    [`¿Cuántas partes admite como máximo un nombre de objeto en CREATE INDEX (por ejemplo, bd.esquema.objeto)?`,[`Dos partes`,`Tres partes`,`Cuatro partes`,`Solo una parte`],1,`Se admite el formato de tres partes; no se admiten nombres de cuatro partes.`],
+    [`¿Debe ser CREATE LOGIN la única instrucción de un lote SQL?`,[`No, puede combinarse libremente`,`Sí, debe ser la única instrucción`,`Solo si usa hashed_password`,`Solo en la base de datos de usuario`],1,`CREATE LOGIN debe ser la única instrucción de su lote de SQL.`],
+    [`CREATE SPATIAL INDEX crea un índice espacial sobre una columna de tipo...`,[`int o varchar`,`geography o geometry`,`xml o hierarchyid`,`datetime`],1,`El índice espacial se crea sobre columnas de tipo geography o geometry.`],
+    [`¿Qué es, en esencia, lo que crea la instrucción CREATE SYNONYM?`,[`Una copia física de una tabla`,`Un nombre alternativo para un objeto de base de datos`,`Un índice adicional`,`Un nuevo esquema`],1,`Un sinónimo es un nombre alternativo para una tabla, vista u otro objeto.`],
+    [`¿Qué cláusula de CREATE USER solo se admite si es la única instrucción del lote?`,[`WITH DEFAULT_SCHEMA`,`FOR/FROM LOGIN`,`WITHOUT LOGIN`,`Todas las anteriores por igual`],1,`La cláusula FOR|FROM LOGIN solo se admite si CREATE USER es la única instrucción del lote.`],
+    [`¿Debe ser CREATE VIEW la primera instrucción dentro de un lote de consultas?`,[`No, puede ir en cualquier posición`,`Sí, debe ser la primera instrucción`,`Solo si tiene SCHEMABINDING`,`Solo en vistas indizadas`],1,`CREATE VIEW debe ser la primera instrucción de un lote de consultas.`]
+  ]
+},
+{
+  num:9, title:`Lenguajes DML y DCL`, boss:`El Tirano del Control de Datos`,
+  glyph:`👑`, color:`#ff3860`, final:true,
+  questions:[
+    [`De todas las instrucciones DML (INSERT, UPDATE, DELETE, MERGE), ¿cuál es la ÚNICA que tiene limitaciones propias en SQL Azure?`,[`UPDATE`,`DELETE`,`INSERT`,`MERGE`],2,`INSERT es la única instrucción DML con acotaciones propias; el resto mantiene su sintaxis habitual.`],
+    [`¿Qué tipo de nombres de objeto NO admite la instrucción INSERT en SQL Azure?`,[`Nombres de una parte`,`Nombres de dos partes`,`Nombres de tres y cuatro partes`,`Todos los formatos son válidos`],2,`INSERT no admite nombres de objeto de tres o cuatro partes.`],
+    [`¿Qué opciones de origen de datos NO admite INSERT en SQL Azure?`,[`VALUES y DEFAULT VALUES`,`OPENQUERY y OPENROWSET`,`SELECT derivado`,`Una instrucción EXECUTE`],1,`INSERT no admite las opciones OPENQUERY ni OPENROWSET.`],
+    [`¿Qué instrucción del lenguaje DCL concede permisos sobre una base de datos, usuario, rol o tipo?`,[`ALLOW`,`GRANT`,`ENABLE`,`PERMIT`],1,`GRANT concede permisos en bases de datos, entidades de seguridad o tipos.`],
+    [`¿Qué instrucción DCL revoca permisos previamente concedidos o denegados?`,[`REMOVE`,`CANCEL`,`REVOKE`,`UNDO`],2,`REVOKE deshace permisos concedidos o denegados anteriormente.`],
+    [`¿Qué instrucción DCL deniega explícitamente un permiso a un usuario o rol?`,[`BLOCK`,`DENY`,`FORBID`,`RESTRICT`],1,`DENY deniega explícitamente un permiso.`],
+    [`¿Cuál de estos tipos de entidad de seguridad NO admite SQL Azure en GRANT/REVOKE/DENY?`,[`Database_user`,`Database_role`,`Application_role`,`Database_user_with_no_login`],2,`Application_role no está admitido como principal de base de datos en estas instrucciones.`],
+    [`¿Qué opción de la instrucción EXECUTE, relacionada con inicios de sesión, NO se admite?`,[`EXECUTE AS LOGIN`,`EXECUTE AS USER`,`EXECUTE AS CALLER`,`EXECUTE AS SELF`],0,`EXECUTE AS LOGIN no está admitida en SQL Azure.`],
+    [`¿Qué instrucción establece el contexto de ejecución (identidad) bajo el que se ejecuta una sesión?`,[`SET CONTEXT`,`EXECUTE AS`,`IMPERSONATE`,`SET IDENTITY`],1,`EXECUTE AS establece el contexto de ejecución de la sesión.`],
+    [`Para funciones y procedimientos almacenados, ¿qué contextos admite la cláusula EXECUTE AS?`,[`Solo CALLER`,`CALLER, SELF, OWNER o 'user_name'`,`Solo SELF y OWNER`,`Solo 'user_name'`],1,`Estos cuatro contextos están disponibles para funciones, procedimientos y desencadenadores DML.`],
+    [`¿Se admite ejecutar un comando de "paso a través" en un servidor vinculado (linked server) mediante EXECUTE?`,[`Sí, sin restricciones`,`No, no se admite`,`Solo con EXECUTE AS`,`Solo desde SQLCMD`],1,`EXECUTE no admite ejecutar comandos de paso a través en servidores vinculados.`],
+    [`¿Qué argumento NO admiten las instrucciones ENABLE TRIGGER y DISABLE TRIGGER?`,[`ALL`,`ON DATABASE`,`ALL SERVER`,`El nombre del esquema`],2,`El argumento ALL SERVER no está admitido en ninguna de las dos instrucciones.`],
+    [`En SQL Azure, ¿a qué puede hacer referencia el parámetro "database" de la instrucción USE?`,[`A cualquier base de datos del servidor`,`Únicamente a la base de datos actual (la ya conectada)`,`A la base de datos master siempre`,`A ninguna, USE no existe en Azure`],1,`El parámetro solo puede referirse a la base de datos con la que ya está conectado.`],
+    [`¿La instrucción USE cambia realmente de base de datos activa dentro de la misma conexión en SQL Azure?`,[`Sí, cambia sin problema`,`No, hay que establecer una nueva conexión directa`,`Solo si el usuario es dbmanager`,`Solo dentro de un procedimiento almacenado`],1,`Para cambiar de base de datos hay que conectarse directamente a la de destino.`],
+    [`¿Tienen limitaciones propias las instrucciones TCL (BEGIN/COMMIT/ROLLBACK TRANSACTION) en SQL Azure?`,[`Sí, muchas`,`No, se admiten con la misma sintaxis que en Transact-SQL`,`Solo COMMIT tiene limitaciones`,`Solo se admite BEGIN TRANSACTION`],1,`Las instrucciones de control de transacciones son admisibles sin acotaciones en SQL Azure.`],
+    [`¿Qué instrucción del lenguaje TCL confirma de forma permanente una transacción?`,[`SAVE TRANSACTION`,`COMMIT TRANSACTION`,`END TRANSACTION`,`CLOSE TRANSACTION`],1,`COMMIT TRANSACTION confirma los cambios de la transacción.`],
+    [`¿Qué instrucción del lenguaje TCL deshace los cambios de una transacción?`,[`UNDO TRANSACTION`,`CANCEL TRANSACTION`,`ROLLBACK TRANSACTION`,`REVERT TRANSACTION`],2,`ROLLBACK TRANSACTION deshace los cambios realizados.`],
+    [`¿Qué cláusula opcional de GRANT permite que el destinatario también pueda conceder ese mismo permiso a otros?`,[`WITH GRANT OPTION`,`WITH CASCADE`,`AS ADMIN`,`WITH FULL ACCESS`],0,`WITH GRANT OPTION permite reconceder el permiso a otros principales.`],
+    [`¿Qué cláusula de REVOKE deshace específicamente la capacidad de conceder el permiso a otros (sin quitar el permiso en sí)?`,[`CASCADE`,`GRANT OPTION FOR`,`FROM ALL`,`RESTRICT`],1,`REVOKE GRANT OPTION FOR revoca solo la capacidad de reconceder el permiso.`],
+    [`Para un desencadenador DDL con ámbito de base de datos, ¿qué contexto de EXECUTE AS NO está disponible (a diferencia de funciones/procedimientos)?`,[`CALLER`,`SELF`,`OWNER`,`'user_name'`],2,`Los desencadenadores DDL con ámbito de base de datos admiten CALLER, SELF o 'user_name', pero no OWNER.`]
+  ]
+}
+];
+
+/* ======================================================================
+   ESTADO DEL JUEGO
+   ====================================================================== */
+const state = {
+  soundOn:true,
+  audioCtx:null,
+  chapterIdx:null,
+  order:[],          // índices de preguntas barajados para el intento actual
+  qi:0,               // posición actual dentro de "order"
+  playerHP:100, playerMaxHP:100,
+  enemyHP:100, enemyMaxHP:100,
+  correct:0, wrong:0,
+  combo:0, bestCombo:0,
+  answered:false,
+  timerHandle:null,
+  timeLeft:20,
+  progress:{}          // {chapterNum:{cleared:true, rank:'A'}}
+};
+
+/* ======================================================================
+   AUDIO — sintetizador simple con WebAudio
+   ====================================================================== */
+function ensureAudio(){
+  if(!state.audioCtx){
+    try{ state.audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ state.audioCtx=null; }
+  }
+  if(state.audioCtx && state.audioCtx.state==='suspended'){ state.audioCtx.resume(); }
+}
+function tone(freq,start,dur,type,vol){
+  if(!state.soundOn || !state.audioCtx) return;
+  const ctx=state.audioCtx;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type=type||'square';
+  osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
+  gain.gain.setValueAtTime(0, ctx.currentTime+start);
+  gain.gain.linearRampToValueAtTime(vol||0.12, ctx.currentTime+start+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(ctx.currentTime+start);
+  osc.stop(ctx.currentTime+start+dur+0.02);
+}
+const SFX = {
+  move(){ tone(520,0,.05,'square',.06); },
+  select(){ tone(660,0,.05,'square',.08); tone(880,.05,.06,'square',.08); },
+  hitEnemy(crit){ tone(880,0,.07,'square',.14); tone(crit?1400:1100,.06,.09,'square',.12); },
+  hitPlayer(crit){ tone(220,0,.09,'sawtooth',.14); tone(crit?140:160,.08,.12,'sawtooth',.12); },
+  wrong(){ tone(180,0,.12,'triangle',.10); },
+  victory(){ [523,659,784,1046].forEach((f,i)=>tone(f,i*.13,.16,'square',.11)); },
+  defeat(){ [392,330,262,196].forEach((f,i)=>tone(f,i*.18,.22,'triangle',.11)); },
+  tick(){ tone(700,0,.03,'square',.05); }
+};
+
+/* ======================================================================
+   UTILIDADES
+   ====================================================================== */
+function $(sel){ return document.querySelector(sel); }
+function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+function showScreen(id){
+  $all('.screen').forEach(s=>s.classList.remove('active'));
+  $('#'+id).classList.add('active');
+}
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function isCrit(){ return Math.random() < 0.15; }
+
+/* ======================================================================
+   ESTRELLAS DE FONDO
+   ====================================================================== */
+(function buildStarfield(){
+  const field = $('#starfield');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('span');
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    s.style.opacity = (0.2+Math.random()*0.6).toFixed(2);
+    field.appendChild(s);
+  }
+})();
+
+/* ======================================================================
+   PANTALLA DE TÍTULO / AYUDA
+   ====================================================================== */
+$('#btn-play').addEventListener('click', ()=>{ ensureAudio(); SFX.select(); renderMap(); showScreen('view-map'); });
+$('#btn-help').addEventListener('click', ()=>{ ensureAudio(); SFX.move(); showScreen('view-help'); });
+$('#btn-help-back').addEventListener('click', ()=>{ SFX.move(); showScreen('view-title'); });
+$('#btn-map-title').addEventListener('click', ()=>{ SFX.move(); showScreen('view-title'); });
+function refreshMuteLabels(){
+  const label = state.soundOn ? '🔊 SONIDO: ACTIVADO' : '🔈 SONIDO: DESACTIVADO';
+  $('#btn-mute-title').textContent = label;
+}
+$('#btn-mute-title').addEventListener('click', ()=>{
+  ensureAudio();
+  state.soundOn = !state.soundOn;
+  refreshMuteLabels();
+  if(state.soundOn) SFX.select();
+});
+refreshMuteLabels();
+
+/* ======================================================================
+   MAPA
+   ====================================================================== */
+function renderMap(){
+  const trail = $('#trail');
+  trail.innerHTML='';
+  let clearedCount=0;
+  CHAPTERS.forEach((ch,idx)=>{
+    const prog = state.progress[ch.num];
+    if(prog && prog.cleared) clearedCount++;
+    const row=document.createElement('div');
+    row.className='node-row '+(idx%2===0?'left':'right');
+    const node=document.createElement('button');
+    node.className='node'+(prog&&prog.cleared?' cleared':'')+(ch.final?' final':'');
+    node.setAttribute('aria-label', 'Capítulo '+ch.num+': '+ch.title);
+    node.innerHTML =
+      '<span class="glyph" style="color:'+ch.color+'">'+ch.glyph+'</span>'+
+      '<span class="info">'+
+        '<span class="num">CAP. '+ch.num+(ch.final?' · FINAL':'')+'</span>'+
+        '<span class="name">'+ch.title+'</span>'+
+        '<span class="boss">Guardián: '+ch.boss+'</span>'+
+        (prog&&prog.cleared ? '<span class="star">★ RANGO '+prog.rank+'</span>' : '') +
+      '</span>';
+    node.addEventListener('click', ()=>{ ensureAudio(); SFX.select(); startChapter(idx); });
+    row.appendChild(node);
+    trail.appendChild(row);
+  });
+  $('#map-progress').textContent = 'Mazmorras superadas: '+clearedCount+' / ' + CHAPTERS.length;
+}
+
+/* ======================================================================
+   BATALLA
+   ====================================================================== */
+function startChapter(idx){
+  const ch = CHAPTERS[idx];
+  document.getElementById("chapter-progress").textContent =
+`Capítulo ${ch.num} (${idx + 1}/${CHAPTERS.length})`;
+document.getElementById("guardian-name").textContent =
+ch.boss;
+document.getElementById("progress-fill").style.width =
+`${((idx + 1) / CHAPTERS.length) * 100}%`;
+  state.chapterIdx = idx;
+  state.order = shuffle(ch.questions.map((_,i)=>i));
+  state.qi = 0;
+  state.playerHP = state.playerMaxHP = 100;
+  state.enemyHP = state.enemyMaxHP = ch.final ? 130 : 100;
+  state.correct = 0; state.wrong = 0;
+  state.combo = 0; state.bestCombo = 0;
+  state.answered = false;
+
+  $('#battle-chapter-label').textContent = 'CAPÍTULO '+ch.num+' · '+ch.title.toUpperCase();
+  $('#enemy-name').textContent = ch.boss.toUpperCase();
+  $('#enemy-glyph').textContent = ch.glyph;
+  $('#enemy-portrait').style.setProperty('--glow', hexToGlow(ch.color));
+  $('#combo-tag').style.display='none';
+
+  updateHPBar('enemy'); updateHPBar('player');
+  showScreen('view-battle');
+  updateBattleStats();
+
+document.getElementById("combat-log").innerHTML = `
+<div class="log-item">
+⚔ Ha comenzado el combate
+</div>
+`;
+  loadQuestion();
+}
+function hexToGlow(hex){
+  return hex ? hex+'88' : 'rgba(255,107,107,.45)';
+}
+
+function updateHPBar(who){
+  if(who==='enemy'){
+    const pct = Math.max(0, (state.enemyHP/state.enemyMaxHP)*100);
+    $('#enemy-hpfill').style.width = pct+'%';
+    $('#enemy-hptext').textContent = Math.max(0,state.enemyHP)+' / '+state.enemyMaxHP+' HP';
+  } else {
+    const pct = Math.max(0, (state.playerHP/state.playerMaxHP)*100);
+    $('#player-hpfill').style.width = pct+'%';
+    $('#player-hptext').textContent = Math.max(0,state.playerHP)+' / '+state.playerMaxHP+' HP';
+    const fill = $('#player-hpfill');
+    if(pct<=25) fill.style.background='linear-gradient(180deg, var(--hp-player-low), #8a1c1c)';
+    else if(pct<=50) fill.style.background='linear-gradient(180deg, var(--hp-player-mid), #a8820a)';
+    else fill.style.background='linear-gradient(180deg, var(--hp-player), #1f9c58)';
+  }
+}
+
+function currentQuestionData(){
+  const ch = CHAPTERS[state.chapterIdx];
+  const raw = ch.questions[state.order[state.qi]];
+  const [text, opts, correctIdx, tip] = raw;
+  const order = [0,1,2,3]
+  const newOpts = order.map(i=>opts[i]);
+  const newCorrect = order.indexOf(correctIdx);
+  return {text, options:newOpts, correct:newCorrect, tip};
+}
+
+let currentQ = null;
+let kbdSelected = -1;
+
+function loadQuestion(){
+  clearInterval(state.timerHandle);
+  state.answered = false;
+  kbdSelected = -1;
+  const ch = CHAPTERS[state.chapterIdx];
+  currentQ = currentQuestionData();
+
+  $('#q-counter').textContent = 'PREGUNTA '+(state.qi+1)+' / '+ch.questions.length;
+  $('#q-text').textContent = currentQ.text;
+  $('#tip-strip').classList.remove('show');
+  $('#next-hint').classList.remove('show');
+
+  const optsWrap = $('#q-options');
+  optsWrap.innerHTML='';
+  currentQ.options.forEach((optText,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML = '<span class="cursor">▶</span><span>'+optText+'</span>';
+    b.addEventListener('click', ()=>selectAnswer(i));
+    optsWrap.appendChild(b);
+  });
+
+  state.timeLeft = 20;
+  $('#timer-fill').style.width='100%';
+  $('#timer-fill').style.background='var(--accent-cyan)';
+  $('#q-timer').textContent = state.timeLeft+'s';
+  state.timerHandle = setInterval(tickTimer, 100);
+}
+
+function tickTimer(){
+  state.timeLeft -= 0.1;
+  const pct = Math.max(0, (state.timeLeft/20)*100);
+  $('#timer-fill').style.width = pct+'%';
+  if(state.timeLeft<=6){ $('#timer-fill').style.background='var(--danger)'; }
+  $('#q-timer').textContent = Math.max(0,Math.ceil(state.timeLeft))+'s';
+  if(state.timeLeft<=0){
+    clearInterval(state.timerHandle);
+    if(!state.answered) selectAnswer(-1); // tiempo agotado
+  }
+}
+
+function selectAnswer(choiceIdx){
+  if(state.answered) return;
+  state.answered = true;
+  clearInterval(state.timerHandle);
+
+  const buttons = $all('#q-options .opt');
+  buttons.forEach(b=>b.disabled=true);
+
+  const isRight = choiceIdx === currentQ.correct;
+  if(choiceIdx>=0) buttons[choiceIdx].classList.add(isRight?'correct':'wrong');
+  if(!isRight) buttons[currentQ.correct].classList.add('correct');
+
+  $('#tip-strip').classList.add('show');
+  $('#tip-text').textContent = currentQ.tip;
+
+  if(isRight){
+    state.correct++;
+    updateBattleStats();
+
+const mensajes = [
+  
+"🗡 Ataque acertado",
+
+"⚡ Consulta ejecutada",
+
+"💥 Golpe crítico",
+
+"✔ Respuesta correcta",
+
+"☁ Azure responde"
+
+];
+
+addCombatLog(
+
+mensajes[Math.floor(Math.random()*mensajes.length)]
+  
+);
+    state.combo++;
+    updateBattleStats();
+    state.bestCombo = Math.max(state.bestCombo, state.combo);
+    let dmg = randInt(14,22);
+    if(state.combo>0 && state.combo%3===0) dmg += 6;
+    const crit = isCrit();
+    if(crit) dmg = Math.round(dmg*1.5);
+    state.enemyHP = Math.max(0, state.enemyHP - dmg);
+    SFX.hitEnemy(crit);
+    floatDamage('enemy-panel', dmg, crit, 'dmg-enemy');
+    shakePortrait('enemy-portrait');
+    updateHPBar('enemy');
+    if(state.combo>=2){
+      const tag=$('#combo-tag');
+      tag.style.display='inline-block';
+      tag.textContent = 'COMBO x'+state.combo+(crit?' · CRÍTICO':'');
+    }
+  } else {
+    state.wrong++;
+    updateBattleStats();
+
+const mensajes = [
+
+"✖ Error de sintaxis",
+
+"☠ El guardián contraataca",
+
+"⚠ Consulta inválida",
+
+"💢 Has recibido daño",
+
+"❌ Respuesta incorrecta"
+
+];
+
+addCombatLog(
+
+mensajes[Math.floor(Math.random()*mensajes.length)]
+
+);
+    state.combo = 0;
+    $('#combo-tag').style.display='none';
+    let dmg = randInt(14,22);
+    const crit = isCrit();
+    if(crit) dmg = Math.round(dmg*1.5);
+    state.playerHP = Math.max(0, state.playerHP - dmg);
+    SFX.hitPlayer(crit);
+    floatDamage('player-panel', dmg, crit, 'dmg-player');
+    shakePortrait('player-portrait');
+    updateHPBar('player');
+  }
+
+  $('#next-hint').classList.add('show');
+
+  const enemyDown = state.enemyHP<=0;
+  const playerDown = state.playerHP<=0;
+
+  window._advance = function(){
+    window._advance = null;
+    document.removeEventListener('keydown', keyAdvanceHandler);
+    // Si alguien llegó a 0 HP solo mostramos el efecto visual
+if(enemyDown){
+    $('#enemy-portrait').classList.add('dead');
+}
+
+if(playerDown){
+    $('#player-portrait').classList.add('dead');
+}
+
+// Continuar siempre hasta responder todas las preguntas
+state.qi++;
+
+if(state.qi >= state.order.length){
+
+    endBattle('outofquestions');
+
+}else{
+
+    loadQuestion();
+
+  };
+  }
+  function keyAdvanceHandler(e){
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); if(window._advance) window._advance(); }
+  }
+  document.addEventListener('keydown', keyAdvanceHandler);
+
+  setTimeout(()=>{ if(window._advance) window._advance(); }, 2400);
+}
+
+function shakePortrait(id){
+  const el = $('#'+id);
+  el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
+}
+function floatDamage(panelId, dmg, crit, cls){
+  const panel = $('#'+panelId);
+  const span = document.createElement('div');
+  span.className = 'dmg-float '+cls+(crit?' crit':'');
+  span.textContent = (crit?'¡CRÍTICO! ':'') + '-'+dmg;
+  panel.style.position='relative';
+  panel.appendChild(span);
+  setTimeout(()=>span.remove(),950);
+}
+
+$('#btn-flee').addEventListener('click', ()=>{
+  if(confirm('¿Huir de la batalla y volver al mapa? Perderás el progreso de este intento.')){
+    clearInterval(state.timerHandle);
+    SFX.move();
+    renderMap();
+    showScreen('view-map');
+  }
+});
+
+/* ======================================================================
+   RESULTADO
+   ====================================================================== */
+function calcRank(correct,total,hpPercent){
+  const accuracy = correct/total;
+  const score = accuracy*0.6 + hpPercent*0.4;
+  if(score>=0.92) return 'S';
+  if(score>=0.78) return 'A';
+  if(score>=0.6)  return 'B';
+  if(score>=0.4)  return 'C';
+  return 'D';
+}
+
+function updateBattleStats(){
+
+    const total = state.correct + state.wrong;
+
+    const accuracy =
+        total === 0
+        ? 0
+        : Math.round((state.correct / total) * 100);
+
+    document.getElementById("stat-accuracy").textContent =
+        accuracy + "%";
+
+    document.getElementById("stat-correct").textContent =
+        state.correct;
+
+    document.getElementById("stat-errors").textContent =
+        state.wrong;
+
+    document.getElementById("stat-combo").textContent =
+        "x" + state.combo;
+
+}
+
+function addCombatLog(text){
+
+    const log = document.getElementById("combat-log");
+
+    const item = document.createElement("div");
+
+    item.className = "log-item";
+
+    item.innerHTML = text;
+
+    log.prepend(item);
+
+    while(log.children.length > 8){
+
+        log.removeChild(log.lastChild);
+
+    }
+
+}
+function endBattle(result){
+  const ch = CHAPTERS[state.chapterIdx];
+  const totalAnswered = state.correct + state.wrong;
+  const hpPercent = Math.max(0, state.playerHP/state.playerMaxHP);
+  const victory = (result==='victory') || (result==='outofquestions' && state.enemyHP<=state.playerHP && state.enemyHP<=0);
+  const won = result==='victory' || (result==='outofquestions' && state.enemyHP<=0 && state.playerHP>0) || (result==='outofquestions' && state.enemyHP < state.playerHP*0 ) ;
+  // Determine outcome clearly:
+ let outcome;
+
+if(state.correct > state.wrong){
+
+    outcome = "victory";
+
+}else if(state.correct < state.wrong){
+
+    outcome = "defeat";
+
+}else{
+
+    // Empate: decide por la vida restante
+    outcome = state.playerHP >= state.enemyHP
+        ? "victory"
+        : "defeat";
+
+}
+
+  const banner = $('#result-banner');
+  const rankBadge = $('#rank-badge');
+  if(outcome==='victory'){
+    banner.textContent = '¡'+ch.boss.toUpperCase()+' DERROTADO!';
+    banner.className='result-banner victory';
+    SFX.victory();
+    const rank = calcRank(state.correct, totalAnswered||1, hpPercent);
+    rankBadge.textContent = rank;
+    rankBadge.style.color='var(--accent-gold)';
+    rankBadge.style.borderColor='var(--accent-gold)';
+    state.progress[ch.num] = {cleared:true, rank: (state.progress[ch.num]&&rankOrder(state.progress[ch.num].rank)<rankOrder(rank)) ? state.progress[ch.num].rank : rank};
+  } else {
+    banner.textContent = 'HAS SIDO DERROTADO';
+    banner.className='result-banner defeat';
+    SFX.defeat();
+    rankBadge.textContent = '☠';
+    rankBadge.style.color='var(--danger)';
+    rankBadge.style.borderColor='var(--danger)';
+  }
+
+  $('#res-boss').textContent = ch.boss;
+  $('#res-correct').textContent = state.correct+' / '+totalAnswered;
+  $('#res-accuracy').textContent = totalAnswered? Math.round((state.correct/totalAnswered)*100)+'%' : '0%';
+  $('#res-hp').textContent = Math.max(0,state.playerHP)+' / '+state.playerMaxHP;
+  $('#res-combo').textContent = state.bestCombo;
+
+  showScreen('view-result');
+}
+function rankOrder(r){ return {S:5,A:4,B:3,C:2,D:1}[r]||0; }
+
+$('#btn-retry').addEventListener('click', ()=>{ ensureAudio(); SFX.select(); startChapter(state.chapterIdx); });
+$('#btn-to-map').addEventListener('click', ()=>{ SFX.move(); renderMap(); showScreen('view-map'); });
+
+/* ======================================================================
+   NAVEGACIÓN POR TECLADO
+   ====================================================================== */
+document.addEventListener('keydown', (e)=>{
+  const battleActive = $('#view-battle').classList.contains('active');
+  if(!battleActive) return;
+  if(state.answered) return;
+  const buttons = $all('#q-options .opt');
+  if(!buttons.length) return;
+
+  if(e.key>='1' && e.key<='4'){
+    const idx = parseInt(e.key,10)-1;
+    if(idx<buttons.length) selectAnswer(idx);
+    return;
+  }
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    kbdSelected = (kbdSelected+1+buttons.length)%buttons.length;
+    buttons.forEach((b,i)=>b.classList.toggle('kbd-selected', i===kbdSelected));
+    SFX.move();
+  }
+  if(e.key==='ArrowUp'){
+    e.preventDefault();
+    kbdSelected = (kbdSelected-1+buttons.length)%buttons.length;
+    buttons.forEach((b,i)=>b.classList.toggle('kbd-selected', i===kbdSelected));
+    SFX.move();
+  }
+  if(e.key==='Enter'){
+    if(kbdSelected>=0){ selectAnswer(kbdSelected); }
+  }
+  if(e.key==='Escape'){
+    $('#btn-flee').click();
+  }
+});
+
+</script>
+</body>
+</html>

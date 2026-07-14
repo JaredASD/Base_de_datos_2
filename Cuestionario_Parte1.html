@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Azure Quest - Parte I</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-void:#0a0e1f;
+  --bg-void-2:#060811;
+  --bg-panel:#1b2340;
+  --bg-panel-2:#141a34;
+  --bg-panel-light:#2a3358;
+  --border-frame:#6b7cc7;
+  --border-frame-dim:#3a4470;
+  --text-primary:#eef1ff;
+  --text-dim:#8b95c4;
+  --hp-player:#3ddc84;
+  --hp-player-mid:#ffd23f;
+  --hp-player-low:#ff5a5a;
+  --hp-enemy:#ff6b6b;
+  --accent-gold:#ffd23f;
+  --accent-violet:#b98aff;
+  --accent-cyan:#4ecdc4;
+  --danger:#ff3860;
+  --font-display:'Press Start 2P', monospace;
+  --font-body:'VT323', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-void);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+  image-rendering:pixelated;
+}
+button{font-family:inherit;cursor:pointer;}
+::selection{background:var(--accent-violet);color:var(--bg-void);}
+
+/* focus visibility */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+  outline:3px dashed var(--accent-gold);
+  outline-offset:3px;
+}
+
+/* ---------- background atmosphere ---------- */
+#starfield{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(185,138,255,0.10), transparent 45%),
+    radial-gradient(ellipse at 80% 85%, rgba(78,205,196,0.08), transparent 45%),
+    var(--bg-void);
+}
+#starfield span{
+  position:absolute;width:2px;height:2px;background:#fff;border-radius:0;
+  opacity:.7;animation:twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.9;}}
+
+#scanlines{
+  position:fixed;inset:0;z-index:50;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 3px
+  );
+  mix-blend-mode:multiply;
+  opacity:.5;
+}
+#vignette{
+  position:fixed;inset:0;z-index:49;pointer-events:none;
+  box-shadow:inset 0 0 18vw 4vw rgba(0,0,0,0.65);
+}
+
+/* ---------- layout screens ---------- */
+.screen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  padding:24px 16px 60px;
+}
+.screen.active{display:flex;}
+
+/* ---------- pixel frame utility ---------- */
+.pixel-frame{
+  border:4px solid var(--border-frame);
+  background:var(--bg-panel);
+  box-shadow:
+    0 0 0 2px var(--bg-void-2),
+    0 0 0 6px var(--border-frame-dim),
+    0 10px 0 rgba(0,0,0,0.35);
+  position:relative;
+}
+.pixel-frame::before, .pixel-frame::after{
+  content:"";position:absolute;width:10px;height:10px;
+  background:var(--accent-gold);
+  box-shadow:0 0 0 2px var(--bg-void-2);
+}
+.pixel-frame::before{top:-7px;left:-7px;}
+.pixel-frame::after{bottom:-7px;right:-7px;}
+
+/* ---------- title screen ---------- */
+#view-title{justify-content:center;text-align:center;gap:28px;}
+.logo{
+  font-family:var(--font-display);
+  font-size:clamp(22px,6vw,44px);
+  line-height:1.5;
+  color:var(--accent-gold);
+  text-shadow:
+    3px 3px 0 #b8860b,
+    6px 6px 0 rgba(0,0,0,.6);
+  letter-spacing:2px;
+}
+.logo small{
+  display:block;
+  font-size:.32em;
+  color:var(--accent-cyan);
+  text-shadow:2px 2px 0 rgba(0,0,0,.6);
+  margin-top:14px;
+  letter-spacing:1px;
+}
+.blink{animation:blink 1.1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.prompt{
+  font-family:var(--font-display);
+  font-size:clamp(11px,2.6vw,15px);
+  color:var(--text-primary);
+}
+.title-buttons{display:flex;flex-direction:column;gap:14px;width:min(360px,88vw);}
+.btn{
+  font-family:var(--font-display);
+  font-size:clamp(10px,2vw,13px);
+  color:var(--text-primary);
+  background:var(--bg-panel-light);
+  border:3px solid var(--border-frame);
+  padding:14px 10px;
+  box-shadow:0 5px 0 var(--border-frame-dim), 0 5px 0 4px rgba(0,0,0,.25);
+  transition:transform .08s ease;
+  text-align:center;
+}
+.btn:hover, .btn:focus-visible{background:#39447a;}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--border-frame-dim);}
+.btn.gold{color:#3a2a00;background:var(--accent-gold);border-color:#7a5b00;box-shadow:0 5px 0 #a8820a;}
+.btn.gold:hover{background:#ffdd6b;}
+.btn.ghost{background:transparent;}
+.footer-credit{
+  font-family:var(--font-body);
+  font-size:16px;color:var(--text-dim);max-width:560px;line-height:1.4;
+}
+
+/* ---------- help screen ---------- */
+.help-box{
+  max-width:640px;padding:22px 24px;margin-top:10px;
+}
+.help-box h2{font-family:var(--font-display);font-size:15px;color:var(--accent-violet);margin:0 0 16px;}
+.help-box p, .help-box li{font-family:var(--font-body);font-size:20px;line-height:1.5;color:var(--text-primary);}
+.help-box ul{padding-left:22px;margin:8px 0 18px;}
+.help-box .tag{color:var(--accent-gold);}
+
+/* ---------- map screen ---------- */
+#view-map{gap:18px;width:100%;max-width:640px;margin:0 auto;}
+.map-header{text-align:center;}
+.map-header h2{font-family:var(--font-display);font-size:clamp(13px,3vw,18px);color:var(--accent-gold);margin:6px 0;}
+.map-progress{font-family:var(--font-body);font-size:20px;color:var(--accent-cyan);}
+.trail{
+  position:relative;width:100%;padding:20px 0 10px;
+}
+.trail::before{
+  content:"";position:absolute;left:50%;top:0;bottom:0;width:0;
+  border-left:4px dashed var(--border-frame-dim);
+  transform:translateX(-50%);
+  z-index:0;
+}
+.node-row{display:flex;justify-content:center;margin:6px 0;position:relative;z-index:1;}
+.node-row.left{justify-content:flex-start;padding-left:6%;}
+.node-row.right{justify-content:flex-end;padding-right:6%;}
+.node{
+  width:min(78vw,260px);
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;cursor:pointer;
+  border:3px solid var(--border-frame);
+  background:var(--bg-panel);
+  box-shadow:0 4px 0 var(--border-frame-dim);
+  transition:transform .1s ease, background .15s ease;
+  text-align:left;color:inherit;
+}
+.node:hover, .node:focus-visible{background:#242c52;transform:translateY(-2px);}
+.node:active{transform:translateY(2px);box-shadow:0 1px 0 var(--border-frame-dim);}
+.node .glyph{
+  font-size:30px;width:52px;height:52px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-void-2);border:2px solid var(--border-frame-dim);
+}
+.node .info{flex:1;min-width:0;}
+.node .num{font-family:var(--font-display);font-size:10px;color:var(--accent-cyan);}
+.node .name{font-family:var(--font-body);font-size:19px;line-height:1.15;color:var(--text-primary);}
+.node .boss{font-family:var(--font-body);font-size:15px;color:var(--text-dim);}
+.node .star{font-family:var(--font-display);font-size:12px;color:var(--accent-gold);margin-top:4px;}
+.node.cleared{border-color:var(--accent-gold);}
+.node.final{border-color:var(--danger);}
+.node.final .glyph{background:#2a0a12;}
+
+/* ---------- battle screen ---------- */
+#view-battle{width:100%;max-width:560px;gap:10px;}
+.battle-topbar{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-display);font-size:10px;color:var(--text-dim);
+}
+.battle-topbar button{
+  background:transparent;border:2px solid var(--border-frame-dim);
+  color:var(--text-dim);padding:6px 8px;font-family:var(--font-display);font-size:9px;
+}
+.battle-topbar button:hover{color:var(--text-primary);border-color:var(--border-frame);}
+/*=========================
+LAYOUT BATALLA NUEVO
+=========================*/
+
+.battle-layout{
+
+    display:grid;
+
+    grid-template-columns:minmax(720px,1fr) 340px;
+
+    gap:22px;
+
+    width:100%;
+
+}
+
+#view-battle{
+
+    width:100%;
+
+    max-width:1500px;
+
+    margin:auto;
+
+}
+
+.battle-left{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.battle-right{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:15px;
+
+}
+
+.side-panel{
+
+    padding:18px;
+
+}
+
+.side-title{
+
+    font-family:var(--font-display);
+
+    font-size:10px;
+
+    color:var(--accent-gold);
+
+    margin-bottom:15px;
+
+}
+
+.side-stat{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:10px;
+
+    font-size:20px;
+
+}
+
+.side-stat span:last-child{
+
+    color:var(--accent-cyan);
+
+}
+
+.progress-mini{
+
+    margin-top:10px;
+
+    height:14px;
+
+    border:2px solid var(--border-frame);
+
+    background:var(--bg-void-2);
+
+}
+
+.progress-mini-fill{
+
+    height:100%;
+
+    width:0%;
+
+    background:var(--accent-gold);
+
+    transition:.3s;
+
+}
+
+.combat-log{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    max-height:170px;
+
+    overflow-y:auto;
+
+    font-size:18px;
+
+}
+
+.log-item{
+
+    border-left:3px solid var(--accent-violet);
+
+    padding-left:8px;
+
+}
+.combatant{
+  width:100%;padding:14px;display:flex;align-items:center;gap:14px;
+}
+.portrait{
+  position:relative;flex:none;
+  width:88px;height:88px;
+  border:4px solid var(--border-frame);
+  background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.12), transparent 60%), var(--bg-void-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;
+  box-shadow:0 0 0 3px var(--bg-void-2), 0 0 18px var(--glow, rgba(185,138,255,.35));
+}
+.portrait .corner{position:absolute;width:8px;height:8px;background:var(--accent-gold);}
+.portrait .corner.tl{top:-4px;left:-4px;}
+.portrait .corner.br{bottom:-4px;right:-4px;}
+.portrait.hit{animation:hitshake .35s ease;}
+.portrait.dead{animation:falldown .8s ease forwards;}
+@keyframes hitshake{
+  0%,100%{transform:translate(0,0) rotate(0);filter:none;}
+  20%{transform:translate(-6px,2px) rotate(-4deg);filter:brightness(2) saturate(0);}
+  40%{transform:translate(6px,-2px) rotate(4deg);filter:brightness(1.6);}
+  60%{transform:translate(-4px,0) rotate(-2deg);}
+  80%{transform:translate(4px,0) rotate(2deg);}
+}
+@keyframes falldown{
+  to{transform:translateY(30px) rotate(18deg);opacity:.15;}
+}
+.cstats{flex:1;min-width:0;}
+.cname{font-family:var(--font-display);font-size:11px;color:var(--text-primary);}
+.cname .lvl{color:var(--accent-cyan);}
+.hpbar-shell{
+  margin-top:8px;border:2px solid var(--border-frame-dim);
+  background:var(--bg-void-2);height:16px;position:relative;
+}
+.hpbar-fill{height:100%;width:100%;transition:width .5s cubic-bezier(.2,.8,.3,1);}
+.hpbar-fill.player{background:linear-gradient(180deg, var(--hp-player), #1f9c58);}
+.hpbar-fill.enemy{background:linear-gradient(180deg, var(--hp-enemy), #b32b2b);}
+.hptext{margin-top:3px;font-family:var(--font-body);font-size:16px;color:var(--text-dim);}
+.combo-tag{
+  font-family:var(--font-display);font-size:9px;color:var(--bg-void);
+  background:var(--accent-gold);padding:3px 6px;display:inline-block;margin-top:6px;
+}
+
+.dmg-float{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-display);font-size:16px;
+  pointer-events:none;
+  animation:floatup .9s ease forwards;
+  text-shadow:2px 2px 0 #000;
+  z-index:5;
+}
+.dmg-float.dmg-enemy{color:var(--accent-gold);}
+.dmg-float.dmg-player{color:var(--danger);}
+.dmg-float.crit{font-size:20px;color:#fff;}
+@keyframes floatup{
+  0%{opacity:0;transform:translate(-50%,10px) scale(.7);}
+  15%{opacity:1;transform:translate(-50%,-6px) scale(1.1);}
+  100%{opacity:0;transform:translate(-50%,-46px) scale(1);}
+}
+
+.vs-divider{
+  font-family:var(--font-display);font-size:11px;color:var(--accent-violet);
+  align-self:center;letter-spacing:3px;
+}
+
+.timerbar-shell{
+  width:100%;height:10px;border:2px solid var(--border-frame-dim);background:var(--bg-void-2);margin-top:4px;
+}
+.timerbar-fill{height:100%;width:100%;background:var(--accent-cyan);transition:width .1s linear, background .3s;}
+
+.dialog-box{
+  width:100%;padding:18px;margin-top:6px;
+}
+.qmeta{
+  font-family:var(--font-display);font-size:9px;color:var(--text-dim);
+  display:flex;justify-content:space-between;margin-bottom:10px;
+}
+.qtext{
+  font-family:var(--font-body);font-size:23px;line-height:1.35;
+  color:var(--text-primary);min-height:64px;
+}
+.options{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.opt{
+  display:flex;align-items:center;gap:10px;
+  text-align:left;background:var(--bg-panel-2);
+  border:2px solid var(--border-frame-dim);
+  color:var(--text-primary);
+  padding:11px 12px;font-family:var(--font-body);font-size:19px;line-height:1.25;
+}
+.opt .cursor{font-family:var(--font-display);font-size:11px;color:var(--accent-gold);opacity:0;flex:none;}
+.opt:hover:not(:disabled), .opt.kbd-selected{background:#2a3358;border-color:var(--border-frame);}
+.opt:hover:not(:disabled) .cursor, .opt.kbd-selected .cursor{opacity:1;}
+.opt:active:not(:disabled){transform:translateY(1px);}
+.opt:disabled{cursor:default;}
+.opt.correct{background:#173a24;border-color:var(--hp-player);}
+.opt.correct .cursor{opacity:1;color:var(--hp-player);}
+.opt.wrong{background:#3a1717;border-color:var(--danger);}
+.opt.wrong .cursor{opacity:1;color:var(--danger);}
+
+.tip-strip{
+  margin-top:14px;padding:10px 12px;background:var(--bg-void-2);
+  border-left:4px solid var(--accent-violet);
+  font-family:var(--font-body);font-size:18px;color:var(--text-dim);
+  display:none;line-height:1.4;
+}
+.tip-strip.show{display:block;}
+.tip-strip .who{color:var(--accent-violet);font-family:var(--font-display);font-size:9px;display:block;margin-bottom:6px;}
+
+.next-hint{
+  margin-top:10px;font-family:var(--font-body);font-size:15px;color:var(--text-dim);text-align:right;display:none;
+}
+.next-hint.show{display:block;}
+
+/* ---------- result screen ---------- */
+#view-result{justify-content:center;text-align:center;gap:20px;}
+.result-banner{font-family:var(--font-display);font-size:clamp(16px,4vw,26px);letter-spacing:2px;}
+.result-banner.victory{color:var(--accent-gold);text-shadow:3px 3px 0 #7a5b00;}
+.result-banner.defeat{color:var(--danger);text-shadow:3px 3px 0 #6b0a1e;}
+.rank-badge{
+  font-family:var(--font-display);font-size:64px;
+  width:110px;height:110px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
+  border:4px solid var(--accent-gold);
+  color:var(--accent-gold);
+  box-shadow:0 0 24px rgba(255,210,63,.4);
+}
+.stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;
+  font-family:var(--font-body);font-size:20px;width:min(360px,88vw);
+  text-align:left;
+}
+.stat-grid .label{color:var(--text-dim);}
+.stat-grid .value{color:var(--text-primary);text-align:right;}
+.result-buttons{display:flex;flex-direction:column;gap:12px;width:min(340px,88vw);}
+
+/* ---------- misc ---------- */
+.small-note{font-family:var(--font-body);font-size:15px;color:var(--text-dim);margin-top:18px;max-width:520px;text-align:center;}
+
+@media (max-width:480px){
+  .combatant{flex-direction:column;text-align:center;}
+  .cstats{width:100%;}
+  .qtext{font-size:20px;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .portrait.hit{animation:none;}
+  .portrait.dead{animation:none;opacity:.2;}
+  .dmg-float{animation:none;opacity:1;}
+  #starfield span{animation:none;opacity:.4;}
+  .blink{animation:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="starfield" aria-hidden="true"></div>
+<div id="scanlines" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+
+<!-- ===================== TITLE ===================== -->
+<section id="view-title" class="screen active" aria-label="Pantalla de título">
+  <div class="logo">
+    SQL Azure Quest
+
+PARTE I<br>
+    <small>EL CÓDICE DE LA NUBE</small>
+  </div>
+  <p class="prompt blink">▶ PULSA PARA COMENZAR ◀</p>
+  <div class="title-buttons">
+    <button class="btn gold" id="btn-play">⚔ INICIAR AVENTURA</button>
+    <button class="btn" id="btn-help">📖 CÓMO JUGAR</button>
+    <button class="btn ghost" id="btn-mute-title">🔊 SONIDO: ACTIVADO</button>
+  </div>
+  <p class="footer-credit">180 preguntas · 9 mazmorras de conocimiento basadas en <em>"Microsoft SQL Azure: Administración y desarrollo en la nube"</em> de María Pérez Marqués. Derrota a los 9 guardianes del Códice respondiendo correctamente antes de perder toda tu vida.</p>
+</section>
+
+<!-- ===================== HELP ===================== -->
+<section id="view-help" class="screen" aria-label="Instrucciones">
+  <div class="pixel-frame help-box">
+    <h2>📖 CÓMO JUGAR</h2>
+    <p>Cada capítulo del libro es una <span class="tag">mazmorra</span> custodiada por un guardián con <span class="tag">100 HP</span> (¡130 HP el guardián final!).</p>
+    <ul>
+      <li><span class="tag">Respuesta correcta</span> → tu héroe ataca y el guardián pierde HP.</li>
+      <li><span class="tag">Respuesta incorrecta o tiempo agotado</span> → el guardián contraataca y TÚ pierdes HP.</li>
+      <li>Encadena aciertos para activar <span class="tag">COMBO</span> y golpear más fuerte. Hay probabilidad de <span class="tag">GOLPE CRÍTICO</span>.</li>
+      <li>Tienes <span class="tag">20 segundos</span> por pregunta antes de que el guardián te sorprenda.</li>
+      <li>La batalla termina cuando un HP llega a 0, o al acabar las 20 preguntas del capítulo.</li>
+      <li>Al vencer obtendrás un <span class="tag">rango (S/A/B/C/D)</span> según tu precisión y la vida restante.</li>
+    </ul>
+    <p>Puedes usar el teclado: <span class="tag">1-4</span> para elegir respuesta, <span class="tag">↑/↓</span> y <span class="tag">Enter</span> para navegar, <span class="tag">Esc</span> para volver al mapa.</p>
+    <button class="btn gold" id="btn-help-back">◀ VOLVER</button>
+  </div>
+</section>
+
+<!-- ===================== MAP ===================== -->
+<section id="view-map" class="screen" aria-label="Mapa de capítulos">
+  <div class="map-header">
+    <h2>MAPA DEL CÓDICE</h2>
+    <p class="map-progress" id="map-progress">Mazmorras superadas: 0 / 9</p>
+  </div>
+  <div class="trail" id="trail"></div>
+  <button class="btn ghost" id="btn-map-title">⌂ MENÚ PRINCIPAL</button>
+</section>
+
+<!-- ===================== BATTLE ===================== -->
+<section id="view-battle" class="screen" aria-label="Batalla">
+  <div class="battle-topbar">
+    
+    <span id="battle-chapter-label">CAPÍTULO 1</span>
+    <button id="btn-flee">✕ HUIR AL MAPA</button>
+  </div>
+<div class="battle-layout">
+
+    <div class="battle-left">
+  <div class="pixel-frame combatant" id="enemy-panel">
+    <div class="portrait" id="enemy-portrait" style="--glow:rgba(255,107,107,.45)">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span id="enemy-glyph">👁️</span>
+    </div>
+    <div class="cstats">
+      <div class="cname" id="enemy-name">EL GUARDIÁN</div>
+      <div class="hpbar-shell"><div class="hpbar-fill enemy" id="enemy-hpfill"></div></div>
+      <div class="hptext" id="enemy-hptext">100 / 100 HP</div>
+    </div>
+  </div>
+
+  <div class="vs-divider">◆ VS ◆</div>
+
+  <div class="pixel-frame combatant" id="player-panel">
+    <div class="portrait" id="player-portrait" style="--glow:rgba(78,205,196,.45)">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span id="player-glyph">🛡️</span>
+    </div>
+    <div class="cstats">
+      <div class="cname">BYTE <span class="lvl">// explorador de datos</span></div>
+      <div class="hpbar-shell"><div class="hpbar-fill player" id="player-hpfill"></div></div>
+      <div class="hptext" id="player-hptext">100 / 100 HP</div>
+      <span class="combo-tag" id="combo-tag" style="display:none;"></span>
+    </div>
+  </div>
+
+  <div class="timerbar-shell"><div class="timerbar-fill" id="timer-fill"></div></div>
+
+  <div class="pixel-frame dialog-box">
+    <div class="qmeta">
+      <span id="q-counter">PREGUNTA 1 / 20</span>
+      <span id="q-timer">20s</span>
+    </div>
+    <div class="qtext" id="q-text">Cargando…</div>
+    <div class="options" id="q-options"></div>
+    <div class="tip-strip" id="tip-strip">
+      <span class="who">📜 EL CÓDICE REVELA:</span>
+      <span id="tip-text"></span>
+    </div>
+    <div class="next-hint" id="next-hint">Pulsa ENTER o ESPACIO para continuar ▶</div>
+  </div>
+      </div>
+      <div class="battle-right">
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            📊 ESTADÍSTICAS
+        </div>
+
+        <div class="side-stat">
+            <span>Precisión</span>
+            <span id="stat-accuracy">0%</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Aciertos</span>
+            <span id="stat-correct">0</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Errores</span>
+            <span id="stat-errors">0</span>
+        </div>
+
+        <div class="side-stat">
+            <span>Combo</span>
+            <span id="stat-combo">0</span>
+        </div>
+
+    </div>
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            🗺 PROGRESO
+        </div>
+<div class="pixel-frame side-panel">
+
+    <div class="side-title">
+        👁 GUARDIÁN
+    </div>
+
+    <div id="guardian-name">
+
+        El Guardián
+
+    </div>
+
+</div>
+        <div id="chapter-progress">
+
+            Capítulo 1 / 9
+
+        </div>
+
+        <div class="progress-mini">
+
+            <div class="progress-mini-fill" id="progress-fill"></div>
+
+        </div>
+
+    </div>
+
+    <div class="pixel-frame side-panel">
+
+        <div class="side-title">
+            ⚔ REGISTRO
+        </div>
+
+        <div class="combat-log" id="combat-log">
+
+            <div class="log-item">
+
+                Comienza la batalla...
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+</div>
+</section>
+
+<!-- ===================== RESULT ===================== -->
+<section id="view-result" class="screen" aria-label="Resultado de la batalla">
+  <div class="result-banner" id="result-banner">¡VICTORIA!</div>
+  <div class="rank-badge" id="rank-badge">S</div>
+  <div class="pixel-frame" style="padding:18px 24px;">
+    <div class="stat-grid">
+      <span class="label">Guardián:</span><span class="value" id="res-boss">—</span>
+      <span class="label">Aciertos:</span><span class="value" id="res-correct">0 / 20</span>
+      <span class="label">Precisión:</span><span class="value" id="res-accuracy">0%</span>
+      <span class="label">HP restante:</span><span class="value" id="res-hp">0 / 100</span>
+      <span class="label">Mejor combo:</span><span class="value" id="res-combo">0</span>
+    </div>
+  </div>
+  <div class="result-buttons">
+    <button class="btn gold" id="btn-retry">⟳ REINTENTAR MAZMORRA</button>
+    <button class="btn" id="btn-to-map">🗺 VOLVER AL MAPA</button>
+  </div>
+  <p class="small-note">El progreso se guarda solo durante esta sesión del navegador. Si recargas la página, el mapa vuelve a empezar.</p>
+</section>
+
+<script>
+"use strict";
+
+/* ======================================================================
+   DATOS: 9 capítulos x 20 preguntas
+   formato de cada pregunta: [texto, [op0,op1,op2,op3], indiceCorrecto, dato]
+   ====================================================================== */
+const CHAPTERS = [
+{
+  num:1, title:`Conceptos de Base de Datos de SQL Azure`, boss:`El Guardián del Portal`,
+  glyph:`👁️`, color:`#b98aff`,
+  questions:[
+    [`¿Quién administra el hardware físico (discos, servidores, almacenamiento) en SQL Azure?`,[`Microsoft`,`El propio DBA`,`Un proveedor externo contratado`,`El usuario final`],0,`Microsoft gestiona la infraestructura física; el DBA sigue administrando esquemas, índices y seguridad lógica.`],
+    [`¿Cuál de estas tareas SIGUE siendo responsabilidad del DBA en SQL Azure?`,[`Sustituir discos duros defectuosos`,`Optimizar índices y consultas`,`Configurar el equilibrio de carga físico`,`Gestionar la conmutación por error del hardware`],1,`El DBA administra esquemas, estadísticas, índices, consultas y seguridad lógica.`],
+    [`¿Cómo se realiza una "copia de seguridad" de una base de datos en SQL Azure?`,[`Con el comando BACKUP DATABASE tradicional`,`Copiándola a una nueva base de datos en SQL Azure`,`Exportándola a un disco duro físico`,`No es posible respaldar datos`],1,`Los comandos BACKUP/RESTORE clásicos no están disponibles; se copia la base de datos a otra nueva.`],
+    [`Como no existen BACKUP/RESTORE tradicionales, ¿qué se recomienda para copias masivas de datos?`,[`Solo el Bloc de notas`,`SQL Server Integration Services (SSIS) y la utilidad SQLCMD`,`Únicamente Excel`,`El Explorador de Windows`],1,`SSIS y SQLCMD permiten realizar copias masivas de datos hacia y desde SQL Azure.`],
+    [`¿Cuántos niveles de abstracción arquitectónica distintos tiene SQL Azure?`,[`Dos`,`Tres`,`Cuatro`,`Cinco`],2,`Cliente, servicios, plataforma e infraestructura.`],
+    [`¿Qué nivel actúa como puerta de enlace entre el nivel de cliente y el nivel de plataforma?`,[`Nivel de infraestructura`,`Nivel de servicios`,`Nivel de cliente`,`Nivel de aplicación`],1,`El nivel de servicios enruta las conexiones y gestiona aprovisionamiento y facturación.`],
+    [`¿Cuáles son las tres funciones principales del nivel de servicios?`,[`Backup, restauración y auditoría`,`Aprovisionamiento, facturación/medida y enrutamiento de conexión`,`Cifrado, compresión y replicación`,`Indexación, particionado y clustering`],1,`Son las tres funciones descritas para el nivel de servicios en la arquitectura de SQL Azure.`],
+    [`¿Cómo se denomina el sistema distribuido que habilita conmutación por error y equilibrio de carga en el nivel de plataforma?`,[`El clúster de Windows`,`El tejido de SQL Azure`,`El motor de almacenamiento`,`El Portal de administración`],1,`El "tejido de SQL Azure" (fabric) integra redes, servidores y almacenamiento.`],
+    [`¿Qué debe crear un usuario, en primer lugar, para empezar a usar SQL Azure?`,[`Una base de datos vacía`,`Un servidor físico propio`,`Una cuenta de la plataforma Windows Azure`,`Un certificado SSL`],2,`La cuenta de la plataforma Windows Azure permite acceder a todos los servicios y gestionar suscripciones.`],
+    [`¿Qué es, exactamente, un "servidor SQL Azure"?`,[`Un equipo físico dedicado`,`Una agrupación lógica de bases de datos`,`Un tipo de índice`,`Un servicio de facturación`],1,`Es una abstracción lógica que actúa como punto administrativo central para varias bases de datos.`],
+    [`¿Qué base de datos de solo lectura se crea automáticamente al aprovisionar un servidor SQL Azure?`,[`tempdb`,`model`,`master`,`msdb`],2,`La base de datos master rastrea qué logins tienen permiso para crear bases de datos u otros logins.`],
+    [`¿Cuáles son las dos ediciones de base de datos que ofrece SQL Azure?`,[`Basic y Standard`,`Web Edition y Business Edition`,`Free y Premium`,`Cloud y Enterprise`],1,`Web Edition para aplicaciones pequeñas y Business Edition para ISV, LOB y aplicaciones empresariales.`],
+    [`¿Cuál es el tamaño máximo disponible para una base de datos Web Edition?`,[`1 o 5 GB`,`10 o 20 GB`,`50 GB fijo`,`100 GB`],0,`Web Edition admite un tamaño máximo de 1 GB o 5 GB.`],
+    [`Business Edition puede crecer hasta 50 GB, ¿en qué incrementos?`,[`De 5 en 5 GB`,`De 10 en 10 GB`,`De 25 en 25 GB`,`De 1 en 1 GB`],1,`Business Edition admite 10, 20, 30, 40 o 50 GB.`],
+    [`¿Qué código de error se recibe al alcanzar el valor MAXSIZE de una base de datos?`,[`40501`,`40544`,`40197`,`40613`],1,`El código 40544 indica que la base de datos alcanzó su cuota de tamaño.`],
+    [`Al alcanzar el límite MAXSIZE, ¿qué operación TODAVÍA se puede realizar?`,[`Insertar nuevas filas`,`Crear procedimientos almacenados nuevos`,`Leer y eliminar datos existentes`,`Crear nuevas vistas`],2,`Aún puede leer y eliminar datos, truncar tablas, quitar tablas/índices y regenerar índices.`],
+    [`Tras liberar espacio o aumentar MAXSIZE, ¿cuánto puede tardar en permitirse insertar datos nuevos?`,[`Hasta 15 minutos`,`Hasta 24 horas`,`Es instantáneo siempre`,`Hasta 7 días`],0,`El libro indica que pueden transcurrir hasta quince minutos.`],
+    [`¿Es gratuito el ancho de banda entre SQL Azure y Windows Azure dentro de la misma subregión?`,[`No, siempre se cobra`,`Sí, es gratuito`,`Solo los fines de semana`,`Solo para Business Edition`],1,`El ancho de banda es gratuito dentro de la misma subregión o centro de datos.`],
+    [`¿Qué vista del sistema, en la base de datos maestra, describe el ancho de banda utilizado por cada base de datos?`,[`sys.database_usage`,`sys.bandwidth_usage`,`sys.dm_exec_sessions`,`sys.firewall_rules`],1,`sys.bandwidth_usage describe el ancho de banda; sys.database_usage muestra número/tipo/duración de bases de datos.`],
+    [`En el escenario donde tanto el código de la aplicación como la base de datos están hospedados en Windows Azure, ¿qué se minimiza?`,[`El costo de almacenamiento`,`La latencia de red`,`El número de índices necesarios`,`El tamaño de la base de datos`],1,`Hospedar la aplicación junto a los datos en el mismo centro de datos minimiza la latencia de red.`]
+  ]
+},
+{
+  num:2, title:`Administrar Bases de Datos e Inicios de Sesión`, boss:`El Centinela de Accesos`,
+  glyph:`🔑`, color:`#ffd23f`,
+  questions:[
+    [`Al suscribirse a SQL Azure, ¿qué crea automáticamente el proceso de aprovisionamiento?`,[`Solo una base de datos vacía`,`Un servidor, la base de datos master y un login de nivel de servidor`,`Un firewall con todas las IP abiertas`,`Un backup completo`],1,`El aprovisionamiento crea el servidor, la base de datos master y el login de entidad de seguridad a nivel de servidor.`],
+    [`El login de entidad de seguridad a nivel de servidor de SQL Azure es similar a...`,[`dbo`,`sa`,`guest`,`public`],1,`Es similar a la entidad de seguridad sa de una instancia local de SQL Server.`],
+    [`¿En qué base de datos se administra la seguridad a nivel de servidor en SQL Azure?`,[`tempdb`,`model`,`master`,`la base de datos de usuario`],2,`A diferencia de SQL Server local, en SQL Azure toda la administración a nivel de servidor se hace desde master.`],
+    [`¿Qué rol de seguridad es necesario para crear inicios de sesión (logins) en SQL Azure?`,[`securityadmin`,`dbcreator`,`loginmanager`,`sysadmin`],2,`loginmanager es el rol equivalente a securityadmin, exclusivo de SQL Azure.`],
+    [`¿Qué rol de seguridad es necesario para crear bases de datos en SQL Azure?`,[`dbmanager`,`db_owner`,`serveradmin`,`bulkadmin`],0,`dbmanager es el rol equivalente a dbcreator, exclusivo de SQL Azure.`],
+    [`En una instancia local de SQL Server, ¿qué rol equivale a "loginmanager"?`,[`dbcreator`,`securityadmin`,`diskadmin`,`processadmin`],1,`loginmanager cumple el mismo papel que securityadmin en SQL Server local.`],
+    [`En una instancia local de SQL Server, ¿qué rol equivale a "dbmanager"?`,[`dbcreator`,`db_datawriter`,`setupadmin`,`bulkadmin`],0,`dbmanager cumple el mismo papel que dbcreator en SQL Server local.`],
+    [`¿Se admite el comando USE para cambiar entre bases de datos en SQL Azure?`,[`Sí, sin restricciones`,`No, se debe establecer una nueva conexión`,`Solo en la base de datos master`,`Solo desde SQLCMD`],1,`SQL Azure no admite USE para conmutar de base de datos; hay que conectarse directamente a la de destino.`],
+    [`¿Qué instrucción crea un nuevo inicio de sesión en SQL Azure?`,[`CREATE USER`,`CREATE LOGIN`,`ADD LOGIN`,`NEW LOGIN`],1,`CREATE LOGIN se ejecuta conectado a la base de datos master.`],
+    [`Una vez creado el login, ¿qué instrucción concede acceso a una base de datos concreta?`,[`GRANT ACCESS`,`CREATE USER ... FROM LOGIN`,`ALTER LOGIN ... ADD DATABASE`,`ENABLE USER`],1,`CREATE USER ... FROM LOGIN crea la cuenta de usuario asociada al login en esa base de datos.`],
+    [`¿Qué procedimiento almacenado se usa para asignar el rol dbmanager o loginmanager a un usuario?`,[`sp_grantrole`,`sp_addrolemember`,`sp_setrole`,`sp_adduser`],1,`sp_addrolemember agrega un usuario a un rol de base de datos, como dbmanager o loginmanager.`],
+    [`Los roles loginmanager y dbmanager solo se pueden asignar a usuarios de la base de datos...`,[`model`,`master`,`tempdb`,`msdb`],1,`Estos roles solo existen y se asignan en la base de datos master.`],
+    [`¿Qué vista muestra todos los inicios de sesión de un servidor SQL Azure?`,[`sys.databases`,`sys.sql_logins`,`sys.server_principals`,`sys.logins`],1,`sys.sql_logins, consultada desde master, lista los inicios de sesión.`],
+    [`¿Qué vista muestra todas las bases de datos de un servidor SQL Azure?`,[`sys.databases`,`sys.tables`,`sys.dm_db_partition_stats`,`sys.objects`],0,`sys.databases, consultada desde master, lista las bases de datos del servidor.`],
+    [`Para migrar una base de datos local existente a SQL Azure, ¿qué se exporta primero?`,[`Un archivo .bak`,`Un script de Transact-SQL del esquema`,`Una imagen de disco`,`Un archivo Excel`],1,`Se exporta el esquema como script T-SQL y luego se ejecuta en SQL Azure.`],
+    [`¿Qué asistente de SQL Server Management Studio genera el script de migración del esquema?`,[`El Asistente de importación y exportación`,`El Asistente para generar scripts`,`El Asistente de copia de seguridad`,`El Diseñador de bases de datos`],1,`El Asistente para generar scripts exporta el esquema como Transact-SQL.`],
+    [`¿Qué servicio permite mover grandes volúmenes de datos hacia o desde SQL Azure?`,[`SQL Server Reporting Services`,`SQL Server Integration Services (SSIS)`,`SQL Server Analysis Services`,`Service Broker`],1,`SSIS es la manera cómoda de mover datos hacia y desde SQL Azure.`],
+    [`¿Qué utilidad de línea de comandos se usa para importar/exportar grandes volúmenes de filas?`,[`sqlcmd.exe`,`bcp.exe`,`osql.exe`,`dtexec.exe`],1,`La utilidad bcp se usa para importar/exportar filas masivamente.`],
+    [`Un usuario con el rol dbmanager puede quitar (DROP)...`,[`Solo las bases de datos que él mismo creó`,`Cualquier base de datos del servidor`,`Solo la base de datos master`,`Ninguna base de datos`],1,`El rol dbmanager permite quitar cualquier base de datos, sin importar quién la creó.`],
+    [`¿A qué base de datos hay que conectarse siempre para ejecutar CREATE, ALTER o DROP sobre logins?`,[`La base de datos de la aplicación`,`tempdb`,`master`,`model`],2,`Toda gestión de logins requiere estar conectado a master.`]
+  ]
+},
+{
+  num:3, title:`Copiar Bases de Datos y Supervisar SQL Azure`, boss:`El Espectro Replicante`,
+  glyph:`👻`, color:`#4ecdc4`,
+  questions:[
+    [`¿Qué cláusula de CREATE DATABASE se utiliza para copiar una base de datos existente?`,[`WITH BACKUP`,`AS COPY OF`,`CLONE FROM`,`DUPLICATE OF`],1,`CREATE DATABASE destino AS COPY OF origen inicia el proceso de copia.`],
+    [`¿El proceso de copia de una base de datos en SQL Azure es síncrono o asíncrono?`,[`Síncrono, requiere conexión constante`,`Asíncrono, no requiere conexión constante`,`Solo síncrono entre servidores distintos`,`Depende de la edición`],1,`La copia es asíncrona; CREATE DATABASE vuelve antes de que termine la copia.`],
+    [`Mientras la copia está en curso, ¿qué valor muestra la columna state_desc en sys.databases?`,[`ONLINE`,`SUSPECT`,`COPYING`,`PENDING`],2,`El estado COPYING indica que la copia sigue en curso.`],
+    [`Si la copia de la base de datos falla, ¿qué estado se muestra?`,[`OFFLINE`,`SUSPECT`,`ERROR`,`COPYING`],1,`El estado SUSPECT indica que la copia falló.`],
+    [`Si el estado de la copia es SUSPECT, ¿qué se debe hacer?`,[`Esperar 24 horas sin actuar`,`Eliminar la nueva base de datos con DROP e intentarlo de nuevo`,`Reiniciar el servidor SQL Azure`,`Cambiar de edición`],1,`Se debe quitar la base de datos de destino y volver a intentar la copia.`],
+    [`¿Cómo se cancela una copia de base de datos que está en curso?`,[`Ejecutando ALTER DATABASE ... CANCEL`,`Ejecutando DROP DATABASE sobre la nueva base de datos`,`Cerrando la sesión de SQLCMD`,`No se puede cancelar`],1,`DROP DATABASE sobre el destino (o el origen) cancela el proceso de copia.`],
+    [`Al copiar entre dos servidores SQL Azure distintos, ¿qué rol necesita el login en el servidor de destino?`,[`db_owner`,`dbmanager (o entidad de seguridad a nivel de servidor)`,`public`,`loginmanager únicamente`],1,`El login de destino debe ser miembro del rol dbmanager o ser la entidad de seguridad a nivel de servidor.`],
+    [`Tras completar una copia entre servidores, ¿qué instrucción reasigna los usuarios a los logins del nuevo servidor?`,[`CREATE USER`,`ALTER USER ... WITH LOGIN`,`GRANT LOGIN`,`SET USER`],1,`ALTER USER userName WITH LOGIN='loginName' remapea usuarios a logins en el servidor de destino.`],
+    [`¿Qué vista de administración dinámica se usa para calcular el tamaño de una base de datos?`,[`sys.dm_exec_sessions`,`sys.dm_db_partition_stats`,`sys.dm_tran_locks`,`sys.firewall_rules`],1,`sys.dm_db_partition_stats permite sumar páginas reservadas y calcular el tamaño.`],
+    [`¿Qué permiso se necesita para consultar cualquier vista de administración dinámica en SQL Azure?`,[`CONTROL SERVER`,`VIEW DATABASE STATE`,`ALTER ANY LOGIN`,`db_owner`],1,`Se requiere el permiso VIEW DATABASE STATE en la base de datos.`],
+    [`¿A través de qué puerto TCP exclusivo funciona el servicio de SQL Azure?`,[`1434`,`443`,`1433`,`3306`],2,`SQL Azure solo está disponible mediante el puerto TCP 1433.`],
+    [`Por defecto, ¿qué hace el firewall de SQL Azure con las conexiones entrantes?`,[`Las permite todas`,`Las bloquea todas hasta que se configuren reglas`,`Solo bloquea las de Windows Azure`,`Depende de la edición`],1,`Inicialmente todo acceso está bloqueado hasta crear reglas de firewall.`],
+    [`¿Qué rango de direcciones IP habilita las conexiones desde aplicaciones de Windows Azure?`,[`127.0.0.1 a 127.0.0.1`,`0.0.0.0 a 0.0.0.0`,`10.0.0.0 a 10.255.255.255`,`255.255.255.255 a 255.255.255.255`],1,`Una regla con inicio y fin 0.0.0.0 habilita las conexiones desde Windows Azure.`],
+    [`¿Qué procedimiento almacenado crea o actualiza una regla de firewall en la base de datos maestra?`,[`sp_add_firewall`,`sp_set_firewall_rule`,`sp_configure_firewall`,`sp_firewall_add`],1,`sp_set_firewall_rule crea o actualiza una regla de firewall.`],
+    [`¿Qué procedimiento almacenado elimina una regla de firewall?`,[`sp_delete_firewall_rule`,`sp_drop_firewall`,`sp_remove_rule`,`sp_clear_firewall`],0,`sp_delete_firewall_rule elimina una configuración de firewall existente.`],
+    [`¿Cuánto puede tardar en surtir efecto un cambio reciente en la configuración del firewall?`,[`Hasta 5 minutos`,`Hasta 1 hora`,`Es instantáneo siempre`,`Hasta 24 horas`],0,`Los cambios al firewall pueden tardar hasta cinco minutos en aplicarse.`],
+    [`¿Tras cuánto tiempo de inactividad se termina automáticamente una sesión iniciada?`,[`5 minutos`,`15 minutos`,`30 minutos`,`60 minutos`],2,`Una sesión inactiva durante 30 minutos se termina automáticamente.`],
+    [`¿Qué vista, en la base de datos maestra, muestra la configuración actual del firewall?`,[`sys.firewall_rules`,`sys.security_rules`,`sys.dm_firewall`,`sys.network_rules`],0,`sys.firewall_rules muestra las reglas de firewall configuradas.`],
+    [`¿Se admite el explorador de SQL Server (SQL Server Browser) con puertos dinámicos en SQL Azure?`,[`Sí, siempre`,`No, solo se usa el puerto 1433`,`Solo en Business Edition`,`Solo si se configura manualmente`],1,`SQL Azure no tiene puertos dinámicos, por lo que el explorador no funciona.`],
+    [`¿Qué vista de administración dinámica permite ver la actividad de bloqueo actual en la base de datos?`,[`sys.dm_tran_locks`,`sys.dm_exec_connections`,`sys.dm_db_partition_stats`,`sys.databases`],0,`sys.dm_tran_locks muestra la actividad de bloqueo actual.`]
+  ]
+},
+{
+  num:4, title:`Desarrollo`, boss:`El Arquitecto de Código`,
+  glyph:`🧱`, color:`#ff9f5a`,
+  questions:[
+    [`¿A partir de qué versión de Visual Studio se considera totalmente compatible con SQL Azure?`,[`Visual Studio 2005`,`Visual Studio 2008`,`Visual Studio 2010`,`Visual Studio 6.0`],2,`Visual Studio 2010 es totalmente compatible y permite explorar bases de datos SQL Azure.`],
+    [`¿Cuáles son las tres categorías de compatibilidad de Transact-SQL en SQL Azure?`,[`Rápidas, lentas y bloqueadas`,`Admitidas tal cual, no admitidas y parcialmente admitidas`,`Locales, remotas e híbridas`,`Públicas, privadas y del sistema`],1,`Así clasifica el libro la compatibilidad de los elementos de Transact-SQL.`],
+    [`Al conectar con SQL Azure, ¿qué valor de sesión se establece automáticamente con un GUID único?`,[`SESSION_ID`,`CONTEXT_INFO`,`@@SPID`,`CONNECTION_GUID`],1,`CONTEXT_INFO recibe un GUID de sesión único útil para rastrear problemas de conectividad.`],
+    [`¿Qué herramienta permite migrar el esquema y los datos desde Microsoft Access o MySQL a SQL Azure?`,[`SSIS`,`El Asistente de migración de SQL Server (SSMA)`,`BCP`,`PowerPivot`],1,`SSMA admite migrar esquema y datos de Access y MySQL a SQL Azure.`],
+    [`¿Qué versión mínima del protocolo de flujo TDS admite SQL Azure?`,[`7.0`,`7.1`,`7.3`,`8.0`],2,`Se requiere el cliente del protocolo TDS versión 7.3 o posterior.`],
+    [`¿Se admite la conexión a SQL Azure mediante OLE DB?`,[`Sí, siempre`,`No, nunca se admite`,`Solo con certificado`,`Solo desde PHP`],1,`No se admite la conexión a Base de datos de SQL Azure mediante OLE DB.`],
+    [`¿Qué tipo de conexiones son las únicas permitidas al usar herramientas con SQL Azure?`,[`Named Pipes`,`TCP/IP`,`Shared Memory`,`VPN`],1,`Solo se permiten conexiones TCP/IP.`],
+    [`¿Se admiten los conjuntos de resultados activos múltiples (MARS)?`,[`No, están prohibidos`,`Sí, se admiten`,`Solo en Business Edition`,`Solo con ODBC`],1,`Se admiten conjuntos de resultados activos múltiples (MARS).`],
+    [`¿Por qué no funciona el explorador de SQL Server 2008 (SQL Server Browser) con SQL Azure?`,[`Porque usa un protocolo distinto`,`Porque SQL Azure no tiene puertos dinámicos, solo el 1433`,`Porque requiere autenticación de Windows`,`Porque está deshabilitado por el usuario`],1,`SQL Azure no usa puertos dinámicos, solo el 1433, por eso el explorador no funciona.`],
+    [`¿Cuál es la intercalación (collation) predeterminada de las bases de datos SQL Azure?`,[`Latin1_General_CI_AS`,`SQL_LATIN1_GENERAL_CP1_CI_AS`,`Modern_Spanish_CI_AS`,`UTF8_BIN`],1,`SQL_LATIN1_GENERAL_CP1_CI_AS es la intercalación predeterminada.`],
+    [`¿En qué niveles SÍ se puede establecer una intercalación distinta de la predeterminada en SQL Azure?`,[`Servidor y base de datos`,`Columna y expresión`,`Solo servidor`,`No se puede cambiar nunca`],1,`No se permite fijar la intercalación a nivel de servidor o base de datos, solo columna o expresión.`],
+    [`¿Qué tipo de índice es obligatorio en toda tabla para poder insertar datos?`,[`Un índice no clúster`,`Un índice clúster`,`Un índice espacial`,`Ningún índice es obligatorio`],1,`SQL Azure no admite tablas de montón; se requiere un índice clúster antes de insertar.`],
+    [`Por defecto, ¿cuántas bases de datos como máximo admite un servidor SQL Azure (incluida master)?`,[`50`,`100`,`150`,`200`],2,`Por defecto se admiten hasta 150 bases de datos por servidor, incluyendo master.`],
+    [`¿Cuál de los siguientes nombres de usuario está PROHIBIDO por razones de seguridad?`,[`dbadmin`,`sa`,`appuser`,`dataowner`],1,`No se permiten los nombres admin, administrator, guest, root o sa.`],
+    [`¿Por qué un nombre de login no puede contener el carácter "\\"?`,[`Por límite de longitud`,`Porque no se admite la autenticación de Windows`,`Por compatibilidad con PHP`,`Es solo una preferencia de estilo`],1,`Como no se admite autenticación de Windows, el carácter \\ no está permitido en los nombres.`],
+    [`¿Qué código de error indica que la base de datos ha alcanzado su cuota de tamaño (MAXSIZE)?`,[`40501`,`40544`,`40613`,`40197`],1,`El error 40544 se produce al alcanzar la cuota de tamaño MAXSIZE.`],
+    [`¿Se admite el Agente SQL Server (SQL Server Agent) de forma nativa en SQL Azure?`,[`Sí, completamente`,`No, se admite solo desde un SQL Server local que se conecta a Azure`,`Solo en Business Edition`,`Solo para trabajos de replicación`],1,`No se admite Agente SQL Server ni trabajos nativos; puede ejecutarse en un SQL Server local que se conecte a Azure.`],
+    [`¿Se admiten las transacciones distribuidas (que afectan a varios recursos) en SQL Azure?`,[`Sí, sin restricciones`,`No, no se admiten`,`Solo entre dos bases de datos del mismo servidor`,`Solo con MSDTC habilitado`],1,`Base de datos de SQL Azure no admite transacciones distribuidas.`],
+    [`Las opciones READ_COMMITTED_SNAPSHOT y ALLOW_SNAPSHOT_ISOLATION están siempre...`,[`Desactivadas (OFF)`,`Activadas (ON) y no se pueden cambiar`,`Configurables libremente`,`Disponibles solo en Web Edition`],1,`Ambas opciones están fijas en ON y no se pueden modificar en SQL Azure.`],
+    [`¿Qué tipo de cifrado necesitan SIEMPRE las comunicaciones entre la aplicación y SQL Azure?`,[`Ninguno es obligatorio`,`Cifrado SSL`,`Solo cifrado a nivel de columna`,`Cifrado AES-256 manual`],1,`Todas las comunicaciones necesitan cifrado SSL en todo momento.`]
+  ]
+},
+{
+  num:5, title:`Conectar con SQL Azure`, boss:`El Nexo de Conexiones`,
+  glyph:`🕸️`, color:`#4cc9f0`,
+  questions:[
+    [`¿Qué notación se debe usar para el nombre de usuario al conectar mediante SQLCMD?`,[`usuario#servidor`,`usuario@servidor`,`servidor\\usuario`,`usuario:servidor`],1,`Se usa la notación login@servidor para conectar con herramientas como SQLCMD.`],
+    [`¿Qué opciones de SQLCMD, usadas para cambiar contraseñas, NO admite SQL Azure?`,[`-U y -P`,`-z y -Z`,`-S y -d`,`-Q y -q`],1,`SQL Azure no admite las opciones -z y -Z de SQLCMD.`],
+    [`Para cambiar la contraseña de un login, ya que SQLCMD no lo permite directamente, ¿qué instrucción se usa?`,[`UPDATE LOGIN`,`ALTER LOGIN`,`SET PASSWORD`,`CHANGE LOGIN`],1,`Se usa ALTER LOGIN tras conectar con la base de datos master.`],
+    [`¿Qué clase de .NET se recomienda para evitar ataques de inyección de código SQL al construir la cadena de conexión?`,[`SqlCommandBuilder`,`SqlConnectionStringBuilder`,`SqlParameterBuilder`,`StringBuilder`],1,`SqlConnectionStringBuilder simplifica y protege la creación de la cadena de conexión.`],
+    [`Para proteger la conexión ADO.NET frente a ataques de intermediario, ¿qué valor debe tener la propiedad Encrypt?`,[`False`,`True`,`Auto`,`Optional`],1,`Encrypt=True cifra la conexión.`],
+    [`Junto con Encrypt=True, ¿qué valor debe tener TrustServerCertificate para máxima seguridad?`,[`True`,`False`,`Auto`,`No aplica`],1,`TrustServerCertificate=False impide ataques del tipo 'Man in the middle'.`],
+    [`En el ejemplo de ASP.NET del libro, ¿qué control se enlaza a un SqlDataSource para mostrar y editar datos?`,[`ListView`,`GridView`,`Repeater`,`DetailsView`],1,`El control GridView se enlaza al SqlDataSource con las operaciones SELECT/INSERT/UPDATE/DELETE.`],
+    [`¿Cómo se llamaba anteriormente "Servicios de datos de Microsoft WCF"?`,[`ADO.NET Data Services`,`SQL Data Services`,`Azure Table Services`,`WCF RIA Services`],0,`Antes se conocía como ADO.NET Data Services.`],
+    [`¿En qué arquitectura se basan los servicios de datos WCF (Servicios de datos de Microsoft WCF)?`,[`SOAP puro`,`REST`,`RPC binario`,`GraphQL`],1,`Se basan en la transferencia de estado representacional (REST).`],
+    [`¿Qué proveedor de Microsoft se utiliza junto con WCF Data Services para crear servicios sobre SQL Azure?`,[`LINQ to SQL`,`Entity Framework`,`NHibernate`,`ADO Recordset`],1,`Se usa el proveedor Entity Framework para crear los servicios de datos.`],
+    [`¿A partir de qué versión del Controlador de SQL Server para PHP se admite la conexión a SQL Azure?`,[`1.0`,`1.1`,`2.0`,`3.0`],1,`El controlador SQL Server para PHP versión 1.1 o posterior admite SQL Azure.`],
+    [`¿Qué función de PHP abre la conexión con la base de datos SQL Azure?`,[`mysqli_connect`,`sqlsrv_connect`,`pdo_connect`,`odbc_connect`],1,`sqlsrv_connect() establece la conexión con SQL Azure desde PHP.`],
+    [`¿A partir de qué versión del Controlador JDBC de Microsoft SQL Server se admite SQL Azure?`,[`2.0`,`2.5`,`3.0`,`4.0`],2,`El controlador JDBC 3.0 o posterior admite Base de datos de SQL Azure.`],
+    [`¿Qué archivo debe estar en la ruta de clase (classpath) para ejecutar una aplicación Java con JDBC?`,[`sqljdbc.jar`,`sqlserver.dll`,`jdbc-config.xml`,`azure.jar`],0,`Se necesita sqljdbc.jar o sqljdbc4.jar en el classpath.`],
+    [`¿Qué extensión de archivo tiene el modelo de datos creado con ADO.NET Entity Data Model?`,[`.dbml`,`.edmx`,`.xsd`,`.config`],1,`El archivo .edmx define un tipo de entidad por cada tabla de la base de datos.`],
+    [`¿Cuál es la longitud máxima total del parámetro username (login@servidor) en la cadena de conexión?`,[`64 caracteres`,`100 caracteres`,`128 caracteres`,`256 caracteres`],2,`El parámetro username completo está limitado a 128 caracteres.`],
+    [`Si no se especifica una base de datos en la cadena de conexión, ¿a cuál se conecta por defecto?`,[`tempdb`,`model`,`master`,`La primera alfabéticamente`],2,`Sin especificar base de datos, la conexión va a master.`],
+    [`En el ejemplo de consola con ADO.NET del libro, ¿qué rol necesita el login para poder crear una base de datos?`,[`db_owner`,`dbmanager`,`public`,`securityadmin`],1,`Se necesita el rol dbmanager para poder crear la base de datos de ejemplo.`],
+    [`¿Qué utilidad se debe ejecutar una sola vez para inicializar el almacenamiento de desarrollo de Windows Azure?`,[`DSInit`,`AzInit`,`CloudSetup`,`StorageConfig`],0,`La utilidad DSInit inicializa el almacenamiento de desarrollo una única vez.`],
+    [`¿Qué controlador ODBC se recomienda para SQL Azure por tener más funcionalidad que su predecesor?`,[`SQL Server 2005 Native Client`,`SQL Server 2008 R2 Native Client`,`MySQL ODBC Driver`,`Generic ODBC Driver`],1,`El controlador ODBC de SQL Server 2008 R2 Native Client ofrece más funcionalidad.`]
+  ]
+},
+];
+
+/* ======================================================================
+   ESTADO DEL JUEGO
+   ====================================================================== */
+const state = {
+  soundOn:true,
+  audioCtx:null,
+  chapterIdx:null,
+  order:[],          // índices de preguntas barajados para el intento actual
+  qi:0,               // posición actual dentro de "order"
+  playerHP:100, playerMaxHP:100,
+  enemyHP:100, enemyMaxHP:100,
+  correct:0, wrong:0,
+  combo:0, bestCombo:0,
+  answered:false,
+  timerHandle:null,
+  timeLeft:20,
+  progress:{}          // {chapterNum:{cleared:true, rank:'A'}}
+};
+
+/* ======================================================================
+   AUDIO — sintetizador simple con WebAudio
+   ====================================================================== */
+function ensureAudio(){
+  if(!state.audioCtx){
+    try{ state.audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ state.audioCtx=null; }
+  }
+  if(state.audioCtx && state.audioCtx.state==='suspended'){ state.audioCtx.resume(); }
+}
+function tone(freq,start,dur,type,vol){
+  if(!state.soundOn || !state.audioCtx) return;
+  const ctx=state.audioCtx;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type=type||'square';
+  osc.frequency.setValueAtTime(freq, ctx.currentTime+start);
+  gain.gain.setValueAtTime(0, ctx.currentTime+start);
+  gain.gain.linearRampToValueAtTime(vol||0.12, ctx.currentTime+start+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(ctx.currentTime+start);
+  osc.stop(ctx.currentTime+start+dur+0.02);
+}
+const SFX = {
+  move(){ tone(520,0,.05,'square',.06); },
+  select(){ tone(660,0,.05,'square',.08); tone(880,.05,.06,'square',.08); },
+  hitEnemy(crit){ tone(880,0,.07,'square',.14); tone(crit?1400:1100,.06,.09,'square',.12); },
+  hitPlayer(crit){ tone(220,0,.09,'sawtooth',.14); tone(crit?140:160,.08,.12,'sawtooth',.12); },
+  wrong(){ tone(180,0,.12,'triangle',.10); },
+  victory(){ [523,659,784,1046].forEach((f,i)=>tone(f,i*.13,.16,'square',.11)); },
+  defeat(){ [392,330,262,196].forEach((f,i)=>tone(f,i*.18,.22,'triangle',.11)); },
+  tick(){ tone(700,0,.03,'square',.05); }
+};
+
+/* ======================================================================
+   UTILIDADES
+   ====================================================================== */
+function $(sel){ return document.querySelector(sel); }
+function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+function showScreen(id){
+  $all('.screen').forEach(s=>s.classList.remove('active'));
+  $('#'+id).classList.add('active');
+}
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function isCrit(){ return Math.random() < 0.15; }
+
+/* ======================================================================
+   ESTRELLAS DE FONDO
+   ====================================================================== */
+(function buildStarfield(){
+  const field = $('#starfield');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('span');
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    s.style.opacity = (0.2+Math.random()*0.6).toFixed(2);
+    field.appendChild(s);
+  }
+})();
+
+/* ======================================================================
+   PANTALLA DE TÍTULO / AYUDA
+   ====================================================================== */
+$('#btn-play').addEventListener('click', ()=>{ ensureAudio(); SFX.select(); renderMap(); showScreen('view-map'); });
+$('#btn-help').addEventListener('click', ()=>{ ensureAudio(); SFX.move(); showScreen('view-help'); });
+$('#btn-help-back').addEventListener('click', ()=>{ SFX.move(); showScreen('view-title'); });
+$('#btn-map-title').addEventListener('click', ()=>{ SFX.move(); showScreen('view-title'); });
+function refreshMuteLabels(){
+  const label = state.soundOn ? '🔊 SONIDO: ACTIVADO' : '🔈 SONIDO: DESACTIVADO';
+  $('#btn-mute-title').textContent = label;
+}
+$('#btn-mute-title').addEventListener('click', ()=>{
+  ensureAudio();
+  state.soundOn = !state.soundOn;
+  refreshMuteLabels();
+  if(state.soundOn) SFX.select();
+});
+refreshMuteLabels();
+
+/* ======================================================================
+   MAPA
+   ====================================================================== */
+function renderMap(){
+  const trail = $('#trail');
+  trail.innerHTML='';
+  let clearedCount=0;
+  CHAPTERS.forEach((ch,idx)=>{
+    const prog = state.progress[ch.num];
+    if(prog && prog.cleared) clearedCount++;
+    const row=document.createElement('div');
+    row.className='node-row '+(idx%2===0?'left':'right');
+    const node=document.createElement('button');
+    node.className='node'+(prog&&prog.cleared?' cleared':'')+(ch.final?' final':'');
+    node.setAttribute('aria-label', 'Capítulo '+ch.num+': '+ch.title);
+    node.innerHTML =
+      '<span class="glyph" style="color:'+ch.color+'">'+ch.glyph+'</span>'+
+      '<span class="info">'+
+        '<span class="num">CAP. '+ch.num+(ch.final?' · FINAL':'')+'</span>'+
+        '<span class="name">'+ch.title+'</span>'+
+        '<span class="boss">Guardián: '+ch.boss+'</span>'+
+        (prog&&prog.cleared ? '<span class="star">★ RANGO '+prog.rank+'</span>' : '') +
+      '</span>';
+    node.addEventListener('click', ()=>{ ensureAudio(); SFX.select(); startChapter(idx); });
+    row.appendChild(node);
+    trail.appendChild(row);
+  });
+  $('#map-progress').textContent = 'Mazmorras superadas: '+clearedCount+' / ' + CHAPTERS.length;
+}
+
+/* ======================================================================
+   BATALLA
+   ====================================================================== */
+function startChapter(idx){
+  const ch = CHAPTERS[idx];
+  document.getElementById("chapter-progress").textContent =
+"Capítulo " + ch.num + " / 9";
+document.getElementById("guardian-name").textContent =
+ch.boss;
+document.getElementById("progress-fill").style.width =
+(ch.num / CHAPTERS.length * 100) + "%";
+  state.chapterIdx = idx;
+  state.order = shuffle(ch.questions.map((_,i)=>i));
+  state.qi = 0;
+  state.playerHP = state.playerMaxHP = 100;
+  state.enemyHP = state.enemyMaxHP = ch.final ? 130 : 100;
+  state.correct = 0; state.wrong = 0;
+  state.combo = 0; state.bestCombo = 0;
+  state.answered = false;
+
+  $('#battle-chapter-label').textContent = 'CAPÍTULO '+ch.num+' · '+ch.title.toUpperCase();
+  $('#enemy-name').textContent = ch.boss.toUpperCase();
+  $('#enemy-glyph').textContent = ch.glyph;
+  $('#enemy-portrait').style.setProperty('--glow', hexToGlow(ch.color));
+  $('#combo-tag').style.display='none';
+
+  updateHPBar('enemy'); updateHPBar('player');
+  showScreen('view-battle');
+  updateBattleStats();
+
+document.getElementById("combat-log").innerHTML = `
+<div class="log-item">
+⚔ Ha comenzado el combate
+</div>
+`;
+  loadQuestion();
+}
+function hexToGlow(hex){
+  return hex ? hex+'88' : 'rgba(255,107,107,.45)';
+}
+
+function updateHPBar(who){
+  if(who==='enemy'){
+    const pct = Math.max(0, (state.enemyHP/state.enemyMaxHP)*100);
+    $('#enemy-hpfill').style.width = pct+'%';
+    $('#enemy-hptext').textContent = Math.max(0,state.enemyHP)+' / '+state.enemyMaxHP+' HP';
+  } else {
+    const pct = Math.max(0, (state.playerHP/state.playerMaxHP)*100);
+    $('#player-hpfill').style.width = pct+'%';
+    $('#player-hptext').textContent = Math.max(0,state.playerHP)+' / '+state.playerMaxHP+' HP';
+    const fill = $('#player-hpfill');
+    if(pct<=25) fill.style.background='linear-gradient(180deg, var(--hp-player-low), #8a1c1c)';
+    else if(pct<=50) fill.style.background='linear-gradient(180deg, var(--hp-player-mid), #a8820a)';
+    else fill.style.background='linear-gradient(180deg, var(--hp-player), #1f9c58)';
+  }
+}
+
+function currentQuestionData(){
+  const ch = CHAPTERS[state.chapterIdx];
+  const raw = ch.questions[state.order[state.qi]];
+  const [text, opts, correctIdx, tip] = raw;
+  const order = [0,1,2,3]
+  const newOpts = order.map(i=>opts[i]);
+  const newCorrect = order.indexOf(correctIdx);
+  return {text, options:newOpts, correct:newCorrect, tip};
+}
+
+let currentQ = null;
+let kbdSelected = -1;
+
+function loadQuestion(){
+  clearInterval(state.timerHandle);
+  state.answered = false;
+  kbdSelected = -1;
+  const ch = CHAPTERS[state.chapterIdx];
+  currentQ = currentQuestionData();
+
+  $('#q-counter').textContent = 'PREGUNTA '+(state.qi+1)+' / '+ch.questions.length;
+  $('#q-text').textContent = currentQ.text;
+  $('#tip-strip').classList.remove('show');
+  $('#next-hint').classList.remove('show');
+
+  const optsWrap = $('#q-options');
+  optsWrap.innerHTML='';
+  currentQ.options.forEach((optText,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML = '<span class="cursor">▶</span><span>'+optText+'</span>';
+    b.addEventListener('click', ()=>selectAnswer(i));
+    optsWrap.appendChild(b);
+  });
+
+  state.timeLeft = 20;
+  $('#timer-fill').style.width='100%';
+  $('#timer-fill').style.background='var(--accent-cyan)';
+  $('#q-timer').textContent = state.timeLeft+'s';
+  state.timerHandle = setInterval(tickTimer, 100);
+}
+
+function tickTimer(){
+  state.timeLeft -= 0.1;
+  const pct = Math.max(0, (state.timeLeft/20)*100);
+  $('#timer-fill').style.width = pct+'%';
+  if(state.timeLeft<=6){ $('#timer-fill').style.background='var(--danger)'; }
+  $('#q-timer').textContent = Math.max(0,Math.ceil(state.timeLeft))+'s';
+  if(state.timeLeft<=0){
+    clearInterval(state.timerHandle);
+    if(!state.answered) selectAnswer(-1); // tiempo agotado
+  }
+}
+
+function selectAnswer(choiceIdx){
+  if(state.answered) return;
+  state.answered = true;
+  clearInterval(state.timerHandle);
+
+  const buttons = $all('#q-options .opt');
+  buttons.forEach(b=>b.disabled=true);
+
+  const isRight = choiceIdx === currentQ.correct;
+  if(choiceIdx>=0) buttons[choiceIdx].classList.add(isRight?'correct':'wrong');
+  if(!isRight) buttons[currentQ.correct].classList.add('correct');
+
+  $('#tip-strip').classList.add('show');
+  $('#tip-text').textContent = currentQ.tip;
+
+  if(isRight){
+    state.correct++;
+    updateBattleStats();
+
+const mensajes = [
+  
+"🗡 Ataque acertado",
+
+"⚡ Consulta ejecutada",
+
+"💥 Golpe crítico",
+
+"✔ Respuesta correcta",
+
+"☁ Azure responde"
+
+];
+
+addCombatLog(
+
+mensajes[Math.floor(Math.random()*mensajes.length)]
+  
+);
+    state.combo++;
+    updateBattleStats();
+    state.bestCombo = Math.max(state.bestCombo, state.combo);
+    let dmg = randInt(14,22);
+    if(state.combo>0 && state.combo%3===0) dmg += 6;
+    const crit = isCrit();
+    if(crit) dmg = Math.round(dmg*1.5);
+    state.enemyHP = Math.max(0, state.enemyHP - dmg);
+    SFX.hitEnemy(crit);
+    floatDamage('enemy-panel', dmg, crit, 'dmg-enemy');
+    shakePortrait('enemy-portrait');
+    updateHPBar('enemy');
+    if(state.combo>=2){
+      const tag=$('#combo-tag');
+      tag.style.display='inline-block';
+      tag.textContent = 'COMBO x'+state.combo+(crit?' · CRÍTICO':'');
+    }
+  } else {
+    state.wrong++;
+    updateBattleStats();
+
+const mensajes = [
+
+"✖ Error de sintaxis",
+
+"☠ El guardián contraataca",
+
+"⚠ Consulta inválida",
+
+"💢 Has recibido daño",
+
+"❌ Respuesta incorrecta"
+
+];
+
+addCombatLog(
+
+mensajes[Math.floor(Math.random()*mensajes.length)]
+
+);
+    state.combo = 0;
+    $('#combo-tag').style.display='none';
+    let dmg = randInt(14,22);
+    const crit = isCrit();
+    if(crit) dmg = Math.round(dmg*1.5);
+    state.playerHP = Math.max(0, state.playerHP - dmg);
+    SFX.hitPlayer(crit);
+    floatDamage('player-panel', dmg, crit, 'dmg-player');
+    shakePortrait('player-portrait');
+    updateHPBar('player');
+  }
+
+  $('#next-hint').classList.add('show');
+
+  const enemyDown = state.enemyHP<=0;
+  const playerDown = state.playerHP<=0;
+
+  window._advance = function(){
+    window._advance = null;
+    document.removeEventListener('keydown', keyAdvanceHandler);
+    // Si alguien llegó a 0 HP solo mostramos el efecto visual
+if(enemyDown){
+    $('#enemy-portrait').classList.add('dead');
+}
+
+if(playerDown){
+    $('#player-portrait').classList.add('dead');
+}
+
+// Continuar siempre hasta responder todas las preguntas
+state.qi++;
+
+if(state.qi >= state.order.length){
+
+    endBattle('outofquestions');
+
+}else{
+
+    loadQuestion();
+
+  };
+  }
+  function keyAdvanceHandler(e){
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); if(window._advance) window._advance(); }
+  }
+  document.addEventListener('keydown', keyAdvanceHandler);
+
+  setTimeout(()=>{ if(window._advance) window._advance(); }, 2400);
+}
+
+function shakePortrait(id){
+  const el = $('#'+id);
+  el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
+}
+function floatDamage(panelId, dmg, crit, cls){
+  const panel = $('#'+panelId);
+  const span = document.createElement('div');
+  span.className = 'dmg-float '+cls+(crit?' crit':'');
+  span.textContent = (crit?'¡CRÍTICO! ':'') + '-'+dmg;
+  panel.style.position='relative';
+  panel.appendChild(span);
+  setTimeout(()=>span.remove(),950);
+}
+
+$('#btn-flee').addEventListener('click', ()=>{
+  if(confirm('¿Huir de la batalla y volver al mapa? Perderás el progreso de este intento.')){
+    clearInterval(state.timerHandle);
+    SFX.move();
+    renderMap();
+    showScreen('view-map');
+  }
+});
+
+/* ======================================================================
+   RESULTADO
+   ====================================================================== */
+function calcRank(correct,total,hpPercent){
+  const accuracy = correct/total;
+  const score = accuracy*0.6 + hpPercent*0.4;
+  if(score>=0.92) return 'S';
+  if(score>=0.78) return 'A';
+  if(score>=0.6)  return 'B';
+  if(score>=0.4)  return 'C';
+  return 'D';
+}
+
+function updateBattleStats(){
+
+    const total = state.correct + state.wrong;
+
+    const accuracy =
+        total === 0
+        ? 0
+        : Math.round((state.correct / total) * 100);
+
+    document.getElementById("stat-accuracy").textContent =
+        accuracy + "%";
+
+    document.getElementById("stat-correct").textContent =
+        state.correct;
+
+    document.getElementById("stat-errors").textContent =
+        state.wrong;
+
+    document.getElementById("stat-combo").textContent =
+        "x" + state.combo;
+
+}
+
+function addCombatLog(text){
+
+    const log = document.getElementById("combat-log");
+
+    const item = document.createElement("div");
+
+    item.className = "log-item";
+
+    item.innerHTML = text;
+
+    log.prepend(item);
+
+    while(log.children.length > 8){
+
+        log.removeChild(log.lastChild);
+
+    }
+
+}
+function endBattle(result){
+  const ch = CHAPTERS[state.chapterIdx];
+  const totalAnswered = state.correct + state.wrong;
+  const hpPercent = Math.max(0, state.playerHP/state.playerMaxHP);
+  const victory = (result==='victory') || (result==='outofquestions' && state.enemyHP<=state.playerHP && state.enemyHP<=0);
+  const won = result==='victory' || (result==='outofquestions' && state.enemyHP<=0 && state.playerHP>0) || (result==='outofquestions' && state.enemyHP < state.playerHP*0 ) ;
+  // Determine outcome clearly:
+ let outcome;
+
+if(state.correct > state.wrong){
+
+    outcome = "victory";
+
+}else if(state.correct < state.wrong){
+
+    outcome = "defeat";
+
+}else{
+
+    // Empate: decide por la vida restante
+    outcome = state.playerHP >= state.enemyHP
+        ? "victory"
+        : "defeat";
+
+}
+
+  const banner = $('#result-banner');
+  const rankBadge = $('#rank-badge');
+  if(outcome==='victory'){
+    banner.textContent = '¡'+ch.boss.toUpperCase()+' DERROTADO!';
+    banner.className='result-banner victory';
+    SFX.victory();
+    const rank = calcRank(state.correct, totalAnswered||1, hpPercent);
+    rankBadge.textContent = rank;
+    rankBadge.style.color='var(--accent-gold)';
+    rankBadge.style.borderColor='var(--accent-gold)';
+    state.progress[ch.num] = {cleared:true, rank: (state.progress[ch.num]&&rankOrder(state.progress[ch.num].rank)<rankOrder(rank)) ? state.progress[ch.num].rank : rank};
+  if(ch.num === 5){
+
+    setTimeout(()=>{
+
+        if(confirm(
+            "🎉 ¡Has completado la Parte I!\n\n¿Deseas comenzar la Parte II?"
+        )){
+
+            window.location.href = "SQLAzureQuest_P2.html";
+
+        }
+
+    },1500);
+
+}
+  } else {
+    banner.textContent = 'HAS SIDO DERROTADO';
+    banner.className='result-banner defeat';
+    SFX.defeat();
+    rankBadge.textContent = '☠';
+    rankBadge.style.color='var(--danger)';
+    rankBadge.style.borderColor='var(--danger)';
+  }
+
+  $('#res-boss').textContent = ch.boss;
+  $('#res-correct').textContent = state.correct+' / '+totalAnswered;
+  $('#res-accuracy').textContent = totalAnswered? Math.round((state.correct/totalAnswered)*100)+'%' : '0%';
+  $('#res-hp').textContent = Math.max(0,state.playerHP)+' / '+state.playerMaxHP;
+  $('#res-combo').textContent = state.bestCombo;
+
+  showScreen('view-result');
+}
+function rankOrder(r){ return {S:5,A:4,B:3,C:2,D:1}[r]||0; }
+
+$('#btn-retry').addEventListener('click', ()=>{ ensureAudio(); SFX.select(); startChapter(state.chapterIdx); });
+$('#btn-to-map').addEventListener('click', ()=>{ SFX.move(); renderMap(); showScreen('view-map'); });
+
+/* ======================================================================
+   NAVEGACIÓN POR TECLADO
+   ====================================================================== */
+document.addEventListener('keydown', (e)=>{
+  const battleActive = $('#view-battle').classList.contains('active');
+  if(!battleActive) return;
+  if(state.answered) return;
+  const buttons = $all('#q-options .opt');
+  if(!buttons.length) return;
+
+  if(e.key>='1' && e.key<='4'){
+    const idx = parseInt(e.key,10)-1;
+    if(idx<buttons.length) selectAnswer(idx);
+    return;
+  }
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    kbdSelected = (kbdSelected+1+buttons.length)%buttons.length;
+    buttons.forEach((b,i)=>b.classList.toggle('kbd-selected', i===kbdSelected));
+    SFX.move();
+  }
+  if(e.key==='ArrowUp'){
+    e.preventDefault();
+    kbdSelected = (kbdSelected-1+buttons.length)%buttons.length;
+    buttons.forEach((b,i)=>b.classList.toggle('kbd-selected', i===kbdSelected));
+    SFX.move();
+  }
+  if(e.key==='Enter'){
+    if(kbdSelected>=0){ selectAnswer(kbdSelected); }
+  }
+  if(e.key==='Escape'){
+    $('#btn-flee').click();
+  }
+});
+
+</script>
+</body>
+</html>

@@ -88,5 +88,15 @@
     "type": "other",
     "filename": "Resumen_Microsoft_SQL_Azure.docx",
     "date": "14/7/2026"
+  },
+  {
+    "id": 1784080154078,
+    "week": 15,
+    "title": "pdf",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana15/Resumen_Microsoft_SQL_Azure%20(1).pdf",
+    "type": "pdf",
+    "filename": "Resumen_Microsoft_SQL_Azure (1).pdf",
+    "date": "14/7/2026"
   }
 ]

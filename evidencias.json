@@ -78,5 +78,15 @@
     "type": "img",
     "filename": "Capitulo 1.png",
     "date": "14/7/2026"
+  },
+  {
+    "id": 1784080098614,
+    "week": 15,
+    "title": "doc",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana15/Resumen_Microsoft_SQL_Azure.docx",
+    "type": "other",
+    "filename": "Resumen_Microsoft_SQL_Azure.docx",
+    "date": "14/7/2026"
   }
 ]

@@ -68,5 +68,15 @@
     "type": "pdf",
     "filename": "Ejercicios_14.pdf",
     "date": "13/7/2026"
+  },
+  {
+    "id": 1784079595058,
+    "week": 15,
+    "title": "cpaitulo",
+    "description": "",
+    "url": "https://raw.githubusercontent.com/JaredASD/Base_de_datos_2/main/Semana15/Capitulo%201.png",
+    "type": "img",
+    "filename": "Capitulo 1.png",
+    "date": "14/7/2026"
   }
 ]
